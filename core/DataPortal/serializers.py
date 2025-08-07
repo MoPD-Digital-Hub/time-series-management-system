@@ -35,7 +35,7 @@ class IndicatorSerializers(serializers.ModelSerializer):
     
     class Meta:
         model = Indicator
-        fields = ('id', 'title_ENG', 'title_AMH', 'for_category', 'measurement_units', 'parent', 'annual_data', 'composite_key',)
+        fields = ('id', 'title_ENG', 'title_AMH', 'for_category', 'measurement_units', 'parent', 'annual_data')
 
 
 class CategorySerializers(serializers.ModelSerializer):

@@ -482,7 +482,7 @@ def topic(request):
 def delete_topic(request, id):
     topic = Topic.objects.get(id=id)    
     topic.delete()
-    messages.success(request, '&#128532 Hello User, Topic Successfully Deleted')
+    messages.success(request, 'Hello User, Topic Successfully Deleted')
     return redirect('topic')
 
 @login_required(login_url='login')
@@ -846,7 +846,7 @@ def years(request):
             return redirect('years')  # Redirect back to the same page
 
         DataPoint.objects.create(year_EC=new_year_EC)
-        messages.success(request, '&#128532 Hello User, Year Successfully Added')
+        messages.success(request, 'Hello User, Year Successfully Added')
         return redirect('years')
     context = {
         'years' : page,
@@ -891,10 +891,10 @@ def users(request):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
-            messages.success(request, '&#128532 Hello User, User Successfully Added')
+            messages.success(request, 'Hello User, User Successfully Added')
             return redirect('users')
         else:
-            messages.error(request, '&#128532 Hello User , An error occurred while Adding User')
+            messages.error(request, 'Hello User , An error occurred while Adding User')
     
     
     context = {
@@ -949,12 +949,12 @@ def document(request):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
-            messages.success(request, '&#128532 Hello User, Document Successfully Added')
+            messages.success(request, 'Hello User, Document Successfully Added')
             return redirect('document')
         else:
-            messages.error(request, '&#128532 Hello User, An error occurred while Adding Document')
+            messages.error(request, 'Hello User, An error occurred while Adding Document')
     
-    topics = Topic.objects.filter(is_deleted = False)
+    topics = Topic.objects.filter()
 
     if 'q' in request.GET:
         q = request.GET['q']
@@ -984,10 +984,10 @@ def document_edit(request, id):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
-            messages.success(request, '&#128532 Hello User, Document Successfully Updated')
+            messages.success(request, 'Hello User, Document Successfully Updated')
             return redirect('document')
         else:
-            messages.error(request, '&#128532 Hello User, An error occurred while Updating Document')
+            messages.error(request, 'Hello User, An error occurred while Updating Document')
     
     context = {
         'form' : form,
@@ -1004,7 +1004,7 @@ def document_delete(request, id):
     except Document.DoesNotExist:
         return HttpResponse("Document does not exist")
     
-    messages.success(request, '&#128532 Hello User, Document Successfully Deleted')
+    messages.success(request, 'Hello User, Document Successfully Deleted')
     return redirect('document')
     
 
@@ -1021,10 +1021,10 @@ def custom_dashboard(request):
     if request.method == 'POST':
         if form.is_valid():
             form.save()
-            messages.success(request, '&#128532 Hello User, Dashboard Successfully Added')
+            messages.success(request, 'Hello User, Dashboard Successfully Added')
             return redirect('custom-dashboard-index')
         else:
-            messages.error(request, '&#128532 Hello User, An error occurred while Adding Dashboard')
+            messages.error(request, 'Hello User, An error occurred while Adding Dashboard')
     paginator = Paginator(dashboards, 10) 
     page_number = request.GET.get('page')
 
@@ -1069,7 +1069,7 @@ def edit_dashboard(request):
 def delete_dashboard(request, id):
     dashboard = Dashboard.objects.get(id=id)    
     dashboard.delete()
-    messages.success(request, '&#128532 Hello User, Dashboard Successfully Deleted')
+    messages.success(request, 'Hello User, Dashboard Successfully Deleted')
     return redirect('custom-dashboard-index')
 
 

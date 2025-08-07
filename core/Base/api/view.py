@@ -113,7 +113,7 @@ def filter_topic_and_category(request):
    '''
    filter indicator and category
    '''
-   topics = list(Topic.objects.filter(is_deleted = False).select_related().values('id','title_ENG','title_AMH'))
+   topics = list(Topic.objects.filter().select_related().values('id','title_ENG','title_AMH'))
    categories = list(Category.objects.filter(is_deleted = False).select_related().values('id','name_ENG','name_AMH','topic__id'))
    context = {
       'topics' : topics,
@@ -128,7 +128,7 @@ def filter_indicator_by_category(request, id):
    '''
    filter indicator by category
    '''
-   indicators = list(Indicator.objects.filter(for_category__id = id, parent = None ,is_deleted = False).select_related().values('id','title_ENG','title_AMH'))
+   indicators = list(Indicator.objects.filter(for_category__id = id, parent = None).select_related().values('id','title_ENG','title_AMH'))
    context = {
       'indicators' : indicators
    }
@@ -143,13 +143,13 @@ def filter_indicator_annual_value(request):
       parent_indicator_id = indicator_ids[0].split(',')
       indicator_list_id_with_children = []
       def child_list(parent):
-            child = Indicator.objects.filter(parent = parent, is_deleted = False).select_related()
+            child = Indicator.objects.filter(parent = parent).select_related()
             for i in child:
                indicator_list_id_with_children.append(i.id)
                child_list(i)
                     
       for i in parent_indicator_id:
-          parent = Indicator.objects.filter(id = i, is_deleted = False).select_related().first()
+          parent = Indicator.objects.filter(id = i).select_related().first()
           indicator_list_id_with_children.append(parent.id)
           child_list(parent)
       
@@ -221,11 +221,11 @@ def filter_indicator_annual_value(request):
 @api_view(['GET'])
 def detail_indicator_with_children(request, id):
    if request.method == 'GET':
-      indicator = Indicator.objects.filter(id = id, is_deleted = False).select_related().first()
+      indicator = Indicator.objects.filter(id = id).select_related().first()
       indicator_id_with_children = []
 
       def child_list(parent):
-            child = Indicator.objects.filter(parent = parent, is_deleted = False).select_related()
+            child = Indicator.objects.filter(parent = parent).select_related()
             for i in child:
                indicator_id_with_children.append(i.id)
                child_list(i)
@@ -302,7 +302,7 @@ def detail_indicator_with_children(request, id):
 def indicator_graph(request, id):
    print(id)
    if request.method == 'GET':
-      indicator = Indicator.objects.filter(id=id, is_deleted=False).select_related().first()
+      indicator = Indicator.objects.filter(id=id).select_related().first()
 
       annual_data_value = list(AnnualData.objects.filter(indicator=indicator)
       .order_by('-for_datapoint__year_GC')

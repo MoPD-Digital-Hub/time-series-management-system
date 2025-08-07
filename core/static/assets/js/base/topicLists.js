@@ -80,13 +80,12 @@ $(document).ready(function () {
     let htmlContent = '';
     const hexColor = getColorHex(color);
     console.log(category)
-
-    if(category.indicators.length>0){
+    if (category.indicators.length > 0) {
     category.indicators.forEach((indicator) => {
-        if (indicator.annual_data) {
-          const latestDataPoint = indicator.annual_data[0];
-          const latestYear = latestDataPoint.for_datapoint;
-          const latestPerformance = latestDataPoint.performance;
+    if (indicator.annual_data && indicator.annual_data.length > 0) {
+      const latestDataPoint = indicator.annual_data[0];
+      const latestYear = latestDataPoint.for_datapoint;
+      const latestPerformance = latestDataPoint.performance;
 
             const seriesData = [{
                 name: " ",
@@ -208,8 +207,7 @@ $(document).ready(function () {
             `;
 
             htmlContent += indicatorChartHtml;
-        }
-        
+        } 
     });
     }
     else {

@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DPMEs</title>
     <link />
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+
     {% include 'user-admin/common/head.html' %}
   </head>
 
@@ -38,68 +40,67 @@
               </div>
             </div>
             <div class="container mt-4">
-              {% if topics %} 
-              {% for topic in topics %}
-               {% if  topic.get_document_lists %}
-              <div class="card mb-3">
-                <div class="card-header bg-success text-white">
-                  (Topic) {{topic.title_ENG}}
+              {% if topics %}
+                <!-- Dropdown Filter -->
+                <div class="mb-4">
+                  <label for="topicFilter" class="form-label fw-bold">Filter by Topic:</label>
+                  <select class="form-select" id="topicFilter">
+                    <option value="all">All Topics</option>
+                    {% for topic in topics %}
+                      {% if topic.get_document_lists %}
+                        <option value="topic-{{ topic.id }}">{{ topic.title_ENG }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
                 </div>
-                <div class="card-body row row-cols-1 row-cols-md-4 g-4">
-                  {% for document in topic.get_document_lists %}
-                  <div class="col">
-                    <div class="card">
-                      <img
-                        style="height: 200px"
-                        src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSExIWFhUVGBcVFxUXFhUYFhcVFRUXGBUWFhcYHSggGBsmGxUXITEhJSkrLi4uGR8zODMtNygtLisBCgoKDg0OGxAQGy0lHyUtLTAtMC0tLS0tLTAvLy0tLS8tLS0tLS0vLTUvLS0tLS0tLS0tNS0tLS0tLS0tLS0tLf/AABEIAQsAvQMBIgACEQEDEQH/xAAcAAEAAgMBAQEAAAAAAAAAAAAAAQIDBQYHBAj/xABDEAABAwIDBgEHCgQEBwAAAAABAAIRAyEEEjEFEyJBUWEGFDJScYGRsRUjQlRilKHB4/Az0dLhJEOjwhZTcnOSovH/xAAaAQEBAQADAQAAAAAAAAAAAAAAAQYDBAUC/8QALBEBAAIBAgQEBQUBAAAAAAAAAAECEQMEEiExQQUyYbETUYHh8CIjocHRcf/aAAwDAQACEQMRAD8A9M27srLNRg4fpAcu47fD4aSV35C5Tbmy90c7RwH/ANT09S8Tf7Ph/cp07vV2e54v0X69muYwmSBpcqkqGuI566oV5eYegyGscuW0TPdTVDZ4TI72WGUlOL5pwrqFEq76gIECCNT1TkKypLydTKpKSplcLSrRafYqKZVEq7mjKDN5uOyxSpJHLp+KuUwmVEqJUgiDOvL+6mVJUqqsI66cuqCAVKhzhNtPema0TZBLnTfT1KJUKY59PzTISkqspKmR6Eq1GBwIIkGxB6KyLYM04zbOzDRdIuw6Hp9krXyu/r0WvaWuEg2IXFbV2e6g+Ddp813UdD3We32z+FPHTy+32e1tNz8SOG3X3fIkqspK83LvYWlSFSVYOvPRIlMJBSUq1i4kmLquZWZjsYWBUyqi5gBZX1C7KA0WtYaqwkqPjl++yhVJRTK4XIFr/wBlCrKSmTCwWXDvhwNrTrposEpKRbE5JjMLON1LnzHaypKSmTC4FjfT8VEqkqQDrFhqmTC4daLX949SAd1jlWAPRMmHoiIi2TMCwYzCtqsLHCx94PIjus6KWrFoxPRYmYnMOEx+B3JLXE5p4bWc3r/ZfEu+2jgW1mZXew8weq4bGYZ1JxY4QR7iOo7LM77aToWzHl/Or3dpuY1YxPVjUSpqVi6AeQgKi6EzHZ3I9VipCpKkOI9vwTJhbMp7rGSryYFrAm8de6sSkwZlCgPibC/7smZTK4WBRUlS5xOp0TJhIQFVlWBEHWeXTumRZzrC2n4qkqJSUmTC5BGvPTuozKsqJTJhma5uUgi82KrnPU+9VCOPQ2V4kw9JREW1ZYREQF8G2NmNrsjRw813Tsey+9F8amnXUrNbRyl9UvNLcVerzatSdTcWuEOFiFjldvt7ZArtltqjdD1Hon92XEvaWkgiCLEHkRyWU3m0tt747dp/O7RbbcV1q57916OWRmmOcaqrom2nL1LHKsSupxcnYxzWCnfGMs2mY7rGkpxTC4WlFWUAUyYWBVg+0ctVjWWjWymYB9d19RPNJhV7SNf2DzVZUSimVWBSVVZK1ItgkjiE2PxTnjKcsqypcRyH/wB5rGpBTK4WJUSqqxtEGZ/DsoPTURFumSEREBERAWj8RbG3o3jB84OXpDp6+nu9W8RcWto01qTS/RyaWrbTtFqvMCFJYbEggHnBXVeJdi5prUxxfTaPpD0h3+Px5V1UkAE2GnZZHc7a23vNbfT1aPQ141qxav19EShVVI/BdbLnMyKIRFWlQSoQhBMq1NsmFSVCQLyoUIguwjnPs68vYolUUlMmEyplQqoPUkRFvGQEREBERAREQFyfibYmWa1MW1e0curh26+9dYhXX3O2puKcFvpPyc2hr20b8VXmNFmYhthPMqHtgkdO/wAFvPEWxd0d5THAdR6B/pK0CyOvo20bcF45tJpatdWvFWeS0Kd2YmLdeU9FUKxqmMs21juuGMd3JOeyqFQiipKhEQSFCKUALLXa0GGmQsQVmujlNtPYvqOiSqURFFeooiLeMgIiICIiAiIgIiIKvYCCCJBsQdCFxG3tjmg7M3+G42Pon0SfgV3Kx16LXtLXCWmxBXT3m0ruKYnrHSXZ225to2z27vNq9LIcsg9xosa2G2tlOoPjVh8135Hv8Vr1ktWltO81tGJho9O8XrFonIiQi432IoRBKlkTeY7KECsAShREADkhCs10XFj16KsoPUURFvGQEWuxeJxIeRTw7HttDjWyk2E8O7MXka8lh8sxn1Sn95/SQbdFqPLMZ9Up/ef0k8sxn1Sn95/SQbdFqPLMZ9Up/ef0k8sxn1Sn95/SQbdFqPLMZ9Up/ef0k8sxn1Sn95/SQbdFqPLMZ9Up/ef0k8sxn1Sn95/SQbDGYVtVhY8SD7x0I6FcDtTZzqD8jrg3a7k4fz6heir5dpYBlZhY71g82nkQvP3+xjcVzHmjp/jubPdzo2xPln8y84BRfVjcCaLnMf5wiIFnDqCvmhZS1LVnFurRVtFozCqktPRSEc8nUzy9nRRUQrscARYHsdFRS1hOgm0+zqkeiShSrPibEkdwqwmMCFCvUA5GbcxF+atSwznCQJ5aj81eGZnEGYiMy9NREW7ZFofEu2atJ9DDYdrHYjEl+TeZt3TZSaHVKtTLdwEtAaCJLhcLHgqm0aVenTr7rEUagcDVo03UXUXtEjeMdUfmY7QEGQdRdYPFdGrSxOFx9Ok+q2gK1KtTpjNU3VcM+cY3Vxa+m2Wi5BMCyvh/EdTE16VPC0am6GZ2Ir16Fak1rcpyspCoGl1Quy8iAAeoQfV/xdgt9ud+M+fdTlfut7MbrfZd3vJtkzTNoUbS8YYGg99OrXAfTIFRoZUeaeZrXB1TI05GZXA5zDb6riiH/JHyR5NW8syGhG5q7nPvJ8p8oy7vJPzmbNM8pW8Gz3ztomk4mqGhhyH50DZ9NvBbj4swtN5CDfYHxRg61bcU64dUIcWiHhrwzz93UIyVI55SY5rBhvGeAqPaxmIBL3BjXZam7NQ6Ut6W5BUPoE5ri11p2YB4Ow4pOAogh8MIFMeQVGQ+3BxENvF7Lm9m4nyjYzNn0aFYV6rsrTuam6b/AIkvOKNfLuwGwX+dmzCIlB3+1PFuCw73U6taHMg1MtOrUFIOEg1nU2kUgQZ4yLX0WTaPifCUC0VKwzPYKjGta+o6ow/Sptpgl/XhBtfRcbtevXdVx1I+U0XOe4UqGFwjS3FNNFobVq4l1JzZdGUnMzKGgdF9vg3A1G18A59J7cmyaVJxcxwyVA6jmpkkcL+E8OtkHVYPxBhaoomnWa4YjOKRE8Zpgl7dLOABlpg2PQr6qOOpvqVKTXAvpZd40Tw7wEsk6SQJj1dQuDfs6o3A4mtkc2rhdoYrG0g4Fpc2niajyBMS2pRL2g6HOuj8C0HeTnEvBFTGVHYpwdq1tSBRYemWi2k2OoKDokREHwbX2a2uzKbOHmu6H+R6LgcTh3U3FjhDhqPzHUL01arbuyBXbItUb5p6/ZPb4LyvEdh8aOOnmj+fu9DZbz4U8FvL7OFa8gETY6940VVapTLSWuEEGCDyKyYZ7RJc2bWHfuszEZnEvezyzDDCsDCNNwYnsdPUoebqCESFICKgISpVUHqSIi3jIOe8UeLaOAqYZlZrsmIc5pqCMtLLl4qnRsuAJ5ar7to7YFLEYbDlhJxLqjQ4EQ3dUnVCSOchsLSeK8Myrj9n0qjQ5lRmNY5p0c11BocD7CucwtSrQ2ns7Z9cuecO/EuoViJ32Fdhagp5jzqMIyO6w080Hpu+bmy5hm9GRPu1UvrNGrgLxcgXOg9a8U2nWovwTMXTpYSjvMTTqU3ueau0HP8AKmlxdUhuR4AcSJflaC3lbpNobCw1ertypWosqOaGhheA7dxs+i7NTnzHTHEIPC3oEHo4qNJLQRI1EiRPUL49j4GjhqbcNSNmAw0ul0OcXEnnq4rhsHs2lRq7GrUabW1qzagq1APnK2bAvqHfP1qS9rXS4m4XObPoB2BpVnVcHSxRqsmuWVX44Y01gHMcG8bnF0tLAIynTKg9rREQa3buxaeLpilVdUDJlzWPcwVGxBp1I85hm45rYgRYKUQEREBERBpPEWxd8M7B84B/5Doe/QriiIsbHQj8F6gud8S7EzzVpjjHnNH0h1H2vivF8S8P486unHPvHz9f+vU2O84f279O3o49Xa2xuBEW6yqkos7D20rJRY4hxboBf1dPwWJSHKxPNJhBWGviqbIzOAnSSsW0cc2k2dXHzW9e/qXK167nuLnGSf3A7L0dj4dbcfqtyr7uju97Gj+mvOfZ+hkRFqmfUdSaSHFoLmzlJAls2MHlKh9Bpc1xaC5s5XEAluYQ7KeUhfFi9lYd7y57eNwk8bxIaACYDtBb3rF8hYX0P9Sp/Ug+kbIw+Z7txSzVP4jt2yX/APWY4vavo8nZxcDePz7Ditl4vSsIvyWu+QsL6HKf4lTTr5yHYOF9D/Uqf1INj5Ozh4G8HmWHDaOH0bWtyWL5Nob3fbmnvdN7kbvI6Z4n8V8J2LhL8IsQ0/OPs4xAPFrxN946qx2FhYnJb/uVOk+l0QbZFqG7EwhAIbIIBB3j4IOhHFog2HhZjLcyY3j5gRJjN9oe8INui1PyFhfQ/wBSp6vSUO2JhAJLYAEkmo+I6zm7FBt0UAqUBERAREQcr4m2JrWpju9o/Fw/P3rl16kuN8SbE3ZNWmOA+c30T1H2fgs/4n4fjOtpxy7x/f8Ar2dhvM/t3+k/00C+PaOPbSb1cdG/meybRx4pDq46N/M9ly1es57i5xkldfw/w+daeO/l9/s5t5vY0o4aeb2K9Zz3FzjJP7gdlRQi08RERiHgzMzOZfopERVGq2zWotcwVS4SypBBEQ3I4gg6mQ0i3KOcHU124FmWabpNEvDTF6ZJNyTAPEdT05wt7tF9cOZuWNc2+cOtF25SDI+1+xB+M18aC0GmwyHFxAsIIgXqawSR10luqDW4jEYJxpudmADN2ABIABgH2EER6rGQsjH4NrpLXS12cEnNDmTMOmLZjzM9zC2bTig1kMpgkvL28heW3nU3vyzaFYgMS8tD6TMmZpMhmlg62d0ReNZ6jQhr8V5HvCwseS6pDrlozSGTJiwzO58jrwrNjX4NhdSeHSHCo4gG7nMu6RyiBaBy0lfW2tjLg0mXvJiNLtgPkyRY95t5qzsfiJpgsbGVpqOt50w8AZrdef5INTiX4MGmXtd/ByAFwIbTkgDWD5uo6C8kTlo1cJQrODczXMBDjBjKWh+WSL6euYAtAWdlbHS2abIAIPm3MNg+eLyHW0NgcuqzU62L4s1Kn/DLmwf8wO4Wni0iDP4hBrmNwYbTdkeWuz5fs5BlcSJnzWdzw9SZnZ2DwdR2RjXXDiSSPo5Wka9HN0ta3Nfe6ri8rIY3NLi8WgC2UDjHU+siLTmVW1sbH8OnNzf1EtAh2s27WuZMBsMDgmUWlrBAJzH1wB8AB7F9Kx4cuLWl4AdAzAaB0XA9qyICIiAiIgLQeLvElPB04ID6rwclPqNMz+jfjp1h4t8T08Ezk6s4cFP/AHP6N+Og5keOY7GVK1R1Wo4ue4ySfgOgHIIMdesXuLnGSf3A6BY1KKRERGIWZmZzKEUoqj9EoiINbthtOWl9Z1OA+IcWySAJgHiIMEC9z3WopMYCC7GuLBmGbO4Evebc8uUG47k+pbfbFSMo3G9JzQcpIaRGpA4Z9mi129DrnATlcBdsEzJzNBbcSO1yPWgscI11Jk4p5bSc7Oby5znBwa4G9swgepVGGDi6kMY6XkFsEl0BnXNaRmJiBdsRzzVK2ZlX/CmOGW5X8czJALAZEC4E6TBssOGxGhGBIceIcLgQ7kHHJZwm50gWk8KDLjHUKpBNccQaLA3Lc+SOf+YSRzGU2GuOoKTs1TyqpBLyAC63Nwy88umlgOxK+3Z9CnUBL8MGEQLt1ENNpGk29i+r5No2+aZYQOEWBMkINTWbRDTT8sc0tqZnHOS7hkFgJJMSQI6iOqq5lHI0eUvgPIlhflLnvcSDBMiXDUmAATZbp+z6RMmmwmSZyiZOpHQ81D9nUXa0mH1tHWUGjDaBz/4upoL53jLYHMD7Y6S+NbLpKdQOAcDIIkHsV83ybR/5TL68Iv6+q+pjQBAEAckEoiICIiAue8XeKGYJkCHVnDgZ/vf0b8dOpEeL/FDMGyBDqzhwM6D039G/H3kePYzFPqvdUqOLnuMucef8hyjkgY3F1Kz3VKji57jJJ/dh25LApUICKVCAiKUH6JREQEREBERAREQEREBERAREQFznjDxSzBsyth1Zw4GcgPTf0Hbn7yI8YeKmYNmVsOruHCzk0em/t25+8jx7FYl9V7qlRxc9xlzjqT++XJBOLxL6r3VKji57jLnHUn8h25LCiICIiAiIgIiIP0UiIgIiICIiAiIgIiICIiAua8Y+K2YNmVsOruHC3k0em/t0HP3kR4y8VswbcjIdXcOFvJo9N/boOa8gxNd9R7nvcXPcZc46koGKxD6j3VHuLnuMucdSVjREBERARFCAiIgIiIP0UiIgIiICIiAiIgIiIC5jxn4sbg25GQ6u4WbyYD9N/wCQ5qPGfixuEbu6cOruFhqGA/Sf+Q5+peQ4iu57i97i5zjLnG5JPMoGIruqOc97i5zjLnHUlY1KIIRSiCEX27IwIr1W0i8MLrNJEy4kBrfbK+6p4ef/AJYqVARLXBgDHWkHMX8IN4JAmLSg0iLZnYOKBINB9hJsPte88LrC4ym1lld4axQLxu5yEtsQcxFQU4b1MuBExIug06LLicO6m4se0tcADB6OEggixBF5CrVYWmHCDAPLRzQ4H3EKTaI6uSuje04rCiKUVcb9EoiICIiAiIgIiIC5bxp4tbhG7unDq7hYaimD9J3foPyXQbTqllGq9phzWPcD0IaSDdeA1aznuL3uLnOMucTJJOpKCa9Vz3F73FznGXONySeZVERBClEQQpREGbBYl1Koyq2MzHNeJuJaZE9rLY/8R190KPDlyNp/SktYQW2zZQRlAkAW1lahEG+b4pqhhbkYX719ZryDwOqb0uLROs1XRMgDkdVkPjPFSTFMScxhrozBzXAxmtdo0iZMyTK51EGfaGMdWeaj9YDYBcQA0QBLiT7yVgeSbkkqFK+ZpEuau41K9LIUqEX04ZnL/9k="
-                        alt=""
-                      />
-                      <div class="card-body">
-                        <p class="card-text">{{document.title_ENG}}</p>
-                        <p class="card-text">{{document.title_AMH}}</p>
-                        <hr class="bg-dark" />
-                        <div class="justify-content-between align-items-center">
-                          <a
-                            href="/media/{{document.file}}"
-                            target="_blank"
-                            class="btn btn-outline-success"
-                          >
-                            <i class="fa fa-eye"></i>
-                          </a>
-                          <a
-                            download="/media/{{document.file}}"
-                            href="/media/{{document.file}}"
-                            class="btn btn-outline-success"
-                          >
-                            <i class="fa fa-download"></i>
-                          </a>
-                          <a
-                            href="{% url 'document_edit' document.id %}"
-                            class="btn btn-outline-info"
-                          >
-                            <i class="fa fa-edit"></i>
-                          </a>
-                          <button
-                            class="btn btn-outline-danger btn-delete"
-                            data-bs-toggle="modal"
-                            data-bs-target="#deleteDocumentModal"
-                            data-bs-whatever="@mdo"
-                            data-id="{{document.id}}"
-                            data-name="{{document.title_ENG}}"
-                          >
-                            <i class="fa fa-trash"></i>
-                          </button>
+
+                <!-- All documents in one list -->
+                <div class="row row-cols-1 row-cols-md-4 g-4" id="documentList">
+                  {% for topic in topics %}
+                    {% for document in topic.get_document_lists %}
+                        <div class="col document-item" data-topic="topic-{{ topic.id }}">
+                          <div class="card h-100">
+                            <!-- Canvas with data attribute for the PDF URL -->
+                            <canvas
+                              id="pdf-canvas-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                              data-pdf-url="{{ document.file.url }}"
+                              style="height: 200px; width: 100%; border: 1px solid #ccc;"
+                            ></canvas>
+
+                            <div class="card-body">
+                              <h6 class="card-title">{{ document.title_ENG }}</h6>
+                              <p class="card-text">{{ document.title_AMH }}</p>
+                              <hr />
+                              <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ document.file.url }}" target="_blank" class="btn btn-outline-success" title="View">
+                                  <i class="fa fa-eye"></i>
+                                </a>
+                                <a href="{{ document.file.url }}" download class="btn btn-outline-success" title="Download">
+                                  <i class="fa fa-download"></i>
+                                </a>
+                                <a href="{% url 'document_edit' document.id %}" class="btn btn-outline-info" title="Edit">
+                                  <i class="fa fa-edit"></i>
+                                </a>
+                                <button
+                                  class="btn btn-outline-danger btn-delete"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#deleteDocumentModal"
+                                  data-id="{{ document.id }}"
+                                  data-name="{{ document.title_ENG }}"
+                                  title="Delete"
+                                >
+                                  <i class="fa fa-trash"></i>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
+                    {% endfor %}
                   {% endfor %}
                 </div>
-              </div>
-              {% endif %}
-              {% endfor %} 
               {% endif %}
             </div>
+
           </div>
         </div>
       </div>
@@ -205,6 +206,8 @@
     <script src="{% static 'assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
     <script src="{% static 'assets/plugins/summernote/summernote-bs4.min.js' %}"></script>
     <script src="{% static 'assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.9.179/pdf.min.js"></script>
+
 
     {% include 'user-admin/common/footer_js.html'%}
 
@@ -221,5 +224,40 @@
         );
       });
     </script>
+    <script>
+       document.getElementById('topicFilter').addEventListener('change', function () {
+        const selectedTopic = this.value;
+        const items = document.querySelectorAll('.document-item');
+
+        items.forEach(item => {
+          const matches = selectedTopic === 'all' || item.dataset.topic === selectedTopic;
+          item.style.display = matches ? 'block' : 'none';
+        });
+      });
+      document.addEventListener("DOMContentLoaded", () => {
+        const canvases = document.querySelectorAll('canvas[data-pdf-url]');
+        canvases.forEach(canvas => {
+          const url = canvas.dataset.pdfUrl;
+          const loadingTask = pdfjsLib.getDocument(url);
+          loadingTask.promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const scale = 0.5;
+              const viewport = page.getViewport({ scale: scale });
+              const context = canvas.getContext('2d');
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              page.render({
+                canvasContext: context,
+                viewport: viewport,
+              });
+            });
+          }).catch(err => {
+            console.error('Error loading PDF', err);
+            canvas.style.display = 'none';
+          });
+        });
+      });
+    </script>
+    
   </body>
 </html>
