@@ -1,0 +1,57 @@
+{% load static %}
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h5>Bar chart stacked</h5>
+        </div>
+        <div class="card-body">
+            <div id="bar-chart-2"></div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'assets/plugins/jquery/jquery.min.js' %}"></script>
+<script>
+    $(document).ready(function () {
+    "use strict"
+    new ApexCharts(document.querySelector("#bar-chart-2"), {
+        chart: {
+          height: 350,
+          type: "bar",
+          stacked: !0,
+          toolbar: { show: !1 },
+          zoom: { enabled: !0 },
+        },
+        colors: ["#4680FF", "#2CA87F", "#E58A00", "#13c2c2"],
+        responsive: [
+          {
+            breakpoint: 480,
+            options: {
+              legend: { position: "bottom", offsetX: -10, offsetY: 0 },
+            },
+          },
+        ],
+        plotOptions: { bar: { horizontal: !1 } },
+        series: [
+          { name: "PRODUCT A", data: [44, 55, 41, 67, 22, 43] },
+          { name: "PRODUCT B", data: [13, 23, 20, 8, 13, 27] },
+          { name: "PRODUCT C", data: [11, 17, 15, 15, 21, 14] },
+          { name: "PRODUCT D", data: [21, 7, 25, 13, 22, 8] },
+        ],
+        xaxis: {
+          type: "datetime",
+          categories: [
+            "01/01/2011 GMT",
+            "01/02/2011 GMT",
+            "01/03/2011 GMT",
+            "01/04/2011 GMT",
+            "01/05/2011 GMT",
+            "01/06/2011 GMT",
+          ],
+        },
+        legend: { position: "bottom" },
+        fill: { opacity: 1 },
+      }).render()
+    })
+</script>

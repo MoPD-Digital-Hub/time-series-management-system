@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    {% include 'user-admin/common/head.html'%}
+  </head>
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%} 
+    {% include 'user-admin/common/sidebar.html'%}
+    <!--Body Start-->
+    <div class="content-wrapper">
+      {% if messages %} 
+         {% include 'user-admin/common/messages.html'%} 
+      {% endif %}
+
+      <section class="content">
+        <div class="container-fluid">
+          {% if result.has_errors %} 
+          {% block errors %}
+          <h2>"Errors"</h2>
+          <ul>
+            {% for error in result.base_errors %}
+            <li>
+              {{ error.error }}
+              <div class="traceback">{{ error.traceback|linebreaks }}</div>
+            </li>
+            {% endfor %} 
+            {% for line, errors in result.row_errors %} 
+            {% for error in errors %}
+            <li>
+              "Line number" : {{ line }} - {{ error.error }}
+              <div><code>{{ error.row.values|join:", " }}</code></div>
+            </li>
+            {% endfor %} 
+            {% endfor %}
+          </ul>
+          <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+          {% endblock %} 
+          {% elif result.has_validation_errors %} 
+          {% block validation_errors %}
+          <h2>"Some rows failed to validate"</h2>
+
+          <p>
+            "Please correct these errors in your data where possible, then
+            reupload it using the form above."
+          </p>
+
+          <table class="import-preview">
+            <thead>
+              <tr>
+                <th>"Row"</th>
+                <th>"Errors"</th>
+                {% for field in result.diff_headers %}
+                <th>{{ field }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in result.invalid_rows %}
+              <tr>
+                <td>{{ row.number }}</td>
+                <td class="errors">
+                  <span class="validation-error-count">{{ row.error_count }}</span>
+                  <div class="validation-error-container">
+                    <ul class="validation-error-list">
+                      {% for field_name, error_list in row.field_specific_errors.items %}
+                      <li>
+                        <span class="validation-error-field-label">
+                          {{ field_name }}</span>
+                        <ul>
+                          {% for error in error_list %}
+                          <li>{{ error }}</li>
+                          {% endfor %}
+                        </ul>
+                      </li>
+                      {% endfor %} 
+                      {% if row.non_field_specific_errors %}
+                      <li>
+                        <span class="validation-error-field-label">
+                          "Non field specific"</span>
+                        <ul>
+                          {% for error in row.non_field_specific_errors %}
+                          <li>{{ error }}</li>
+                          {% endfor %}
+                        </ul>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </td>
+                {% for field in row.values %}
+                <td>{{ field }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+          {% endblock %} 
+          {% else %}
+
+          <div class="row justify-content-center mt-5">
+            <div class="col-10">
+              <h2>Preview</h2>
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th class="text-center">#</th>
+                    {% for field in result.diff_headers %}
+                    <th class="text-center">{{ field }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                {% for row in result.valid_rows %}
+                <tr>
+                  <td class="text-center import-type">
+                    {% if row.import_type == 'new' %}
+                    <p class="btn rounded-pill btn-sm btn-success">New</p>
+                    {% elif row.import_type == 'skip' %}
+                    <p class="btn rounded-pill btn-sm btn-secondary">Skipped</p>
+                    {% elif row.import_type == 'delete' %}
+                    <p class="btn rounded-pill btn-sm btn-danger">Delete</p>
+                    {% elif row.import_type == 'update' %}
+                    <p class="btn rounded-pill btn-sm btn-warning">Update</p>
+                    {% endif %}
+                  </td>
+                  {% for field in row.diff %}
+                  <td class="text-center">{{ field }}</td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </table>
+              <form class="mb-5" method="post">
+                {% csrf_token %}
+                <button
+                  name="confirm_data_form"
+                  class="btn btn-success"
+                  type="submit">
+                  Confirm
+                </button>
+                <a href="javascript:history.back()"
+                  class="btn btn-secondary">Cancel</a>
+              </form>
+            </div>
+          </div>
+
+          {% endif %}
+        </div>
+      </section>
+    </div>
+    <!--Body End-->
+
+    {% include 'user-admin/common/footer.html'%}
+    <aside class="control-sidebar control-sidebar-dark"></aside>
+
+    {% include 'user-admin/common/footer_js.html'%}
+  </body>
+
+  <script>
+    function goBack() {
+      // Use window.history.back() to go back to the previous page
+      window.history.back();
+    }
+  </script>
+</html>

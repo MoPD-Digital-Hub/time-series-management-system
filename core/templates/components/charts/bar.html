@@ -1,0 +1,45 @@
+{% load static %}
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h5>Bar chart</h5>
+        </div>
+        <div class="card-body">
+            <div id="bar-chart-1"></div>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="{% static 'assets/plugins/jquery/jquery.min.js' %}"></script>
+<script>
+    $(document).ready(function () {
+    "use strict"
+    new ApexCharts(document.querySelector("#bar-chart-1"), {
+        chart: { height: 350, type: "bar" },
+        plotOptions: {
+          bar: { horizontal: !1, columnWidth: "55%", endingShape: "rounded" },
+        },
+        dataLabels: { enabled: !1 },
+        colors: ["#2CA87F", "#4680FF", "#13c2c2"],
+        stroke: { show: !0, width: 2, colors: ["transparent"] },
+        series: [
+          { name: "Net Profit", data: [44, 55, 57, 56, 61, 58, 63] },
+          { name: "Revenue", data: [76, 85, 101, 98, 87, 105, 91] },
+          { name: "Free Cash Flow", data: [35, 41, 36, 26, 45, 48, 52] },
+        ],
+        xaxis: {
+          categories: ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"],
+        },
+        fill: { opacity: 1 },
+        tooltip: {
+          y: {
+            formatter: function (e) {
+              return "$ " + e + " thousands";
+            },
+          },
+        },
+      }).render()
+    })
+</script>

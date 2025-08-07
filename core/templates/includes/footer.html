@@ -1,0 +1,101 @@
+{% load static %}
+ 
+
+
+<!-- START FOOTER -->
+<section class="bg-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-4">
+        <div class="footer-item mt-4 mt-lg-0 me-lg-5">
+          <h4 class="text-white mb-4">Seraye</h4>
+          <p class="text-white-50">
+            It is a long established fact that a reader will be of a page reader
+            will be of at its layout.
+          </p>
+          <p class="text-white mt-3">Follow Us on:</p>
+          <ul class="footer-social-menu list-inline mb-0">
+          {% for social in social_medias %}
+
+            <li class="list-inline-item">
+              <a href="{{social.link}}"><i class="fab fa-{{social.icon.name}} fa-lg"></i></a>
+            </li>
+            
+          {% endfor %}
+
+
+          </ul>
+        </div>
+      </div>
+      <!--end col-->
+      <div class="col-lg-2 col-6">
+        <div class="footer-item mt-4 mt-lg-0">
+          <p class="fs-16 text-white mb-4">Company</p>
+          <ul class="list-unstyled footer-list mb-0">
+            <li>
+              <a href="{% url 'about' %}"
+                ><i class="mdi mdi-chevron-right"></i> About Us</a
+              >
+            </li>
+            <li>
+              <a href="{% url 'contact' %}"
+                ><i class="mdi mdi-chevron-right"></i> Contact Us</a
+              >
+            </li>
+            <li>
+              <a href="{% url 'blog' %}"
+                ><i class="mdi mdi-chevron-right"></i> Blog</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--end col-->
+      <div class="col-lg-2 col-6">
+        <div class="footer-item mt-4 mt-lg-0">
+          <p class="fs-16 text-white mb-4">For Jobs</p>
+          <ul class="list-unstyled footer-list mb-0">
+            <li>
+              <a href="{% url 'job-list' %}"
+                ><i class="mdi mdi-chevron-right"></i> Browser Jobs</a
+              >
+            </li>
+            <li>
+              <a href="{% url 'user-bookmark' %}"
+                ><i class="mdi mdi-chevron-right"></i> Bookmark Jobs</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-lg-2 col-6">
+        <div class="footer-item mt-4 mt-lg-0">
+          <p class="fs-16 text-white mb-4">Support</p>
+          <ul class="list-unstyled footer-list mb-0">
+            <li>
+              <a href="{% url 'contact' %}"
+                ><i class="mdi mdi-chevron-right"></i> Help Center</a
+              >
+            </li>
+            <li>
+              <a href="{% url 'faqs' %}"
+                ><i class="mdi mdi-chevron-right"></i> FAQ'S</a
+              >
+            </li>
+            <li>
+              <a href="{% url 'Privacy-policy' %}"
+                ><i class="mdi mdi-chevron-right"></i> Privacy Policy</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!--end col-->
+    </div>
+    <!--end row-->
+  </div>
+  <!--end container-->
+</section>
+<!-- END FOOTER -->
+
+<!-- END FOOTER -->

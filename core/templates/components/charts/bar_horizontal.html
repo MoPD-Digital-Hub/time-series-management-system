@@ -1,0 +1,37 @@
+{% load static %}
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h5>Bar chart horizontal</h5>
+        </div>
+        <div class="card-body">
+            <div id="bar-chart-3"></div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'assets/plugins/jquery/jquery.min.js' %}"></script>
+<script>
+    $(document).ready(function () {
+    "use strict"
+    new ApexCharts(document.querySelector("#bar-chart-3"), {
+        chart: { height: 50, type: "bar" },
+        plotOptions: {
+          bar: { horizontal: !0, dataLabels: { position: "top" } },
+        },
+        colors: ["#4680FF", "#2CA87F"],
+        dataLabels: {
+          enabled: !0,
+          offsetX: -6,
+          style: { fontSize: "12px", colors: ["#fff"] },
+        },
+        stroke: { show: !0, width: 1, colors: ["#fff"] },
+        series: [
+          { data: [44, 55, 41, 64, 22, 43, 21] },
+          { data: [53, 32, 33, 52, 13, 44, 32] },
+        ],
+        xaxis: { categories: [2001, 2002, 2003, 2004, 2005, 2006, 2007] },
+      }).render()
+    })
+</script>    

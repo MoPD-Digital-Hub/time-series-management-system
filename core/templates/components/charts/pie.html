@@ -1,0 +1,30 @@
+{% load static %}
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h5>Pie Charts</h5>
+        </div>
+        <div class="card-body">
+            <div id="pie-chart-1" style="width: 100%"></div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'assets/plugins/jquery/jquery.min.js' %}"></script>
+
+<script>
+    $(document).ready(function () {
+        new ApexCharts(document.querySelector("#pie-chart-1"), {
+      chart: { height: 320, type: "pie" },
+      labels: ["Team A", "Team B", "Team C", "Team D", "Team E"],
+      series: [44, 55, 13, 43, 22],
+      colors: ["#4680FF", "#2CA87F", "#13c2c2", "#E58A00", "#DC2626"],
+      legend: { show: !0, position: "bottom" },
+      dataLabels: { enabled: !0, dropShadow: { enabled: !1 } },
+      responsive: [
+        { breakpoint: 480, options: { legend: { position: "bottom" } } },
+      ],
+    }).render()
+    })
+</script>

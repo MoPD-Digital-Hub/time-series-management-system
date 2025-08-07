@@ -1,0 +1,144 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    {% include 'user-admin/common/head.html' %}
+  </head>
+  <style>
+  .card-custom {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-title {
+    flex-grow: 1;
+}
+</style>
+
+
+
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+     
+      <div class="content-header">
+        <div class="container-fluid mt-2">
+        
+        
+          <h6 class="text-secondary"> Dashboard </h6>
+          <div class="row mb-2">
+            <div class="col-lg-3">
+              <div class="card shadow" style="background-color:#b0e4ac">
+                <div class="card-body text-center text-primary">
+                 <h4>  <i class="bi bi-person-video3 ml-1"></i> Total Topic </h4>
+                 <h4> {{total_topic}}  </h4>
+                 <a class="text-primary" href="{% url "topic" %}"> More Info <i class="bi bi-arrow-down-circle-fill"></i></a>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-3">
+              <div class="card shadow" style="background-color:#b0e4ac">
+                <div class="card-body text-center text-success">
+                  <h4>  <i class="bi bi-list-nested ml-1"></i> Total Category </h4>
+                 <h4> {{total_category}}  </h4>
+                 <a class="text-success" href="{% url "categories" %}"> More Info <i class="bi bi-arrow-down-circle-fill"></i></a>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-3">
+              <div class="card shadow" style="background-color:#b0e4ac">
+                <div class="card-body text-center text-info">
+                  <h4>   <i class="bi bi-app-indicator ml-1"></i> Total Indicator </h4>
+                  <h4> {{total_indicator}} </h4>
+                  <a class="text-info" href="{% url "all_indicators" %}"> More Info <i class="bi bi-arrow-down-circle-fill"></i></a>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-3">
+              <div class="card shadow" style="background-color:#b0e4ac">
+                <div class="card-body text-center text-secondary">
+                  <h4>  <i class="bi bi-house-dash"></i> Total Dashbordtopic </h4>
+                  <h4> {{total_dashboard_topic}}  </h4>
+                  <a class="text-secondary" href="{% url "topic" %}"> More Info <i class="bi bi-arrow-down-circle-fill"></i></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <form class="d-flex col-8 mx-auto">
+            <input class="form-control p-4 me-2" name="q" type="text" placeholder="Search" >
+            <button class="btn btn-outline-success" type="submit">Search</button>
+          </form>
+
+        
+
+          <!--Topic Card Start -->
+          <p>Topic lists</p>
+          <div id="topic_list" class="row">
+           </div>
+          <!--Topic Card End-->
+
+          <div id="category_list" class="row">
+          </div>
+
+         
+          <!--Filter Category Start-->
+          <div id="filter_category" >
+          
+          </div>
+          <!--Filter Category End-->
+
+          <!--Annual Table Start-->
+          <div id="annualTable">
+
+          
+          
+          </div>
+
+          
+        </div>
+      </div>
+
+    </div>
+    <!--Body End-->
+
+    {% include 'user-admin/common/footer.html'%}
+    {% include 'user-admin/common/highchart.html'%}
+
+
+    <script src="{% static 'assets/js/hooks/useFetch.js' %}"></script>
+    <script src="{% static 'assets/js/base/topicLists.js' %}"></script>
+
+    <!--Chart -->
+    <script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/chart.js/Chart.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/moment/moment.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/daterangepicker/daterangepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/summernote/summernote-bs4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+
+
+    
+
+    {% include 'user-admin/common/footer_js.html'%}
+
+
+  </body>
+ 
+  
+
+
+</html>

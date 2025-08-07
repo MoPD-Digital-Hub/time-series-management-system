@@ -1,0 +1,271 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-main.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+    {% include 'user-admin/common/head.html' %}
+  </head>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+   
+
+    <!--Body Start-->
+    <div class="content-wrapper row justify-content-center">
+        <div class="col-lg-10">
+            {% include 'user-admin/common/messages.html' %}
+            <button class="btn btn-sm btn-success m-3 mx-end d-block" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                Add Project
+            </button>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Project name</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td id="projectTitleENG{{project.id}}">{{ project.title_ENG }}</td>
+                        <td id="projectDescription{{project.id}}">{{ project.description }}</td>
+                        <td>
+                            <a href="{% url 'sub_projects' project.id %}" class="btn btn-sm btn-muted">
+                                <i class="fa fa-list"></i>
+                            </a>
+                            <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-info">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                            <button
+                                
+                                id="btnEditProject{{ project.id }}"
+                                class="btn btn-sm btn-outline-warning btn-edit"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editProject"
+                                data-id="{{ project.id }}"
+                                data-title_ENG="{{ project.title_ENG }}"
+                                data-title_AMH="{{ project.title_AMH }}"
+                                data-description="{{ project.description }}"
+                            >
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button
+                                class="btn btn-sm btn-outline-danger btn-delete"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteProjectModal"
+                                data-id="{{ project.id }}"
+                                data-name="{{ project.title_ENG }}"
+                            >
+                                <i class="fa fa-trash"></i>
+                            </button>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProjectModalLable">Add Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="editProject" tabindex="-1" aria-labelledby="editProjectLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProjectLabel">Edit Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="modalFormEditProject" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <!-- Hidden field for ID -->
+                        <input id="id_id" type="hidden" name="id">
+    
+                        <!-- Form fields rendered as <p> tags -->
+                        {{ form.as_p }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button id="saveProject" type="submit" class="btn btn-primary">Save changes</button>
+                        <button id="btnLoading" style="display: none;" class="btn btn-primary" type="button" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Delete Project Modal -->
+    <div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteProjectModalLabel">Delete Project</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="h4 fw-normal" id="deleteProject"></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <a href="#" id="deleteProjectAnchor" type="submit" class="btn btn-danger">Delete</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+    {% include 'user-admin/common/footer.html'%}
+
+    <!-- Chart -->
+    <script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/chart.js/Chart.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/moment/moment.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/daterangepicker/daterangepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/summernote/summernote-bs4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+
+    {% include 'user-admin/common/footer_js.html'%}
+  </body>
+ 
+  <script>
+    $(document).ready(function () {
+
+        $(".btn-delete").on('click', function () {
+
+            const buttonData = $(this).data()
+            $("#deleteProjectAnchor").attr("href", `/user-admin/delete_project/${buttonData.id}`)
+            $("#deleteProject").html(`Are you sure you want to delete <div> <code> ${buttonData.name}</code>? </div> `)
+          })
+
+
+        showToast = (title, body, cssClass) => {
+            $.toast({
+              heading: title,
+              text: body,
+              showHideTransition: 'slide',
+              icon: cssClass,
+              position: 'top-right',
+            })
+          }
+      
+
+          $(document).on('click', '.btn-edit', function () {
+            const buttonData = $(this).data();  // Get data from the button
+            console.log(buttonData);  // Check if data is correct
+        
+            // Set the values of the form fields in the modal
+            $("#id_title_ENG").val(buttonData.title_eng);  // Set title in English
+            $("#id_title_AMH").val(buttonData.title_amh);  // Set title in Amharic
+            $("#id_description").val(buttonData.description);  // Set description
+            $("#id_id").val(buttonData.id);  // Set hidden ID field value
+        
+            // Check the field values are populated
+            console.log("Title ENG:", $("#id_title_ENG").val());
+            console.log("Title AMH:", $("#id_title_AMH").val());
+            console.log("Description:", $("#id_description").val());
+        });
+        
+      $("#modalFormEditProject").on('submit', function (e) {
+        e.preventDefault()
+        let title_ENG = $("#id_title_ENG").val()
+        let title_AMH = $("#id_title_AMH").val()
+        let description = $("#id_description").val()
+        let id = $("#id_id").val()
+  
+        $.ajax({
+          type: 'POST',
+          url: `{% url "edit_project" %}`,
+          data: {
+            'id': id,
+            'title_ENG': title_ENG,
+            'title_AMH': title_AMH,
+            'description' : description,
+            csrfmiddlewaretoken: '{{csrf_token}}'
+          },
+         
+          beforeSend: function () {
+            $('#saveProject').hide()
+            $("#btnLoading").show();
+          },
+          // hides the loader after completion of request, whether successfull or failor.             
+          complete: function () {
+            //Show save button finished 
+            $('#saveProject').show()
+            $("#btnLoading").hide();
+          },
+          success: function (response) {
+            if (response.success) {
+  
+              //show succuss message
+              showToast('&#128515 Hello, User', 'Successfully Updated', 'success')
+              $('#editProject').modal('hide'); //Hide Modal
+              let htmlTitleENG = $('#projectTitleENG' + id)
+              let htmlDescription = $('#projectDescription' + id)
+              let buttonHtml = $('#btnEditProject' + id)
+  
+              //Update Table Value
+              htmlTitleENG.text(title_ENG)
+              htmlDescription.text(description)
+              
+            
+              //update Button Value
+              buttonHtml.data("title ENG", title_ENG);
+  
+            } else {
+              //show succuss message
+              showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
+            }
+          },
+          error: function () {
+            //show succuss message
+            showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
+          }
+        })
+      })
+    })
+  </script>
+
+</html>

@@ -1,0 +1,708 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/2.1.6/css/dataTables.dataTables.css"
+    />
+    {% include 'user-admin/common/head.html' %}
+  </head>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+      <!-- TItle Start-->
+      <div class="content-header">
+        <div class="container-fluid bg-white pt-5">
+          {% include 'includes/messages.html' %}
+          <div class="row justify-content-between d-flex align-items-end">
+            <div
+              class="col-md-6 card text-light"
+              style="background-color: #40864b"
+            >
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-3">
+                    <h5>Topic:</h5>
+                  </div>
+                  <div class="col-7">
+                    <h5 id="topicName"></h5>
+                  </div>
+                </div>
+
+                <div class="row mt-2">
+                  <div class="col-3">
+                    <h5>Category:</h5>
+                  </div>
+                  <div class="col-7">
+                    <h5 id="categoryName"></h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 text-end">
+              <p class="text-success">
+                Last Indicator ID:
+                <span class="text-bold">{{last_indicator_id}}</span>
+              </p>
+              <button
+                type="button"
+                class="btn btn-success mb-2"
+                data-bs-toggle="modal"
+                data-bs-target="#valueExcel"
+                data-bs-whatever="@mdo"
+              >
+                <i class="bi bi-file-earmark-arrow-down"></i> Add Excel
+              </button>
+            </div>
+          </div>
+
+          <div class="row mt-1">
+            <div class="col-md-3">
+              <!-- Filter Data  Accordion Start-->
+              <div class="accordion" id="FilterData">
+                <!-- Topic Lists-->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingTopic">
+                    <button
+                      class="accordion-button"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#collapseTopic"
+                      aria-expanded="true"
+                      aria-controls="collapseTopic"
+                    >
+                      Topic
+                    </button>
+                  </h2>
+                  <div
+                    id="collapseTopic"
+                    class="accordion-collapse collapse show"
+                    aria-labelledby="headingTopic"
+                    data-bs-parent="#FilterData"
+                  >
+                    <div class="accordion-body">
+                      <div id="topicListParent" class="row scrollable"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Category Lists-->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingCategory">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#collapsCategory"
+                      aria-expanded="false"
+                      aria-controls="collapsCategory"
+                    >
+                      Category
+                    </button>
+                  </h2>
+                  <div
+                    id="collapsCategory"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="headingCategory"
+                    data-bs-parent="#FilterData"
+                  >
+                    <div class="accordion-body">
+                      <div id="categoryListParent" class="row scrollable"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Indicator Lists-->
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="headingIndicator">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#collapseIndicator"
+                      aria-expanded="false"
+                      aria-controls="collapseIndicator"
+                    >
+                      Indicator
+                    </button>
+                  </h2>
+                  <div
+                    id="collapseIndicator"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="headingIndicator"
+                    data-bs-parent="#FilterData"
+                  >
+                    <div class="accordion-body">
+                      <div
+                        id="indicatorListParent"
+                        class="row scrollable"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Filter Data  Accordion End-->
+
+              <button
+                disabled
+                id="applyFilterButton"
+                class="btn btn-primary btn-block mt-5"
+              >
+                Select indicator
+              </button>
+            </div>
+
+            <div class="col-md-9 card p-4">
+              <!-- Table Start-->
+              <div class="table-responsive">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link active"
+                      id="pills-all-tab"
+                      data-bs-toggle="pill"
+                      data-bs-target="#pills-all"
+                      type="button"
+                      role="tab"
+                      aria-controls="pills-all"
+                      aria-selected="false"
+                    >
+                      All
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="pills-yearly-tab"
+                      data-bs-toggle="pill"
+                      data-bs-target="#pills-yearly"
+                      type="button"
+                      role="tab"
+                      aria-controls="pills-yearly"
+                      aria-selected="true"
+                    >
+                      Yearly
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="pills-quarterly-tab"
+                      data-bs-toggle="pill"
+                      data-bs-target="#pills-quarterly"
+                      type="button"
+                      role="tab"
+                      aria-controls="pills-quarterly"
+                      aria-selected="false"
+                    >
+                      Quarterly
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="pills-monthly-tab"
+                      data-bs-toggle="pill"
+                      data-bs-target="#pills-monthly"
+                      type="button"
+                      role="tab"
+                      aria-controls="pills-monthly"
+                      aria-selected="false"
+                    >
+                      Monthly
+                    </button>
+                  </li>
+                </ul>
+
+                <div class="tab-content" id="pills-tabContent">
+                  <div id="tableLoader"></div>
+
+                  <div
+                    class="tab-pane fade show active"
+                    id="pills-all"
+                    role="tabpanel"
+                    aria-labelledby="pills-all-tab"
+                  >
+                    <!--All-->
+                    <button
+                      id="btnDownloadExcel"
+                      onclick="tableToExcel('allReportData', 'allReportData', 'allReportData.xls');"
+                      type="button"
+                      class="btn btn-success mb-2 float-end"
+                    >
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <table
+                      id="allReportData"
+                      class="table"
+                      style="table-layout: fixed"
+                    >
+                      <tbody>
+                        <!--Yearly-->
+                        <tr>
+                          <td class="border m-0 p-0" colspan="12">
+                            <table
+                              class="m-0 p-0 table table-bordered table-hover"
+                              style="table-layout: fixed"
+                            >
+                              <thead name="tableHead">
+                                <tr style="background-color: #40864b">
+                                  <th class="text-light" colspan="9">Yearly</th>
+                                </tr>
+                                <tr style="background-color: #9fdfa9">
+                                  <th scope="col">Indicator (English)</th>
+                                  <th scope="col">Indicator (Amharic)</th>
+                                  <th scope="col">2000</th>
+                                  <th scope="col">2001</th>
+                                  <th scope="col">2002</th>
+                                  <th scope="col">2003</th>
+                                  <th scope="col">2004</th>
+                                  <th scope="col">2005</th>
+                                  <th scope="col">2006</th>
+                                </tr>
+                              </thead>
+                              <tbody name="tableBody">
+                                <tr>
+                                  <td
+                                    colspan="9"
+                                    class="text-danger text-center"
+                                  >
+                                    Please apply filters to see the relevant
+                                    information.
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!--Quarter-->
+                        <tr class="pt-3">
+                          <td class="border m-0 p-0" colspan="12">
+                            <table
+                              style="table-layout: fixed"
+                              class="m-0 p-0 table table-hover table-bordered"
+                            >
+                              <thead name="tableHeadQuarter">
+                                <tr style="background-color: #40864b">
+                                  <th class="text-light border" colspan="4">
+                                    Quarter
+                                  </th>
+                                </tr>
+                                <tr
+                                  class="text-start border"
+                                  style="background-color: #9fdfa9"
+                                >
+                                  <th
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Year EC
+                                  </th>
+                                  <th
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Quarter
+                                  </th>
+                                  <th
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Indicator-1
+                                  </th>
+                                  <th
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Indicator-2
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody
+                                name="tableBodyQuarter"
+                                class="text-center"
+                              >
+                                <tr>
+                                  <td
+                                    colspan="4"
+                                    class="text-danger text-center"
+                                  >
+                                    Please apply filters to see the relevant
+                                    information.
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!--Month-->
+                        <tr>
+                          <td class="border m-0 p-0" colspan="12">
+                            <table
+                              style="table-layout: fixed"
+                              class="m-0 p-0 table table-hover table-bordered"
+                            >
+                              <thead name="tableHeadMonth">
+                                <tr style="background-color: #40864b">
+                                  <th class="text-light border" colspan="4">
+                                    Monthly
+                                  </th>
+                                </tr>
+                                <tr
+                                  class="text-start border"
+                                  style="background-color: #9fdfa9"
+                                >
+                                  <th
+                                    style="width: 230px"
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Year EC
+                                  </th>
+                                  <th
+                                    style="width: 200px"
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Quarter
+                                  </th>
+                                  <th
+                                    style="width: 70px"
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Indicator-1
+                                  </th>
+                                  <th
+                                    style="width: 70px"
+                                    class="vertical-text text-start align-middle"
+                                    scope="col"
+                                  >
+                                    Indicator-2
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody name="tableBodyMonth" class="text-center">
+                                <tr>
+                                  <td
+                                    colspan="4"
+                                    class="text-danger text-center"
+                                  >
+                                    Please apply filters to see the relevant
+                                    information.
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <!--End all-->
+                  </div>
+
+                  <div
+                    class="tab-pane fade"
+                    id="pills-yearly"
+                    role="tabpanel"
+                    aria-labelledby="pills-yearly-tab"
+                  >
+                    <button
+                      id="btnDownloadExcel"
+                      onclick="tableToExcel('yearData', 'yearData', 'yearData.xls');"
+                      type="button"
+                      class="btn btn-success mb-2 float-end"
+                    >
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <!--Year-->
+                    <table
+                      id="yearData"
+                      class="m-0 p-0 table table-bordered table-hover"
+                      style="table-layout: fixed"
+                    >
+                      <thead name="tableHead">
+                        <tr style="background-color: #40864b">
+                          <th class="text-light" colspan="9">Yearly</th>
+                        </tr>
+                        <tr style="background-color: #9fdfa9">
+                          <th scope="col">Indicator (English)</th>
+                          <th scope="col">Indicator (Amharic)</th>
+                          <th scope="col">2000</th>
+                          <th scope="col">2001</th>
+                          <th scope="col">2002</th>
+                          <th scope="col">2003</th>
+                          <th scope="col">2004</th>
+                          <th scope="col">2005</th>
+                          <th scope="col">2006</th>
+                        </tr>
+                      </thead>
+                      <tbody name="tableBody">
+                        <tr>
+                          <td colspan="9" class="text-danger text-center">
+                            Please apply filters to see the relevant
+                            information.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <!--Year end-->
+                  </div>
+
+                  <div
+                    class="tab-pane fade"
+                    id="pills-quarterly"
+                    role="tabpanel"
+                    aria-labelledby="pills-quarterly-tab"
+                  >
+                    <button
+                      id="btnDownloadExcel"
+                      onclick="tableToExcel('quarterData', 'quarterData', 'quarterData.xls');"
+                      type="button"
+                      class="btn btn-success mb-2 float-end"
+                    >
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <table
+                      id="quarterData"
+                      style="table-layout: fixed"
+                      class="m-0 p-0 table table-hover table-bordered"
+                    >
+                      <thead name="tableHeadQuarter">
+                        <tr style="background-color: #40864b">
+                          <th class="text-light border" colspan="4">Quarter</th>
+                        </tr>
+                        <tr
+                          class="text-start border"
+                          style="background-color: #9fdfa9"
+                        >
+                          <th
+                            style="width: 230px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Year EC
+                          </th>
+                          <th
+                            style="width: 200px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Quarter
+                          </th>
+                          <th
+                            style="width: 70px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Indicator-2
+                          </th>
+                          <th
+                            style="width: 70px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Indicator-2
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody name="tableBodyQuarter" class="text-center">
+                        <tr>
+                          <td colspan="4" class="text-danger text-center">
+                            Please apply filters to see the relevant
+                            information.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div
+                    class="tab-pane fade"
+                    id="pills-monthly"
+                    role="tabpanel"
+                    aria-labelledby="pills-monthly-tab"
+                  >
+                    <button
+                      id="btnDownloadExcel"
+                      type="button"
+                      onclick="tableToExcel('monthData', 'monthData', 'monthData.xls');"
+                      class="btn btn-success mb-2 float-end"
+                    >
+                      <i class="bi bi-download"></i>
+                    </button>
+                    <table
+                      id="monthData"
+                      style="table-layout: fixed"
+                      class="m-0 p-0 table table-hover table-bordered"
+                    >
+                      <thead name="tableHeadMonth">
+                        <tr style="background-color: #40864b">
+                          <th class="text-light border" colspan="4">Monthly</th>
+                        </tr>
+                        <tr
+                          class="text-start border"
+                          style="background-color: #9fdfa9"
+                        >
+                          <th
+                            style="width: 230px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Year EC
+                          </th>
+                          <th
+                            style="width: 200px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Quarter
+                          </th>
+                          <th
+                            style="width: 70px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Indicator-1
+                          </th>
+                          <th
+                            style="width: 70px"
+                            class="vertical-text text-start align-middle"
+                            scope="col"
+                          >
+                            Indicator-2
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody name="tableBodyMonth" class="text-center">
+                        <tr>
+                          <td colspan="4" class="text-danger text-center">
+                            Please apply filters to see the relevant
+                            information.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <!--Table End-->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--Title End-->
+    </div>
+    <!--Body End-->
+
+    <!--Modal add Excel file for value-->
+    <!--Add Excel Data-->
+    <div
+      class="modal fade"
+      id="valueExcel"
+      tabindex="-1"
+      aria-labelledby="valueExcelLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="valueExcelLabel">New Value</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form
+            method="POST"
+            name="fileDataValue"
+            enctype="multipart/form-data"
+          >
+            <div class="modal-body">
+              {% csrf_token %}
+              <p class="text-info">
+                <a
+                  href="{% static 'sample_excel/SampleYearFormat.xlsx' %}"
+                  download="SampleYearFormat.xlsx"
+                  class="btn btn-info"
+                >
+                  <i class="bi bi-download"></i>
+                </a>
+                Download sample Excel
+                <span class="fw-bold text-success">Yearly</span> format.
+              </p>
+              <p class="text-info">
+                <a
+                  href="{% static 'sample_excel/SampleQuarterFormat.xlsx' %}"
+                  download="SampleQuarterFormat.xlsx"
+                  class="btn btn-info"
+                >
+                  <i class="bi bi-download"></i>
+                </a>
+                Download sample Excel
+                <span class="fw-bold text-success">Quarterly</span> format.
+              </p>
+              <p class="text-info">
+                <a
+                  href="{% static 'sample_excel/SampleMonthFormat.xlsx' %}"
+                  download="SampleMonthFormat.xlsx"
+                  class="btn btn-info"
+                >
+                  <i class="bi bi-download"></i>
+                </a>
+                Download sample Excel
+                <span class="fw-bold text-success">Monthly</span> format.
+              </p>
+
+              <div class="row justify-content-start mt-5">
+                <div class="col-12">
+                  <label for="">Add Excel</label>
+                  {{form.as_p}}
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                name="fileDataValue"
+                class="btn btn-primary"
+              >
+                Add Value
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {% include 'user-admin/common/footer.html'%} 
+    {% include 'user-admin/common/footer_js.html'%}
+
+    <script src="{% static 'assets/js/admin-data-view/filterTopicAndCategory.js' %}"></script>
+    <script src="{% static 'assets/js/hooks/useFetch.js' %}"></script>
+    <script src="https://cdn.datatables.net/2.1.6/js/dataTables.js"></script>
+  </body>
+</html>

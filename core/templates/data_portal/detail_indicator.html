@@ -1,0 +1,205 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+  {% include 'data_portal/common/head.html' %}
+  
+  <body
+    data-pc-preset="preset-1"
+    data-pc-sidebar-caption="true"
+    data-pc-layout="vertical"
+    data-pc-direction="ltr"
+    data-pc-theme_contrast
+    data-pc-theme="light"
+  >
+    {% include 'data_portal/common/navbar.html' %}
+
+    <div class="pc-container">
+      <div class="pc-content">
+        <div
+          style="height: 750px; overflow: scroll"
+          class="card mt-2 shadow-sm border p-3"
+        >
+          <h1 class="mt-5">{{ indicator.title_ENG | capfirst }}</h1>
+
+          <!--UPDATED TABLE-->
+          <!--Tab Lists-->
+          <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active"
+                id="pills-yearly-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-yearly"
+                type="button"
+                role="tab"
+                aria-controls="pills-yearly"
+                aria-selected="true"
+              >
+                Yearly
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="pills-quarterly-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-quarterly"
+                type="button"
+                role="tab"
+                aria-controls="pills-quarterly"
+                aria-selected="false"
+              >
+                Quarterly
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                id="pills-monthly-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#pills-monthly"
+                type="button"
+                role="tab"
+                aria-controls="pills-monthly"
+                aria-selected="false"
+              >
+                Monthly
+              </button>
+            </li>
+          </ul>
+
+          <!--Main Content -->
+          <div class="tab-content" id="pills-tabContent">
+            <!--Table Yearly-->
+            <div
+              class="tab-pane fade show active"
+              id="pills-yearly"
+              role="tabpanel"
+              aria-labelledby="pills-yearly-tab"
+            >
+              <div class="table-responsive">
+                <!--Year-->
+                <table
+                  class="m-0 p-0 table table-bordered table-hover"
+                  style="table-layout: fixed"
+                >
+                  <thead id="tableHead" name="tableHead"></thead>
+                  <tbody id="tableBody" name="tableBody">
+                    <tr>
+                      <td colspan="9" class="text-danger text-center">
+                        Please apply filters to see the relevant information.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!--Quarterly-->
+            <div
+              class="tab-pane fade scrolldiv"
+              id="pills-quarterly"
+              role="tabpanel"
+              aria-labelledby="pills-quarterly-tab"
+            >
+              <!--Table-->
+              <div class="table-responsive">
+                <table
+                  id="tableQuarterDataTable"
+                  class="m-0 p-0 table table-hover table-bordered"
+                >
+                  <thead name="tableHeadQuarter"></thead>
+                  <tbody name="tableBodyQuarter" class="text-center"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!--Table Monthly-->
+            <div
+              class="tab-pane fade scrolldiv"
+              id="pills-monthly"
+              role="tabpanel"
+              aria-labelledby="pills-monthly-tab"
+            >
+              <div class="table-responsive">
+                <table
+                  id="tableMonthDataTable"
+                  class="m-0 p-0 table table-hover table-bordered"
+                >
+                  <thead name="tableHeadMonth">
+                    <tr style="background-color: #40864b">
+                      <th class="text-light border" colspan="4">Monthly</th>
+                    </tr>
+                    <tr
+                      class="text-start border"
+                      style="background-color: #9fdfa9"
+                    >
+                      <th
+                        style="width: 230px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Year EC
+                      </th>
+                      <th
+                        style="width: 200px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Quarter
+                      </th>
+                      <th
+                        style="width: 70px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Indicator-1
+                      </th>
+                      <th
+                        style="width: 70px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Indicator-2
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody name="tableBodyMonth" class="text-center">
+                    <tr>
+                      <td colspan="4" class="text-danger text-center">
+                        Please apply filters to see the relevant information.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!--Chart-->
+        <div class="row">
+          <div class="col-lg-6">
+            <div class="card p-3" id="chart-year-line"></div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="card p-3" id="chart-quarter-bar"></div>
+          </div>
+
+          <div class="col-lg-12">
+            <div class="card p-3" id="container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% include 'data_portal/common/footer.html' %}
+
+    <!--detail dahsboard js-->
+    <script src="{% static 'assets/js/hooks/useFetch.js' %}"></script>
+    <script src="{% static 'data_portal/assets/js/dashboard/dashboard_detail.js' %}"></script>
+  </body>
+</html>

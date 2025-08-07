@@ -1,0 +1,37 @@
+{% load static %}
+<div class="col-lg-6">
+    <div class="card">
+        <div class="card-header">
+            <h5>Pie Charts donut</h5>
+        </div>
+        <div class="card-body">
+            <div id="pie-chart-2" style="width: 100%"></div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'assets/plugins/jquery/jquery.min.js' %}"></script>
+
+
+<script>
+    $(document).ready(function(){
+        new ApexCharts(document.querySelector("#pie-chart-2"), {
+      chart: { height: 320, type: "donut" },
+      series: [44, 55, 41, 17, 15],
+      colors: ["#4680FF", "#2CA87F", "#13c2c2", "#E58A00", "#DC2626"],
+      legend: { show: !0, position: "bottom" },
+      plotOptions: {
+        pie: {
+          donut: {
+            labels: { show: !0, name: { show: !0 }, value: { show: !0 } },
+          },
+        },
+      },
+      dataLabels: { enabled: !0, dropShadow: { enabled: !1 } },
+      responsive: [
+        { breakpoint: 480, options: { legend: { position: "bottom" } } },
+      ],
+    }).render()
+    })
+</script>

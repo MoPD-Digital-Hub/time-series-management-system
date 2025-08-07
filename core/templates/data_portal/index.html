@@ -1,0 +1,165 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  {% include 'data_portal/common/head.html' %}
+  <body
+    data-pc-preset="preset-1"
+    data-pc-sidebar-caption="true"
+    data-pc-layout="vertical"
+    data-pc-direction="ltr"
+    data-pc-theme_contrast
+    data-pc-theme="light"
+  >
+    {% include 'data_portal/common/navbar.html' %}
+
+    <div class="pc-container">
+      <div class="pc-content">
+        <div class="row">
+          <!--Main Card info-->
+          <div class="col-12">
+            <div class="card welcome-banner bg-blue-800">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-sm-6">
+                    <div class="p-4">
+                      <h2 class="text-white">
+                        National Aggregated Data Dashboard
+                      </h2>
+                      <p class="text-white">
+                        The Ethiopian National Dashboard is a comprehensive and
+                        dynamic platform designed to provide the nation's key
+                        development outcomes. It is developed with the aim of
+                        enhancing data access for better decision-making, and
+                        supporting development tracking. This dashboard
+                        aggregates data from various sectors including macro,
+                        economic, infrastructure and projects, social sectors,
+                        and governance and civil service, environment, and
+                        climate.
+                      </p>
+                      <a href="#" class="btn btn-outline-light"
+                        >All done is Here,Welcome!
+                      </a>
+                    </div>
+                  </div>
+
+                  <!--Image graph-->
+                  <div class="col-sm-5 text-center d-none d-lg-block">
+                    <div class="img-welcome-banner">
+                      <img
+                        src="{% static 'data_portal/assets/images/widget/welcome-banner.png' %}"
+                        alt="img"
+                        class="img-fluid"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--dashboard card lists -->
+          <div id="dashboard-card-list" class="row"></div>
+
+          <!--Search-->
+          <div class="container-fluid m-3 p-2">
+            <form id="searchItemForm">
+              <div class="row justify-content-center">
+                <div class="col-9 col-md-6 mb-2">
+                  <input
+                    id="searchItemValue"
+                    list="autocomplete"
+                    type="text"
+                    name="q"
+                    class="form-control rounded-pill"
+                    placeholder="Enter Key Word"
+                  />
+                  <datalist id="autocomplete">
+                    <option>Asia/Aden</option>
+                    <option>Asia/Aqtau</option>
+                    <option>Asia/Baghdad</option>
+                    <option>Asia/Barnaul</option>
+                    <option>Asia/Chita</option>
+                    <option>Asia/Dhaka</option>
+                    <option>Asia/Famagusta</option>
+                    <option>Asia/Hong_Kong</option>
+                    <option>Asia/Jayapura</option>
+                    <option>Asia/Kuala_Lumpur</option>
+                    <option>Asia/Jakarta</option>
+                  </datalist>
+                </div>
+                <div class="col-3 col-md-2 mb-2">
+                  <button type="submit" class="btn btn-primary">
+                    <span>Search</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!--Select topic title-->
+        <p class="fw-bold text-primary" id="topic-title"></p>
+
+        <!--card page start-->
+        <div class="row">
+          <!--category List Card-->
+          <div id="category-card-list" class="row">
+            <!--dashboard card lists -->
+          </div>
+        </div>
+
+        <!-- Modal category-->
+        <div
+          class="modal fade"
+          id="modalCategory"
+          tabindex="-1"
+          aria-labelledby="modalCategoryLabel"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoryLabel">Modal title</h5>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead id="table-header-modal"></thead>
+                    <tbody id="table-body-modal"></tbody>
+                  </table>
+                </div>
+
+                <div id="modal-chart"></div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% include 'data_portal/common/footer.html' %}
+
+    <!--main dahsboard js-->
+    <script src="{% static 'data_portal/assets/js/dashboard/dashboard.js' %}"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+  </body>
+</html>

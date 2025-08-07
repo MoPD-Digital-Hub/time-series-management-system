@@ -1,0 +1,23 @@
+#live_data {
+    min-width: 300px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  #live_data {
+    max-width: 800px;
+    min-width: 300px;
+    margin: 0 auto;
+  }
+  
+  #live_data .controls {
+    display: table;
+    margin: 0 auto;
+  }
+  
+  .controls{
+    align-items: center;
+    justify-content: center;
+  }
+
+  

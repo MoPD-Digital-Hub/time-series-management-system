@@ -1,0 +1,405 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    {% include 'user-admin/common/head.html' %}
+  </head>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+
+      <div class="row container-fluid justify-content-center">
+         <div class="col-lg-4  mt-2">
+          <div class="shadow card card-info">
+            <div class="card-header">
+              Total Users
+            </div>
+            <div class="card-body" >
+              <h4 class="text-secondary"> {{total_users}} <code class="card-text">Total Users</code>  </h4>
+            </div>
+          </div>
+         </div>
+         <div class="col-lg-4  mt-2">
+          <div class="shadow card card-success">
+            <div class="card-header">
+              Active Users
+            </div>
+            <div class="card-body" >
+              <h4 class="text-secondary"> {{active_users}} <code class="card-text"> Active Users </code></h4>
+            </div>
+          </div>
+         </div>
+         <div class="col-lg-4  mt-2">
+          <div class="shadow card card-danger">
+            <div class="card-header">
+              Inactive Users
+            </div>
+            <div class="card-body" >
+              <h4 class="text-secondary"> {{inactive_users}} <code class="card-text">Inactive Users</code>  </h4>
+            </div>
+          </div>
+         </div>
+      </div>
+
+ <div class="col-lg-7 mx-auto d-block ">
+          {% include 'includes/messages.html' %}
+  </div>
+    <!-- TItle Start-->
+    <div class="content-header">
+      <div class="container-fluid">
+          <div class="table-responsive m-3 border p-3">
+              <div class="row p-3">
+        
+                <div class="col-lg-8">
+                  <form>
+                    <div class="col-12 d-flex align-items-center">
+                      <input type="text" name="q" class="form-control ps-5 pe-5 m-3 d-block" placeholder="Enter Key Word">
+                      <button class="btn btn-primary"> <i class="fas fa-search ms-2"></i></button>
+                    </div>
+                  </form>
+                </div>
+          
+          
+                <div class="col flot-right ">
+                  <button class="btn btn-success float-end m-2" data-bs-toggle="modal" data-bs-target="#AddUser"
+                    data-bs-whatever="@mdo"><i class="fas fa-plus"></i> Add User</button>
+                </div>
+          
+              </div>
+              <table class="table  table-sm  table-hover caption-top">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>User Name</th>
+                    <th>Email</th>
+                    <th>Created at</th>
+                    <th>Acc Type</th>
+                    <th>Acc Staues</th>
+                    <th>Action</th>
+
+                   
+                  </tr>
+                </thead>
+                <tbody class="p-5">
+                  {% if users %}
+                  {% for user in users %}
+                  <tr>
+                    <td>{{count | add:forloop.counter}}</td>
+                    <td>{{user.first_name}}</td>
+                    <td> {{user.last_name}} </td>
+                    <td> {{user.username}} </td>
+                    <td> {{user.email}} </td>
+                    <td>{{user.date_joind|date:"M d, Y" }}</td>
+                    <td>
+                      {% if user.is_superuser %}
+                      <p> Admin </p>
+                      {% else %}
+                        <p> Staff </p>
+                      {% endif %}
+                    </td>
+                    <td> 
+                      {% if user.is_active  %}
+                      <button class="btn btn-sm btn-success disabled"> Active </button>
+                      {% else %}
+                      <button class="btn btn-sm btn-danger disabled"> Inactive </button>
+                      {% endif %}
+                    </td>
+                    <td> 
+                      <button class="btn btn-outline-info mt-2 btn-sm btn-edit" id="btnEditTable{{user.id}}"
+                      data-bs-toggle="modal" data-bs-target="#editUser" data-bs-whatever="@mdo" data-id={{topic.id}}
+                      data-first_name={{user.first_name}} data-last_name={{user.last_name}}
+                      data-username={{user.username}}
+                      data-email={{user.email}} data-is_superuser={{user.is_superuser}}>
+                      <i class="fa fa-edit"></i>
+                    </button>
+                    {% if user.is_active %}
+                    
+                    <button class="btn btn-danger mt-2 btn-sm btn-deactivate" data-bs-toggle="modal"
+                      data-bs-target="#deactivateUserModal" data-bs-whatever="@mdo" data-id={{user.id}}
+                      data-first_name={{user.first_name}}
+                      data-status={{user.is_active}}>
+                      Deactive
+                    </button>
+                    </td>
+
+                    {% else %}
+
+                    <button class="btn btn-success mt-2 btn-sm btn-deactivate" data-bs-toggle="modal"
+                      data-bs-target="#deactivateUserModal" data-bs-whatever="@mdo" data-id={{user.id}}
+                      data-first_name={{user.first_name}}>
+                      Active
+                    </button>
+                    </td>
+
+                    {% endif %}
+                    
+                  </tr>
+                  {% endfor %}
+                  {% else %}
+                  <tr>
+                    <td class="text-center text-danger" colspan="9">No Data Found</td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+        
+              <!-- Pagination -->
+              <nav aria-label="Page navigation example">
+                <ul class="pagination pagination-circle pagination-outline justify-content-center">
+                  {% if years.has_previous %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ years.previous_page_number }}">Previous</a>
+                  </li>
+                  {% else %}
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1" aria-disabled="True">Previous</a>
+                  </li>
+                  {% endif %}
+        
+                  {% if years.number|add:'-4' > 1 %}
+                  <li class="page-item"><a class="page-link" href="?page={{ years.number|add:'-5' }}">&hellip;</a></li>
+                  {% endif %}
+        
+                  {% for i in years.paginator.page_range %}
+                  {% if years.number == i %}
+                  <li class="page-item active" aria-current="page">
+                    <span class="page-link">
+                      {{ i }}
+                      <span class="sr-only">(current)</span>
+                    </span>
+                  </li>
+                  {% elif i > years.number|add:'-5' and i < years.number|add:'5' %} <li class="page-item"><a class="page-link"
+                      href="?page={{ i }}">{{ i }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+        
+                    {% if years.paginator.num_pages > years.number|add:'4' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ years.number|add:'5' }}">&hellip;</a></li>
+                    {% endif %}
+        
+                    {% if years.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ years.next_page_number }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                      <a class="page-link" href="#" tabindex="-1" aria-disabled="True">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+              </nav>
+            </div>          
+      </div>
+    </div>
+    <!--Title End-->
+  </div>
+    <!--Body End-->
+
+
+
+
+
+<!--Update Modal-->
+    <!-- Modal -->
+    <div class="modal fade" id="editUser" tabindex="-1" aria-labelledby="editUserLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserLabel">Edit User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="modalFormEditUser" method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+              <input id="id_id" type="hidden">
+              {{form.as_p}}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button id="saveUser" type="submit" class="btn btn-primary">Save changes</button>
+              <button id="btnLoading" style="display: none;" class="btn btn-primary" type="button" disabled>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Loading...
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+<!--End Modal -->
+
+
+
+ <!--Delete  Modal-->
+    <!-- Modal -->
+    <div class="modal fade outline-danger" id="deactivateUserModal" tabindex="-1" aria-labelledby="deactivateUserModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deactivateUserModalLabel">Deactivate User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="h4 fw-normal" id="deactivateUser"></p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <a href="#" id="deactivateUserAnchor" type="submit" class="btn btn-success">Yes</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+<!--End Modal -->
+
+
+
+    <!--Add  Modal-->
+    <!-- Modal -->
+    <div class="modal fade" id="AddUser" tabindex="-1" aria-labelledby="AddUserLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="AddUserLabel">User Information</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="post" enctype="multipart/form-data">
+            <div id="detailModalBody" class="modal-body">
+              {% csrf_token %}
+              <div class="modal-body">
+                <input id="id_id" type="hidden">
+                {{form.as_p}}
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!--End Modal -->
+    {% include 'user-admin/common/footer.html'%}
+
+    <!--Chart -->
+    <script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/chart.js/Chart.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/moment/moment.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/daterangepicker/daterangepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/summernote/summernote-bs4.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+
+    {% include 'user-admin/common/footer_js.html'%}
+  </body>
+
+  <script>
+    $(".btn-deactivate").on('click', function () {
+
+      const buttonData = $(this).data()
+      let status = buttonData.status ? "Deactivate" : "Activate"
+      $("#deactivateUserAnchor").attr("href", `/user-admin/user_activate/${buttonData.id}`)
+      $("#deactivateUser").html(`Are you sure you want to ${status} <div> <code> ${buttonData.first_name}</code>? </div> `)
+    })
+
+
+    $(".btn-edit").on('click', function () {
+      const buttonData = $(this).data()
+      $("#id_id").val(buttonData.id)
+      $("#id_first_name").val(buttonData.first_name)
+      $("#id_last_name").val(buttonData.last_name)
+      $("#id_username").val(buttonData.user)
+      $("#id_email").val(buttonData.email)
+      let is_superuser = buttonData.is_superuser == "True" ? true : false
+      $("#id_is_superuser").prop('checked', is_superuser) 
+    })
+
+    $("#modalFormEditUser").on('submit', function (e) {
+      e.preventDefault()
+      let first_name = $("#id_first_name").val()
+      let last_name = $("#id_last_name").val()
+      let username = $("#id_username").val()
+      let email = $("#id_email").val()
+      let is_superuser = $("#id_is_superuser").is(':checked')
+      let id = $("#id_id").val()
+
+      
+
+      $.ajax({
+        type: 'POST',
+        url: `{% url "edit_topic" %}`,
+        data: {
+          'id': id,
+          'title_ENG': title_ENG,
+          'title_AMH': title_AMH,
+          'is_dashboard' : is_dashboard,
+          'rank' : 2,
+          'icon' : icon,
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        beforeSend: function () {
+          $('#saveTopic').hide()
+          $("#btnLoading").show();
+        },
+        // hides the loader after completion of request, whether successfull or failor.             
+        complete: function () {
+          //Show save button finished 
+          $('#saveTopic').show()
+          $("#btnLoading").hide();
+          console.log("Done")
+        },
+        success: function (response) {
+          if (response.success) {
+
+            //show succuss message
+            showToast('&#128515 Hello, User', 'Successfully Updated', 'success')
+            $('#editTopic').modal('hide'); //Hide Modal
+            let htmlTitleENG = $('#topicTitleENG' + id)
+            let htmlTitleAMH = $('#topicTitleAMH' + id)
+            let isDashboard = $('#topicIsDashboard' + id)
+            let htmlrank = $('#topicRank' + id)
+            let htmlicon = $('#topicIcon' + id)
+            let buttonHtml = $('#btnEditTable' + id)
+
+            //Update Table Value
+            htmlTitleENG.text(title_ENG)
+            htmlTitleAMH.text(title_AMH)
+            is_dashboard ? isDashboard.html('<i class="fa fa-check text-success"></i>' ) : isDashboard.html('<i class="fa fa-times text-danger"></i>')
+            htmlrank.text(rank)
+            htmlicon.html(`<i class="fab fa-${{topic.icon.name}} fa-2x text-success"></i>`)
+            
+            
+           
+
+            //update Button Value
+            buttonHtml.data("title ENG", title_ENG);
+
+          } else {
+            //show succuss message
+            showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
+          }
+        },
+        error: function () {
+          //show succuss message
+          showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
+        }
+      })
+    })
+</script>
+
+</html>

@@ -1,0 +1,157 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    {% include 'user-admin/common/head.html' %}
+  </head>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+      <!-- TItle Start-->
+      <div class="content-header">
+        <div class="container-fluid">
+
+          {% include 'includes/messages.html' %}
+
+          <!--Add Button-->
+          <div>
+            <div class="flot-right">
+              <button 
+                  id="btnDownloadExcel"
+                  onclick="tableToExcel('tableCategoryIndicator', 'tableCategoryIndicator', 'tableCategoryIndicator.xls');"
+                  type="button" 
+                  class="btn btn-success m-2 float-end">
+                  <i class="bi bi-download"></i>
+              </button>
+              <button 
+                class="btn btn-success float-end m-2"
+                data-bs-toggle="modal" 
+                data-bs-target="#addIndicator">
+                <i class="fas fa-plus"></i> Add Indicator
+              </button>
+          </div>
+
+
+            <caption class="text-muted">List of Indicators</caption>
+            <!--Table Start-->
+           <div class="table-responsive">
+            <table id="tableCategoryIndicator" class="table table-sm  table-hover caption-top">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">ስም</th>
+                  <th scope="col">Composite key</th>
+                  <th scope="col">Categories</th>
+                  <th scope="col">Kpi characteristics</th>
+                  <th scope="col">Is Dashboard</th>
+                  <th scope="col">Public</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="renderTable">
+              </tbody>
+            </table>
+           </div>
+           <!--Table End-->
+          </div>
+        </div>
+      </div>
+      <!--Title End-->
+    </div>
+    <!--Body End-->
+
+
+    <!-- Modal addSubIndicator  -->
+    <div class="modal fade" id="addSubIndicator" tabindex="-1" aria-labelledby="addSubIndicatorLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addSubIndicatorLabel">Add new Indicator</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form name="addSubIndicator" method="post" >
+            {% csrf_token %}
+            <div class="modal-body">
+              <input type="hidden" id="subIndicatorId" name="subIndicatorId">
+              {{form.as_p}}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button id="saveCategory"  type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- Modal add  -->
+<div class="modal fade" id="addIndicator" tabindex="-1" aria-labelledby="addIndicatorLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addIndicatorLabel">Add new Indicator</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addIndicatorForm" name="addIndicator" method="post" >
+        {% csrf_token %}
+        <div class="modal-body">
+          
+          {{form.as_p}}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button id="saveCategory"  type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!--Delete  Modal-->
+  <!-- Modal -->
+  <div class="modal fade" id="deleteIndicatorModal" tabindex="-1" aria-labelledby="deleteIndicatorModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteIndicatorModalLabel">Delete Indicator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="h4 fw-normal" id="deleteMessageCategory"></p>
+        </div> 
+          
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <a href="#" id="deleteCategoryAnchor" type="submit" class="btn btn-danger">Delete</a>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+  <!--End Modal -->
+
+  </div>
+
+
+
+
+
+    {% include 'user-admin/common/footer.html'%}
+    {% include 'user-admin/common/footer_js.html'%}
+    <script src="{% static 'assets/js/indicator/indicatorList.js' %}"></script>
+    <script src="{% static 'assets/js/hooks/useFetch.js' %}"></script>
+
+  </body>
+</html>

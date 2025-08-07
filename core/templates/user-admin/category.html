@@ -1,0 +1,572 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    {% include 'user-admin/common/head.html' %}
+    <link
+      href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+      <!-- TItle Start-->
+      <div class="content-header">
+        <h4 class="text-info mt-3">List of all categories</h4>
+        <div class="container-fluid justify-content-center row">
+          <div class="col-12 bg-white p-3 border">
+            <div class="col-lg-7 mx-auto d-block">
+              {% include 'includes/messages.html' %}
+            </div>
+
+            <!--Search and Adds-->
+            <div class="row align-middle">
+              <div class="col-lg-8">
+                <form>
+                  <div class="col-12 d-flex align-items-center">
+                    <input
+                      type="text"
+                      name="q"
+                      class="form-control ps-5 pe-5 m-3 d-block"
+                      placeholder="Enter Key Word"
+                    />
+                    <button class="btn btn-primary">
+                      <i class="fas fa-search ms-2"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div class="col flot-right">
+                <button
+                  class="btn btn-success float-end m-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addCategory"
+                >
+                  <i class="fas fa-plus"></i> Add Category
+                </button>
+                <a
+                  href="{% url 'export_category' %}"
+                  download
+                  type="button"
+                  class="btn btn-success m-2 float-end"
+                >
+                  <i class="bi bi-download"></i>
+                </a>
+                <button
+                  class="btn btn-success float-end m-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#categoryExcel"
+                  data-bs-whatever="@mdo"
+                >
+                  <i class="fas fa-database"></i>
+                  Import Category
+                </button>
+              </div>
+            </div>
+
+            <!--Table Start-->
+            <div class="table-responsive">
+              <table
+                id="categoryDataLists"
+                class="table table-sm table-hover caption-top"
+              >
+                <thead>
+                  <tr style="background-color: #9fdfa9">
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">ስም</th>
+                    <th scope="col">Is Dashboard</th>
+                    <th scope="col">Topic</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for category in categories %}
+                  <tr>
+                    <th scope="row">{{count | add:forloop.counter}}</th>
+                    <td id="categoryNameENG{{category.id}}">
+                      {{category.name_ENG}}
+                    </td>
+                    <td id="categoryNameAMH{{category.id}}">
+                      {{category.name_AMH}}
+                    </td>
+                    <td id="categoryIsDashboard{{category.id}}">
+                      {% if category.is_dashboard_visible %}
+                      <i class="fa fa-check text-success"></i>
+                      {% else %}
+                      <i class="fa fa-times text-danger"></i>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <button
+                        id="categoryTopic{{category.id}}"
+                        class="btn btn-block btn-sm btn-secondary"
+                      >
+                        {{category.topic}}
+                      </button>
+                    </td>
+                    <td>
+                      <a
+                        href="{% url 'indicators' category.id %}"
+                        class="btn btn-sm btn-info"
+                      >
+                        <i class="fa fa-eye"></i>
+                      </a>
+                      <button
+                        id="btnEditTable{{category.id}}"
+                        class="btn-edit btn btn-sm btn-warning"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addEditCategory"
+                        data-id="{{category.id}}"
+                        data-name_ENG="{{category.name_ENG}}"
+                        data-name_AMH="{{category.name_AMH}}"
+                        data-topic="{{category.topic.id}}"
+                        data-topic-name="{{category.topic.title_ENG}}"
+                        data-is_dashboard="{{category.is_dashboard_visible}}"
+                      >
+                        <i class="fa fa-edit"></i>
+                      </button>
+                      <button
+                        class="btn btn-sm btn-danger btn-delete"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteCategoryModal"
+                        data-bs-whatever="@mdo"
+                        data-id="{{category.id}}"
+                        data-name_ENG="{{category.name_ENG}}"
+                        data-name_AMH="{{category.name_AMH}}"
+                      >
+                        <i class="fa fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <!--Pagination-->
+
+              <nav class="mt-5" aria-label="Page navigation example">
+                <ul
+                  class="pagination pagination-circle pagination-outline justify-content-center"
+                >
+                  {% if categories.has_previous %}
+                  <li class="page-item">
+                    <a
+                      class="page-link"
+                      href="?page={{ categories.previous_page_number }}"
+                      >Previous</a
+                    >
+                  </li>
+                  {% else %}
+                  <li class="page-item disabled">
+                    <a
+                      class="page-link"
+                      href="#"
+                      tabindex="-1"
+                      aria-disabled="True"
+                      >Previous</a
+                    >
+                  </li>
+                  {% endif %} 
+                  {% if categories.number|add:'-4' > 1 %}
+                  <li class="page-item">
+                    <a
+                      class="page-link"
+                      href="?page={{ categories.number|add:'-5' }}"
+                      >&hellip;</a
+                    >
+                  </li>
+                  {% endif %} 
+                  {% for i in categories.paginator.page_range %} 
+
+                  {% if categories.number == i %}
+                  <li class="page-item active" aria-current="page">
+                    <span class="page-link">
+                      {{ i }}
+                      <span class="sr-only">(current)</span>
+                    </span>
+                  </li>
+                  {% elif i > categories.number|add:'-5' and i < categories.number|add:'5' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                  </li>
+                  {% endif %} 
+                  {% endfor %} 
+                  {% if categories.paginator.num_pages > categories.number|add:'4' %}
+                  <li class="page-item">
+                    <a
+                      class="page-link"
+                      href="?page={{ categories.number|add:'5' }}"
+                      >&hellip;</a
+                    >
+                  </li>
+                  {% endif %} 
+                  {% if categories.has_next %}
+                  <li class="page-item">
+                    <a
+                      class="page-link"
+                      href="?page={{ categories.next_page_number }}"
+                      >Next</a
+                    >
+                  </li>
+                  {% else %}
+                  <li class="page-item disabled">
+                    <a
+                      class="page-link"
+                      href="#"
+                      tabindex="-1"
+                      aria-disabled="True"
+                      >Next</a
+                    >
+                  </li>
+                  {% endif %}
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--Title End-->
+    </div>
+    <!--Body End-->
+
+    <!--Modals-->
+
+    <!-- Modal edit category -->
+    <div
+      class="modal fade"
+      id="addEditCategory"
+      tabindex="-1"
+      aria-labelledby="addEditCategoryLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addEditCategoryLabel">
+              Add new category
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form id="modalFormAddEdit" method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+              <input id="id_id" type="hidden" />
+              {{form.as_p}}
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button id="saveCategory" type="submit" class="btn btn-primary">
+                Save changes
+              </button>
+              <button
+                id="btnLoading"
+                style="display: none"
+                class="btn btn-primary"
+                type="button"
+                disabled
+              >
+                <span
+                  class="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Loading...
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal add new category -->
+    <div
+      class="modal fade"
+      id="addCategory"
+      tabindex="-1"
+      aria-labelledby="addCategoryLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addCategoryLabel">Add new category</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">{{form.as_p}}</div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button
+                name="addTopicForm"
+                id="saveCategory"
+                type="submit"
+                class="btn btn-primary"
+              >
+                Save changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!--Delete  Modal-->
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="deleteCategoryModal"
+      tabindex="-1"
+      aria-labelledby="deleteCategoryModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteCategoryModalLabel">
+              Delete Sector
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p class="h4 fw-normal" id="deleteMessageCategory"></p>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <a
+              href="#"
+              id="deleteCategoryAnchor"
+              type="submit"
+              class="btn btn-danger"
+              >Delete</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--End Modal -->
+
+    <!--Modal add Excel file for Category-->
+    <!--Add Excel Data-->
+    <div
+      class="modal fade"
+      id="categoryExcel"
+      tabindex="-1"
+      aria-labelledby="categoryExcelLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="categoryExcelLabel">
+              New Category Registration
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form method="POST" name="fileCategory" enctype="multipart/form-data">
+            <div class="modal-body">
+              {% csrf_token %}
+              <p class="text-info">
+                <a
+                  href="{% static 'sample_excel/SampleCategoryFormat.xlsx' %}"
+                  download="SampleCategoryFormat.xlsx"
+                  class="btn btn-info"
+                >
+                  <i class="bi bi-download"></i>
+                </a>
+                Download sample Excel format.
+              </p>
+
+              <div class="row justify-content-start mt-5">
+                <div class="col-12">
+                  <label for="">Add Excel</label>
+                  {{formFile.as_p}}
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" name="fileCategory" class="btn btn-primary">
+                Add Category
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {% include 'user-admin/common/footer.html'%}
+    <div>{% include 'user-admin/common/footer_js.html'%}</div>
+  </body>
+
+  <script>
+    $(document).ready(function () {
+      // Function to show toast messages
+      showToast = (title, body, cssClass) => {
+        $.toast({
+          heading: title,
+          text: body,
+          showHideTransition: "slide",
+          icon: cssClass,
+          position: "top-right",
+        });
+      };
+
+      $(".btn-edit").on("click", function () {
+        const buttonData = $(this).data();
+        $("#id_name_ENG").val(buttonData.name_eng);
+        $("#id_name_AMH").val(buttonData.name_amh);
+        $("#id_topic").val(buttonData.topic);
+        let is_dashboard = buttonData.is_dashboard == "True" ? true : false;
+        $("#id_is_dashboard_visible").prop("checked", is_dashboard);
+        $("#id_id").val(buttonData.id);
+      });
+
+      //Edit Category
+      $("#modalFormAddEdit").on("submit", function (e) {
+        e.preventDefault();
+        let nameEng = $("#id_name_ENG").val();
+        let nameAmh = $("#id_name_AMH").val();
+        let topic = $("#id_topic").val();
+        let is_dashboard = $("#id_is_dashboard_visible").is(":checked");
+        let id = $("#id_id").val();
+        let topicName = $("#id_topic").find(":selected").text();
+
+        $.ajax({
+          type: "POST",
+          url: `{% url "update_category" %}`,
+          data: {
+            id: id,
+            name_ENG: nameEng,
+            name_AMH: nameAmh,
+            topic: topic,
+            is_dashboard_visible: is_dashboard,
+            csrfmiddlewaretoken: "{{csrf_token}}",
+          },
+          beforeSend: function () {
+            $("#saveCategory").hide();
+            $("#btnLoading").show();
+          },
+          // hides the loader after completion of request, whether successfull or failor.
+          complete: function () {
+            //Show save button finished
+            $("#saveCategory").show();
+            $("#btnLoading").hide();
+          },
+          success: function (response) {
+            if (response.success) {
+              //show succuss message
+              showToast(
+                "&#128515 Hello, User",
+                "Successfully Updated",
+                "success"
+              );
+              $("#addEditCategory").modal("hide"); //Hide Modal
+              let htmlNameEng = $("#categoryNameENG" + id);
+              let htmlNameAmh = $("#categoryNameAMH" + id);
+              let categoryTopic = $("#categoryTopic" + id);
+              let isDashboard = $("#categoryIsDashboard" + id);
+              let buttonHtml = $("#btnEditTable" + id);
+
+              //Update Table Value
+              htmlNameEng.text(nameEng);
+              htmlNameAmh.text(nameAmh);
+              categoryTopic.text(topicName);
+              is_dashboard
+                ? isDashboard.html('<i class="fa fa-check text-success"></i>')
+                : isDashboard.html('<i class="fa fa-times text-danger"></i>');
+
+              //update Button Value
+              buttonHtml.data("topic", topic);
+            } else {
+              //show succuss message
+              showToast(
+                "&#128532 Hello User",
+                "Failed to update Category.",
+                "error"
+              );
+            }
+          },
+          error: function () {
+            //show succuss message
+            showToast(
+              "&#128532 Hello User",
+              "Failed to update Category.",
+              "error"
+            );
+          },
+        });
+      });
+
+      //Delete Category
+      //Event handler that handle on Click to delete
+      $(".btn-delete").on("click", function () {
+        const buttonData = $(this).data();
+        $("#deleteCategoryAnchor").attr(
+          "href",
+          `/user-admin/delete_category/${buttonData.id}`
+        );
+        $("#deleteMessageCategory").html(
+          `Are you sure you want to delete <div> <code> ${buttonData.name_eng} / ${buttonData.name_amh}</code>? </div> `
+        );
+      });
+    });
+  </script>
+</html>

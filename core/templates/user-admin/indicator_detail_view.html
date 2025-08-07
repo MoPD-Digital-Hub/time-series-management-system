@@ -1,0 +1,430 @@
+{% load static %} {% load fontawesome_5 %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DPMEs</title>
+    <link />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/2.1.6/css/dataTables.dataTables.css"
+    />
+    {% include 'user-admin/common/head.html' %}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  </head>
+  {% fontawesome_5_static %}
+  <style>
+    .wrap {
+      margin: 4rem auto;
+      max-width: 800px;
+      position: relative;
+      background: #fff;
+    }
+
+    .chart-box {
+      padding-left: 0;
+      background: #fff;
+    }
+
+    #chart-container {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    #chart-year,
+    #chart-quarter {
+      width: 48%;
+      box-shadow: none;
+      display: inline-block;
+    }
+
+    #chart-year {
+      float: left;
+      position: relative;
+      transition: 1s ease transform;
+      z-index: 3;
+    }
+
+    #chart-year.chart-quarter-activated {
+      transform: translateX(0);
+      transition: 1s ease transform;
+    }
+
+    #chart-quarter {
+      float: left;
+      position: relative;
+      z-index: -2;
+      transition: 1s ease transform;
+    }
+
+    #chart-quarter.active {
+      transition: 1.1s ease-in-out transform;
+      transform: translateX(0);
+      z-index: 1;
+    }
+
+    @media screen and (min-width: 480px) {
+      #chart-year {
+        transform: translateX(50%);
+      }
+      #chart-quarter {
+        transform: translateX(-50%);
+      }
+    }
+
+    select#model {
+      display: none;
+      position: absolute;
+      top: -40px;
+      left: 0;
+      z-index: 2;
+      cursor: pointer;
+      transform: scale(0.8);
+    }
+
+    .scrolldiv {
+      height: 450px;
+      overflow-y: auto;
+    }
+    .rowquarter {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    .header {
+      background-color: #40864b;
+    }
+
+    .rowquarter p {
+      text-align: center;
+      padding: 5px;
+      margin: 0;
+      border-right: 1px solid #ccc;
+    }
+
+    .rowquarter p:last-child {
+      border-right: none; /* Remove right border for the last "cell" in each row */
+    }
+  </style>
+
+  <body class="hold-transition sidebar-mini layout-fixed">
+    {% include 'user-admin/common/navbar.html'%}
+    <div>{% include 'user-admin/common/sidebar.html' %}</div>
+
+    
+
+    <!--Body Start-->
+    <div class="content-wrapper">
+      <!-- TItle Start-->
+      <div class="content-header">
+        <div class="card row"></div>
+        <div class="container-fluid">
+          <div class="row justify-content-center align-self-center">
+            <div class="card bg-info col-md-7">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <h1 class="mt-3 text-white">{{indicator}}</h1>
+                    <p class="mt-3 text-white">
+                      When presenting a description about a topic on a webpage,
+                      it's essential to ensure that the content is both engaging
+                      and easy to read.
+                    </p>
+                  </div>
+                  <div class="col-md-4">
+                    <i
+                      class="fas fa-{{topic.icon.name}} fa-6x text-white float-end"
+                      style="transform: scale(1.1); transition: transform 0.3s"
+                    ></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row shadow">
+            <div class="col-lg-9 shadow">
+              <div class="row border">
+                <div class="col-md-6">
+                  <div id="chart"></div>
+                </div>
+                <div class="col-md-6">
+                  <div id="chartMonth"></div>
+                </div>
+                <div class="col-md-12 wrap">
+                  <div id="chart-year"></div>
+                  <div id="chart-quarter"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-3 mx-auto">
+              <div class="card shadow-lg rounded p-4 pb-1">
+                <div class="row justify-content-center">
+                  <div class="col-5 text-center">
+                    <h3>{{annual_data_value.0.performance}}</h3>
+                  </div>
+                  <div class="col-2 d-flex">
+                    <div class="border"></div>
+                  </div>
+                  <div class="col-5 fw-bold text-success text-center">
+                    <h3>{{annual_data_value.0.for_datapoint__year_EC}}</h3>
+                  </div>
+                </div>
+                <hr class="text-success fw-bold" />
+                <p class="text-center fw-bold text-success">Yearly</p>
+                <p class="text-center fw-bold">{{indicator}}</p>
+              </div>
+              <div class="card shadow-lg rounded p-4 pb-1">
+                <div class="row justify-content-center">
+                  <div
+                    class="col-5 fw-bold text-success text-center align-item-center"
+                  >
+                    <h3>{{annual_data_value.0.for_datapoint__year_EC}}</h3>
+                  </div>
+                </div>
+                <hr class="text-success fw-bold" />
+                <div class="rowquarter header">
+                  <p>Q 1</p>
+                  <p>Q 2</p>
+                  <p>Q 3</p>
+                  <p>Q 4</p>
+                </div>
+                <div class="rowquarter">
+                  {% for i in quarter_data_value|slice:"::-1" %}
+                  <p>{{ i.performance }}</p>
+                  {% endfor %}
+                </div>
+                <p class="text-center fw-bold text-success">Quarterly</p>
+                <p class="text-center fw-bold">
+                  {{indicator.title_ENG | capfirst}}
+                </p>
+              </div>
+
+              <div class="card shadow-lg rounded p-4 pb-1">
+                <div class="row justify-content-center">
+                  <div
+                    class="col-5 fw-bold text-success text-center align-item-center"
+                  >
+                    <h3>{{month_data_value.0.for_datapoint__year_EC}}</h3>
+                  </div>
+                </div>
+                <hr class="text-success fw-bold" />
+                <table class="table table-bordered table-responsive">
+                  <tr>
+                    {% for i in month_data_value|slice:"::-1" %}
+                    <th>
+                      {% if i.for_month__number == 1 %} ሐምሌ 
+                      {% elif i.for_month__number == 2 %} ነሐሴ
+                       {% elif i.for_month__number == 3 %} መስከረም 
+                       {% elif i.for_month__number == 4 %} ጥቅምት 
+                       {% elif i.for_month__number == 5 %} ኅዳር 
+                       {% elif i.for_month__number == 6 %} ጥር 
+                       {% elif i.for_month__number == 7 %} ታኅሣሥ 
+                       {% elif i.for_month__number == 8 %} የካቲት 
+                       {% elif i.for_month__number == 9 %} መጋቢት
+                       {% elif i.for_month__number == 10 %} ሚያዝያ 
+                       {% elif i.for_month__number == 11 %} ግንቦት 
+                       {% elif i.for_month__number == 12 %} ሰኔ
+                       {% else %} Unknown {% endif %}
+                    </th>
+                    {% endfor %}
+                  </tr>
+                  <tr>
+                    {% for i in month_data_value|slice:"::-1" %}
+                    <td>{{i.performance}}</td>
+                    {% endfor %}
+                  </tr>
+                </table>
+                <p class="text-center fw-bold text-success">Monthly</p>
+                <p class="text-center fw-bold">
+                  {{indicator.title_ENG | capfirst}}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="text-center text-secondary mt-4">
+            {{indicator.title_ENG | capfirst}}
+          </h4>
+          <div class="col-lg-7 mt-3 mx-auto d-block">
+            {% include 'includes/messages.html' %}
+          </div>
+
+          <div class="card mt-2 shadow-sm border p-3">
+            <!--UPDATED TABLE-->
+            <!--Tab Lists-->
+            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link active"
+                  id="pills-yearly-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-yearly"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-yearly"
+                  aria-selected="true"
+                >
+                  Yearly
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="pills-quarterly-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-quarterly"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-quarterly"
+                  aria-selected="false"
+                >
+                  Quarterly
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="pills-monthly-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-monthly"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-monthly"
+                  aria-selected="false"
+                >
+                  Monthly
+                </button>
+              </li>
+            </ul>
+
+            <!--Main Content -->
+            <div class="tab-content" id="pills-tabContent">
+              <!--Table Yearly-->
+              <div
+                class="tab-pane fade show active"
+                id="pills-yearly"
+                role="tabpanel"
+                aria-labelledby="pills-yearly-tab"
+              >
+                <div class="table-responsive">
+                  <!--Year-->
+                  <table
+                    class="m-0 p-0 table table-bordered table-hover"
+                    style="table-layout: fixed"
+                  >
+                    <thead id="tableHead" name="tableHead"></thead>
+                    <tbody id="tableBody" name="tableBody">
+                      <tr>
+                        <td colspan="9" class="text-danger text-center">
+                          Please apply filters to see the relevant information.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!--Table Quarterly-->
+              <div
+                class="tab-pane fade scrolldiv"
+                id="pills-quarterly"
+                role="tabpanel"
+                aria-labelledby="pills-quarterly-tab"
+              >
+                <div class="table-responsive">
+                  <table
+                    id="tableQuarterDataTable"
+                    style="table-layout: fixed"
+                    class="m-0 p-0 table table-hover table-bordered"
+                  >
+                    <thead name="tableHeadQuarter"></thead>
+                    <tbody name="tableBodyQuarter" class="text-center"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!--Table Monthly-->
+              <div
+                class="tab-pane fade scrolldiv"
+                id="pills-monthly"
+                role="tabpanel"
+                aria-labelledby="pills-monthly-tab"
+              >
+                <table
+                  id="tableMonthDataTable"
+                  style="table-layout: fixed"
+                  class="m-0 p-0 table table-hover table-bordered"
+                >
+                  <thead name="tableHeadMonth">
+                    <tr style="background-color: #40864b">
+                      <th class="text-light border" colspan="4">Monthly</th>
+                    </tr>
+                    <tr
+                      class="text-start border"
+                      style="background-color: #9fdfa9"
+                    >
+                      <th
+                        style="width: 230px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Year EC
+                      </th>
+                      <th
+                        style="width: 200px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Quarter
+                      </th>
+                      <th
+                        style="width: 70px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Indicator-1
+                      </th>
+                      <th
+                        style="width: 70px"
+                        class="vertical-text text-start align-middle"
+                        scope="col"
+                      >
+                        Indicator-2
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody name="tableBodyMonth" class="text-center">
+                    <tr>
+                      <td colspan="4" class="text-danger text-center">
+                        Please apply filters to see the relevant information.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--Title End-->
+    </div>
+    <!--Body End-->
+
+    {% include 'user-admin/common/footer.html'%} 
+    {% include 'user-admin/common/footer_js.html'%}
+
+    <script src="{% static 'assets/js/hooks/useFetch.js' %}"></script>
+    <script src="{% static 'assets/js/admin-data-view/indicatorDetailView.js' %}"></script>
+    <script src="https://cdn.datatables.net/2.1.6/js/dataTables.js"></script>
+
+    <!-- Graph js -->
+    <script src="{% static 'assets/js/admin-data-view/quarterGraph.js' %}"></script>
+    <script src="{% static 'assets/js/admin-data-view/yearAndMonthgraphs.js' %}"></script>
+  </body>
+</html>
