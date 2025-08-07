@@ -15,6 +15,7 @@ djangorestframework = "3.15.2"
 pillow = "<11.0"
 openpyxl = "^3.1.2"
 python-decouple = "^3.8"
+uwsgi = "^2.0.30"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
