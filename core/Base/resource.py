@@ -448,17 +448,18 @@ class MonthDataResource(resources.ModelResource):
                 continue
             except DataPoint.MultipleObjectsReturned:
                 continue
+
                 
             for indicator_code, value in row.items():
                 if indicator_code in ['for_datapoint', 'for_month'] or value in [None, '']:
                     continue
 
+                
                 try:
                     indicator = Indicator.objects.get(code=indicator_code)
                 except Indicator.DoesNotExist:
                     continue
 
-            
                 try:
                     performance = round(float(value), 2)
                 except (ValueError, TypeError):
@@ -479,6 +480,8 @@ class MonthDataResource(resources.ModelResource):
                     else:
                         updated_count += 1
 
+        
+        print(result_dataset)
         if dry_run:
             return super().import_data(result_dataset, dry_run=True, raise_errors=raise_errors, **kwargs)
 

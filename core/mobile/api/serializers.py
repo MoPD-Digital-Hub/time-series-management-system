@@ -326,10 +326,10 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         request = self.context
         q = request.get('q')
 
-        indicators = obj.indicators.filter(is_dashboard_visible = True)
+        indicators = obj.indicators.filter()
 
         if q:
-            indicators = indicators.filter(Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)).filter(is_dashboard_visible = True)
+            indicators = indicators.filter(Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)).filter()
 
         # Use IndicatorDetailSerializer instead of custom dict
         serializer = IndicatorSerializer(indicators, many=True)
@@ -354,7 +354,7 @@ class TopicDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_categories(self, obj):
-        categories = obj.categories.filter(is_dashboard_visible = True)
+        categories = obj.categories.filter()
         serializer = CategoryDetailSerializer(categories, many=True, context=self.context)
         # Remove categories that were skipped (returned as None)
         return [cat for cat in serializer.data if cat is not None]
