@@ -94,8 +94,15 @@ def year_lists(request):
 ##Projects
 @api_view(['GET'])
 def mobile_projects(request):
-    projects = ProjectInitiatives.objects.all()
+    projects = ProjectInitiatives.objects.filter(is_initiative = False)
     serializer = ProjectSerializer(projects , many=True)
+    return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
+
+##Projects
+@api_view(['GET'])
+def mobile_initiatives(request):
+    initiatives = ProjectInitiatives.objects.filter(is_initiative = True)
+    serializer = ProjectSerializer(initiatives , many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
