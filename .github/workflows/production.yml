@@ -27,7 +27,6 @@ jobs:
           cd core
           poetry run python manage.py migrate
           poetry run python manage.py collectstatic --noinput
-          sudo systemctl restart uwsgi.service
           sudo systemctl restart tsms.service
           sudo systemctl restart nginx.service
         EOF
