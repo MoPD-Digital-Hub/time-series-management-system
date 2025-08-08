@@ -113,8 +113,7 @@ def general_search(request):
         return Response({"error": "Query parameter 'q' is required."}, status=400)
 
     indicators = Indicator.objects.filter(
-        Q(title_ENG__icontains=q) | Q(title_AMH__icontains=q),
-        is_deleted=False
+        Q(title_ENG__icontains=q) | Q(title_AMH__icontains=q)
     ).prefetch_related('for_category')
 
     # Group indicators by category ID
