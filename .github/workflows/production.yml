@@ -21,12 +21,13 @@ jobs:
     - name: Deploy to server via SSH
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-          cd /mnt/data/Digital_Hub
+          cd /mnt/data/time-series-management-system
           git pull origin production
           source .venv/bin/activate  
           cd core
           poetry run python manage.py migrate
           poetry run python manage.py collectstatic --noinput
           sudo systemctl restart uwsgi.service
+          sudo systemctl restart tsms.service
           sudo systemctl restart nginx.service
         EOF
