@@ -674,6 +674,7 @@ class ProjectInitiatives(models.Model):
     description = models.TextField()  
     image = models.FileField(upload_to="media/image" , null=True, blank=True)
     image_icons = models.FileField(upload_to="media/image_icons" , null=True, blank=True)
+    is_initiative = models.BooleanField(default=False)
     content = models.JSONField(null=True , blank=True)  
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
