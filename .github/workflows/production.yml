@@ -22,7 +22,7 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd /mnt/data/time-series-management-system
-          git pull origin production
+          git pull origin main
           source .venv/bin/activate  
           cd core
           poetry run python manage.py migrate
