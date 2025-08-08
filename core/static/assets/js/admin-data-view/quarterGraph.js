@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  console.log("Fetched data:", data);
+
   const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF3357', '#57FF33', '#5733FF'];
   function getRandomColor(colors) {
     return colors[Math.floor(Math.random() * colors.length)];

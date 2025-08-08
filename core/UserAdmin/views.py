@@ -285,7 +285,9 @@ def data_view_indicator_detail(request, id):
         }
         return render(request, 'user-admin/data_view_indicator_detail.html', context=context)
     elif request.method == 'POST':
+        print('post')
         if 'form_indicator_add_id' in request.POST:
+            print('form_indicator_add_id')
             parent_id = request.POST['form_indicator_add_id']
             try:
                 indicator = Indicator.objects.get(id = parent_id)
@@ -306,11 +308,14 @@ def data_view_indicator_detail(request, id):
             new_value = request.POST['value']
             quarter_id = request.POST['quarter_id']
             month_id = request.POST['month_id']
+            
 
             if quarter_id == "" and month_id == "":
+                print('ind',indicator_id, 'year',year_id, 'value',new_value)
                 try:
                     value = AnnualData.objects.filter(indicator__id = indicator_id, for_datapoint__year_EC = year_id).first()
                     value.performance = new_value
+                    print(value.performance)
                     value.save()
                 except:
                     try:
@@ -348,8 +353,9 @@ def data_view_indicator_detail(request, id):
                 
 
             return JsonResponse({'response' : True})
-    
-    else: return HttpResponse("Bad Request!")
+    else: 
+        print('else')
+        return HttpResponse("Bad Request!")
 
 @login_required(login_url='login')
 def data_view_indicator_update(request, id):
@@ -368,7 +374,9 @@ def data_view_indicator_update(request, id):
 
     if request.method == 'POST':
         if form.is_valid():
-            form.save()
+            data = form.save(commit=False)
+            print(data)
+            data.save
             messages.success(request, '😀 Hello User, Indicator Successfully Updated')
             return redirect('data_view_indicator_detail', previous_page)
         else:
@@ -377,7 +385,7 @@ def data_view_indicator_update(request, id):
     context = {
         'form' : form,
     }
-    return render(request, 'user-admin/indicator_detail.html', context=context)
+    return render(request, 'user-admin/data_view_indicator_detail.html', context=context)
 
 @login_required(login_url='login')
 def topic(request):
@@ -944,6 +952,9 @@ def edit_user(request):
 #######Document#########
 @login_required(login_url='login')
 def document(request):
+    for i in Indicator.objects.all():
+        i.is_dashboard_visible = True 
+        i.save()
     form = DocumentForm(request.POST or None, request.FILES or None)
 
     if request.method == 'POST':
