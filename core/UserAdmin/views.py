@@ -952,9 +952,6 @@ def edit_user(request):
 #######Document#########
 @login_required(login_url='login')
 def document(request):
-    for i in Indicator.objects.all():
-        i.is_dashboard_visible = True 
-        i.save()
     form = DocumentForm(request.POST or None, request.FILES or None)
 
     if request.method == 'POST':

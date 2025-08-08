@@ -1,0 +1,32 @@
+name: Deploy Project
+
+on:
+  push:
+    branches:
+      - main  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up SSH key for authentication
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to server via SSH
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /mnt/data/Digital_Hub
+          git pull origin production
+          source .venv/bin/activate  
+          cd core
+          poetry run python manage.py migrate
+          poetry run python manage.py collectstatic --noinput
+          sudo systemctl restart uwsgi.service
+          sudo systemctl restart nginx.service
+        EOF
