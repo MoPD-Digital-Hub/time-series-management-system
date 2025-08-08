@@ -25,6 +25,7 @@ jobs:
           git pull origin main
           source .venv/bin/activate  
           cd core
+          poetry run python manage.py makemigrations
           poetry run python manage.py migrate
           poetry run python manage.py collectstatic --noinput
           sudo systemctl restart tsms.service
