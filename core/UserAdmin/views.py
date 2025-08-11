@@ -1411,6 +1411,7 @@ def sub_projects(request , id):
     projects = SubProject.objects.filter(project__id=id)
     form = SubProjectForm()
     context = {
+        "parent_project" : parent_project,
         "projects" : projects,
         "form" : form
     }
@@ -1481,7 +1482,6 @@ def sub_project_detail(request, id):
         "project" : project
     }
     return render(request, "user-admin/sub_project_detail.html", context)
-
 @login_required(login_url='login')
 @api_view(['POST'])
 def edit_project(request):    
@@ -1489,34 +1489,61 @@ def edit_project(request):
     title_ENG = request.POST.get('title_ENG')
     title_AMH = request.POST.get('title_AMH')
     description = request.POST.get('description')
+    is_initiative = request.POST.get('is_initiative')  # Will be "on" if checked, None if not
+
+    # Convert checkbox value to boolean
+    is_initiative = True if is_initiative in ["on", "true", "True", True] else False
+
+    print("ID:", id)
+    print("Title ENG:", title_ENG)      
+    print("Title AMH:", title_AMH)
+    print("Description:", description)
+    print("Is Initiative:", is_initiative)
+
     try:
-        project = ProjectInitiatives.objects.get(id = id)
+        project = ProjectInitiatives.objects.get(id=id)
         project.title_ENG = title_ENG
         project.title_AMH = title_AMH
         project.description = description
+        project.is_initiative = is_initiative  # save it
         project.save()
-        response = {'success' : True}
-    except:
-        response = {'success' : False}
-    return Response(response) 
+        response = {'success': True}
+    except Exception as e:
+        print("Error:", e)
+        response = {'success': False}
 
-# @login_required(login_url='login')
-# @api_view(['POST'])
-# def edit_sub_project(request):    
-#     id = request.POST.get('id') 
-#     title_ENG = request.POST.get('title_ENG')
-#     title_AMH = request.POST.get('title_AMH')
-#     description = request.POST.get('description')
-#     try:
-#         project = ProjectInitiatives.objects.get(id = id)
-#         project.title_ENG = title_ENG
-#         project.title_AMH = title_AMH
-#         project.description = description
-#         project.save()
-#         response = {'success' : True}
-#     except:
-#         response = {'success' : False}
-#     return Response(response)  
+    return Response(response)
+
+
+@login_required(login_url='login')
+@api_view(['POST'])
+def edit_sub_project(request):    
+    id = request.POST.get('id') 
+    title_ENG = request.POST.get('title_ENG')
+    title_AMH = request.POST.get('title_AMH')
+    description = request.POST.get('description')
+    is_regional = request.POST.get('is_regional')  # Will be "true" or "false" as string
+
+
+
+    try:
+        project = SubProject.objects.get(id=id)
+        project.title_ENG = title_ENG
+        project.title_AMH = title_AMH
+        project.description = description
+        
+        # Convert "true"/"false" string to boolean
+        project.is_regional = str(is_regional).lower() == "true"
+
+        project.save()
+        response = {'success': True}
+    except SubProject.DoesNotExist:
+        response = {'success': False, 'error': 'Project not found'}
+    except Exception as e:
+        response = {'success': False, 'error': str(e)}
+
+    return Response(response)
+
   
 
 @login_required(login_url='login')

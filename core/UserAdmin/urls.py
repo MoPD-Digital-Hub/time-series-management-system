@@ -72,7 +72,7 @@ urlpatterns = [
     ##Sub Projects
     path('sub_projects/<int:id>' , sub_projects , name='sub_projects'),
     path('sub_project_detail/<int:id>' , sub_project_detail , name='sub_project_detail'),
-    # path('edit_project/', edit_project, name='edit_project'), 
+    path('edit_sub_project/', edit_sub_project, name='edit_sub_project'), 
     path('delete_sub_project/<int:id>', delete_sub_project, name='delete_sub_project'),    
 
 ]

@@ -26,7 +26,7 @@
         <div class="col-lg-10">
             {% include 'user-admin/common/messages.html' %}
 
-            <h1>Sub Instance </h1>
+            <h1 class="bg-info">{{parent_project.title_ENG}} </h1>
 
             <button class="btn btn-sm btn-success m-3 mx-end d-block" data-bs-toggle="modal" data-bs-target="#addProjectModal">
                 Add Sub Instance
@@ -36,6 +36,7 @@
                   <tr>
                     <th scope="col">#</th>
                     <th scope="col">Instance name</th>
+                    <th scope="col">Regional</th>
                     <th scope="col">Description</th>
                     <th scope="col">Action</th>
                   </tr>
@@ -45,6 +46,7 @@
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
                         <td id="projectTitleENG{{project.id}}">{{ project.title_ENG }}</td>
+                        <td id="projectIsRegional{{project.id}}">{{ project.is_regional }}</td>
                         <td id="projectDescription{{project.id}}">{{ project.description }}</td>
                         <td>
                             <a href="{% url 'sub_project_detail' project.id %}" class="btn btn-sm btn-outline-info">
@@ -189,82 +191,79 @@
               position: 'top-right',
             })
           }
-      
+      $(document).on('click', '.btn-edit', function () {
+          const data = $(this).data();
+          let modal = $("#editProject"); // modal container
 
-          $(document).on('click', '.btn-edit', function () {
-            const buttonData = $(this).data();  // Get data from the button
-            console.log(buttonData);  // Check if data is correct
-        
-            // Set the values of the form fields in the modal
-            $("#id_title_ENG").val(buttonData.title_eng);  // Set title in English
-            $("#id_title_AMH").val(buttonData.title_amh);  // Set title in Amharic
-            $("#id_description").val(buttonData.description);  // Set description
-            $("#id_id").val(buttonData.id);  // Set hidden ID field value
-        
-            // Check the field values are populated
-            console.log("Title ENG:", $("#id_title_ENG").val());
-            console.log("Title AMH:", $("#id_title_AMH").val());
-            console.log("Description:", $("#id_description").val());
-        });
-        
+          modal.find("#id_title_ENG").val(data.title_eng);
+          modal.find("#id_title_AMH").val(data.title_amh);
+          modal.find("#id_description").val(data.description);
+          modal.find("#id_id").val(data.id);
+          modal.find("#id_is_regional").prop("checked", data.is_regional === true || data.is_regional === "true");
+
+          modal.modal('show');
+      });
+
       $("#modalFormEditProject").on('submit', function (e) {
-        e.preventDefault()
-        let title_ENG = $("#id_title_ENG").val()
-        let title_AMH = $("#id_title_AMH").val()
-        let description = $("#id_description").val()
-        let id = $("#id_id").val()
-  
-        $.ajax({
-          type: 'POST',
-          url: `{% url "edit_project" %}`,
-          data: {
-            'id': id,
-            'title_ENG': title_ENG,
-            'title_AMH': title_AMH,
-            'description' : description,
-            csrfmiddlewaretoken: '{{csrf_token}}'
-          },
-         
-          beforeSend: function () {
-            $('#saveProject').hide()
-            $("#btnLoading").show();
-          },
-          // hides the loader after completion of request, whether successfull or failor.             
-          complete: function () {
-            //Show save button finished 
-            $('#saveProject').show()
-            $("#btnLoading").hide();
-          },
-          success: function (response) {
-            if (response.success) {
-  
-              //show succuss message
-              showToast('&#128515 Hello, User', 'Successfully Updated', 'success')
-              $('#editProject').modal('hide'); //Hide Modal
-              let htmlTitleENG = $('#projectTitleENG' + id)
-              let htmlDescription = $('#projectDescription' + id)
-              let buttonHtml = $('#btnEditProject' + id)
-  
-              //Update Table Value
-              htmlTitleENG.text(title_ENG)
-              htmlDescription.text(description)
-              
-            
-              //update Button Value
-              buttonHtml.data("title ENG", title_ENG);
-  
-            } else {
-              //show succuss message
-              showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
-            }
-          },
-          error: function () {
-            //show succuss message
-            showToast('&#128532 Hello User', 'Failed to update Topic.', 'error')
-          }
-        })
-      })
-    })
+          e.preventDefault();
+
+          let modal = $("#editProject");
+
+          let title_ENG = modal.find("#id_title_ENG").val();
+          let title_AMH = modal.find("#id_title_AMH").val();
+          let description = modal.find("#id_description").val();
+          let id = modal.find("#id_id").val();
+          let is_regional = modal.find("#id_is_regional").is(":checked");
+
+
+
+          $.ajax({
+              type: 'POST',
+              url: `{% url "edit_sub_project" %}`,
+              data: {
+                  'id': id,
+                  'title_ENG': title_ENG,
+                  'title_AMH': title_AMH,
+                  'description': description,
+                  'is_regional': is_regional,
+                  csrfmiddlewaretoken: '{{csrf_token}}'
+              },
+
+              beforeSend: function () {
+                  modal.find('#saveProject').hide();
+                  modal.find("#btnLoading").show();
+              },
+              complete: function () {
+                  modal.find('#saveProject').show();
+                  modal.find("#btnLoading").hide();
+              },
+              success: function (response) {
+                  if (response.success) {
+                      showToast('&#128515 Hello, User', 'Successfully Updated', 'success');
+                      modal.modal('hide');
+
+                      // Update table row content
+                      let htmlTitleENG = $('#projectTitleENG' + id);
+                      let htmlDescription = $('#projectDescription' + id);
+                      let buttonHtml = $('#btnEditProject' + id);
+
+                      htmlTitleENG.text(title_ENG);
+                      htmlDescription.text(description);
+
+                    
+
+                  } else {
+                      showToast('&#128532 Hello User', 'Failed to update Topic.', 'error');
+                  }
+              },
+              error: function () {
+                  showToast('&#128532 Hello User', 'Failed to update Topic.', 'error');
+              }
+          });
+      });
+
+
+    });
   </script>
 
 </html>
