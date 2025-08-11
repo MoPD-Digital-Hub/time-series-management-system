@@ -651,3 +651,68 @@ def confirm_file(imported_data, type):
             return False, f"Error importing data: Please review your Document."
     except Exception as e:
          return False, f"Error importing data: Please review your Document."
+    
+
+
+
+
+def create_aggregate_data_resource():
+    YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
+
+    attrs = {
+        'topic_name': fields.Field(column_name='Topic'),
+        'category_name': fields.Field(column_name='Category'),
+    }
+
+    def dehydrate_topic_name(self, indicator):
+        topics = set()
+        for category in indicator.for_category.all():
+            if category.topic:
+                topics.add(category.topic.title_ENG)
+        return ", ".join(sorted(topics)) if topics else ''
+    attrs['dehydrate_topic_name'] = dehydrate_topic_name
+
+    def dehydrate_category_name(self, indicator):
+        categories = [cat.name_ENG for cat in indicator.for_category.all()]
+        return ", ".join(categories) if categories else ''
+    attrs['dehydrate_category_name'] = dehydrate_category_name
+
+    def dehydrate_parent(self, indicator):
+        return indicator.parent.code if indicator.parent else ''
+    attrs['dehydrate_parent'] = dehydrate_parent
+
+    def make_dehydrate_year(year):
+        def f(self, indicator):
+            annual_value = indicator.annual_data.filter(for_datapoint__year_EC=year).first()
+            return annual_value.performance if annual_value else ''
+        return f
+
+    for year in YEARS:
+        attrs[f'year_{year}'] = fields.Field(column_name=str(year))
+        attrs[f'dehydrate_year_{year}'] = make_dehydrate_year(year)
+
+    class Meta:
+        model = Indicator
+        fields = (
+            'topic_name',
+            'category_name',
+            'title_ENG',
+            'code',
+            'description',
+            'measurement_units',
+            'frequency',
+            'source',
+            'methodology',
+            'disaggregation_dimensions',
+            'status',
+            'version',
+            'parent',
+            'kpi_characteristics',
+            *[f'year_{year}' for year in YEARS],
+        )
+        export_order = fields
+
+    attrs['Meta'] = Meta
+    return type('AnnualDataResource', (resources.ModelResource,), attrs)
+
+AnnualDataResource = create_aggregate_data_resource()

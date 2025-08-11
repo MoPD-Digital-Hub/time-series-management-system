@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+
 from .models import (
   Topic,
   Category,
@@ -15,16 +17,11 @@ class TopicSerializers(serializers.ModelSerializer):
     model = Topic
     fields = '__all__'
 
-
 class CategorySerializers(serializers.ModelSerializer):
   indicator_count = serializers.IntegerField(read_only=True)
   class Meta:
     model = Category
     fields = '__all__'
-
-
-
-
 
 class AnnualDataSerializers(serializers.ModelSerializer):
   for_datapoint = serializers.SlugRelatedField(
@@ -36,9 +33,6 @@ class AnnualDataSerializers(serializers.ModelSerializer):
     model = AnnualData
     fields = '__all__'
 
-
-
-
 class QuarterDataSerializers(serializers.ModelSerializer):
   for_datapoint = serializers.SlugRelatedField(
       
@@ -48,8 +42,6 @@ class QuarterDataSerializers(serializers.ModelSerializer):
   class Meta:
     model = QuarterData
     fields = '__all__'
-
-
 
 class IndicatorSerializers(serializers.ModelSerializer):
   annual_data = serializers.SerializerMethodField()
@@ -75,12 +67,14 @@ class DataPointSerializers(serializers.ModelSerializer):
     model = DataPoint
     fields = ['id','year_EC','year_GC']
 
-
-
 class CategoryIndicatorSerializers(serializers.ModelSerializer):
   indicators = IndicatorSerializers(many=True)
   class Meta:
     model = Category
     fields = '__all__'
+
+
+
+
 
 
