@@ -62,7 +62,7 @@ class DocumentForm(forms.ModelForm):
 class ProjectInitiativesForm(forms.ModelForm):
     class Meta:
         model = ProjectInitiatives
-        fields = ['title_ENG', 'title_AMH', 'description' , 'image' , 'image_icons'  ] # Specify the fields you want in the form
+        fields = ['title_ENG', 'title_AMH', 'description' , 'image' , 'image_icons' , 'is_initiative'  ] # Specify the fields you want in the form
         widgets = {
             'title_ENG': forms.TextInput(attrs={'class': 'form-control'}),
             'title_AMH': forms.TextInput(attrs={'class': 'form-control'}),
@@ -80,6 +80,6 @@ class SubProjectForm(forms.ModelForm):
             'title_ENG': forms.TextInput(attrs={'class': 'form-control'}),
             'title_AMH': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
-            'is_regional': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_regional': forms.CheckboxInput(attrs={'class': 'form-check-input ml-2'}),
         }
     

@@ -25,10 +25,11 @@
     <div class="content-wrapper row justify-content-center">
         <div class="col-lg-10">
             {% include 'user-admin/common/messages.html' %}
-            <button class="btn btn-sm btn-success m-3 mx-end d-block" data-bs-toggle="modal" data-bs-target="#addProjectModal">
-                Add Project
+            <button class="btn btn-sm btn-success mt-3 mb-3 mx-end d-block" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                Add Instance
             </button>
-            <table class="table">
+            <h4 class="mt-4"> Projects </h4>
+            <table class="table mb-5">
                 <thead>
                   <tr>
                     <th scope="col">#</th>
@@ -39,6 +40,58 @@
                 </thead>
                 <tbody>
                     {% for project in projects %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td id="projectTitleENG{{project.id}}">{{ project.title_ENG }}</td>
+                        <td id="projectDescription{{project.id}}">{{ project.description }}</td>
+                        <td>
+                            <a href="{% url 'sub_projects' project.id %}" class="btn btn-sm btn-muted">
+                                <i class="fa fa-list"></i>
+                            </a>
+                            <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-info">
+                                <i class="fa fa-eye"></i>
+                            </a>
+                            <button
+                                
+                                id="btnEditProject{{ project.id }}"
+                                class="btn btn-sm btn-outline-warning btn-edit"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editProject"
+                                data-id="{{ project.id }}"
+                                data-title_ENG="{{ project.title_ENG }}"
+                                data-title_AMH="{{ project.title_AMH }}"
+                                data-description="{{ project.description }}"
+                            >
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button
+                                class="btn btn-sm btn-outline-danger btn-delete"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteProjectModal"
+                                data-id="{{ project.id }}"
+                                data-name="{{ project.title_ENG }}"
+                            >
+                                <i class="fa fa-trash"></i>
+                            </button>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h4 class="mt-5"> Initiatives </h4>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Initiative name</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for project in initiatives %}
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
                         <td id="projectTitleENG{{project.id}}">{{ project.title_ENG }}</td>

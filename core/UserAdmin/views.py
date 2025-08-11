@@ -1384,10 +1384,12 @@ def projects(request):
             return redirect('projects')  # Redirect to the list of projects after saving
     else:
         form = ProjectInitiativesForm()
-    projects = ProjectInitiatives.objects.all()
+    projects = ProjectInitiatives.objects.filter(is_initiative=False)
+    initiatives = ProjectInitiatives.objects.filter(is_initiative=True)
     form = ProjectInitiativesForm()
     context = {
         "projects" : projects,
+        "initiatives" : initiatives,    
         "form" : form
     }
     return render(request , 'user-admin/projects.html' , context)
