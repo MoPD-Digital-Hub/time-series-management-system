@@ -88,7 +88,7 @@ admin.site.register(QuarterData,  QuarterDataAdmin)
 
 class MonthDataAdmin(ImportExportModelAdmin):
     resource_classes = [MonthDataResource]
-    list_display = ('for_datapoint' , 'performance','target' , )
+    list_display = ('for_datapoint' , 'for_month' ,'performance','target' , )
     list_filter = ('indicator' , 'for_datapoint')
     search_fields = ('indicator' , 'for_datapoint')
 

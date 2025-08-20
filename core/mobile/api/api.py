@@ -18,8 +18,8 @@ def dashboard_overview(request):
 
 @api_view(['GET'])
 def trending(request):
-    indicatos = MobileDahboardOverview.objects.all()
-    serializer = MobileDashboardOverviewSerializer(indicatos, many=True)
+    indicators = MobileDahboardOverview.objects.all()
+    serializer = MobileDashboardOverviewSerializer(indicators, many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
 
