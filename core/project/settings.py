@@ -22,11 +22,8 @@ if DJANGO_ENV == 'production':
 else:
     DEBUG = True
     
-
 ALLOWED_HOSTS = ['*']
 CORS_ALLOW_ALL_ORIGINS = True
-
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -45,9 +42,11 @@ INSTALLED_APPS = [
     'DashBoard',
     'mobile',
     'mediaManager',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
