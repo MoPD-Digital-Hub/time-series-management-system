@@ -25,18 +25,14 @@ urlpatterns = [
 
     ###Api
     path('topic_list/', topic_lists),
+    path('initiatives/', initiative_lists),
     path('count_indicator_by_category/<str:id>/', count_indicator_by_category),
     path('filter_by_category_with_value/', filter_by_category_with_value),
     
-    
 
-    
     path('indicator-lists/<str:id>/', get_indicators),
     path('filter_topic_and_category/', filter_topic_and_category),
     path('filter_indicator_by_category/<str:id>/', filter_indicator_by_category),
-   
-
-
 
     path('filter_indicator_by_category/<str:id>/', filter_indicator_by_category),
     path('filter_indicator_annual_value/', filter_indicator_annual_value),
@@ -49,12 +45,5 @@ urlpatterns = [
     path('api/video_api' , video_api),
 
     path('api/search-indicator' , search_category_indicator),
-
-
-
-
-
-
-
 
 ]

@@ -30,7 +30,16 @@ from django.contrib.auth.decorators import login_required
 @api_view(['GET'])
 def topic_lists(request):
     if request.method == 'GET':
-        topics = Topic.objects.annotate(category_count=Count('categories')).select_related()
+        topics = Topic.objects.filter(is_initiative = False).annotate(category_count=Count('categories')).select_related()
+        serializer = TopicSerializers(topics, many=True)
+        return Response(serializer.data)
+    
+
+@login_required(login_url='login')
+@api_view(['GET'])
+def initiative_lists(request):
+    if request.method == 'GET':
+        topics = Topic.objects.filter(is_initiative = True).annotate(category_count=Count('categories')).select_related()
         serializer = TopicSerializers(topics, many=True)
         return Response(serializer.data)
 

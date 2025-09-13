@@ -16,6 +16,8 @@ class Topic(models.Model):
     image = models.FileField(upload_to="media/topic-image" , null=True, blank=True)
     image_icons = models.FileField(upload_to="media/image_icons" , null=True, blank=True)
     background_image = models.FileField(upload_to="media/background_image" , null=True, blank=True)
+    is_initiative = models.BooleanField(default=False)
+    description = models.TextField(null=True, blank=True)
     updated =  models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
