@@ -43,6 +43,8 @@ class Category(models.Model):
     name_ENG = models.CharField(max_length=300, unique = True)
     name_AMH = models.CharField(max_length=300, unique = True)
     code = models.CharField(max_length=10, unique=True)
+    is_national = models.BooleanField(default=False)
+    is_reginal = models.BooleanField(default=False)
     is_dashboard_visible = models.BooleanField(default = False)
     topic = models.ForeignKey(Topic, null=True, blank=True, on_delete=models.SET_NULL, related_name='categories')
     created_at = models.DateTimeField(auto_now_add=True, null=True)
