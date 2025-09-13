@@ -5,6 +5,7 @@ urlpatterns = [
     path('dashboard/overview/', api.dashboard_overview),
     path('trending/', api.trending),
     path('topic-list/' , api.mobile_topic),
+    path('initiatives/' , api.initiatives),
     path('topic-detail/<str:id>/' , api.mobile_topic_detail),
     path('indicator-detail/<str:id>/' , api.mobile_indicator_detail),
     path('indicator-performance-detail/<str:id>/' , api.indicator_performance_detail),

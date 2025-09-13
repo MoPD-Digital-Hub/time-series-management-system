@@ -25,7 +25,13 @@ def trending(request):
 
 @api_view(['GET'])
 def mobile_topic(request):
-    topics = Topic.objects.filter()
+    topics = Topic.objects.filter(is_initiative = False)
+    serializer = TopicSerializer(topics, many=True)
+    return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def initiatives(request):
+    topics = Topic.objects.filter(is_initiative = True)
     serializer = TopicSerializer(topics, many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
