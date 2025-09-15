@@ -326,10 +326,12 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         request = self.context
         q = request.get('q')
 
-        indicators = obj.indicators.filter()
+        indicators = obj.indicators.filter(parent__isnull=True)
 
         if q:
-            indicators = indicators.filter(Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)).filter()
+            indicators = indicators.filter(
+                Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)
+            )
 
         # Use IndicatorDetailSerializer instead of custom dict
         serializer = IndicatorSerializer(indicators, many=True)
