@@ -112,6 +112,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
     month_data =serializers.SerializerMethodField()
     latest_data = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
 
     class Meta:
         model = Indicator
@@ -183,6 +184,9 @@ class IndicatorSerializer(serializers.ModelSerializer):
         )
 
         return latest_data[1]
+    
+    def get_children(self, obj):
+        return IndicatorSerializer(obj.children.all(), many=True, context=self.context).data
 
 
 class MobileDashboardOverviewSerializer(serializers.ModelSerializer):
