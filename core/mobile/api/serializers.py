@@ -124,11 +124,11 @@ class IndicatorSerializer(serializers.ModelSerializer):
             Q(for_datapoint__year_EC__isnull=False),
             for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
         ).order_by('-for_datapoint__year_EC')
-        
+
         annual_data = obj.annual_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        )[:12]
-        
+        ).order_by('-for_datapoint__year_EC')[:12]
+
         return AnnualDataSerializer(annual_data, many=True).data
 
     def get_quarter_data(self, obj):
@@ -136,25 +136,25 @@ class IndicatorSerializer(serializers.ModelSerializer):
             Q(for_datapoint__year_EC__isnull=False),
             for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
         ).order_by('-for_datapoint__year_EC')
+
         quarter_data = obj.quarter_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        )[:12]
+        ).order_by('-for_datapoint__year_EC')[:12]
 
-        serializer = QuarterDataSerializer(quarter_data, many=True)
-        return serializer.data
-    
+        return QuarterDataSerializer(quarter_data, many=True).data
+
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
             Q(for_datapoint__year_EC__isnull=False),
             for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
         ).order_by('-for_datapoint__year_EC')
+
         month_data = obj.month_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        )[:12]
+        ).order_by('-for_datapoint__year_EC')[:12]
 
-        month_data = obj.month_data.filter(Q(for_datapoint__year_EC__isnull = False))[:12]
-        serializer = MonthDataSerializer(month_data, many=True)
-        return serializer.data
+        return MonthDataSerializer(month_data, many=True).data
+
     
     def get_latest_data(self, obj):
      
