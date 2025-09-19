@@ -143,9 +143,10 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         quarter_data = obj.quarter_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+        ).order_by('-for_datapoint__year_EC', '-for_quarter__number')[:12]
 
-        quarter_data = reversed(quarter_data)
+        # reverse → chronological order by year, then quarter number
+        quarter_data = sorted(quarter_data, key=lambda x: (x.for_datapoint.year_EC, x.for_quarter.number))
 
         return QuarterDataSerializer(quarter_data, many=True).data
 
@@ -158,9 +159,10 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         month_data = obj.month_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+        ).order_by('-for_datapoint__year_EC', '-for_month_number')[:12]
 
-        month_data = reversed(month_data)
+        # reverse → chronological order by year, then month number
+        month_data = sorted(month_data, key=lambda x: (x.for_datapoint.year_EC, x.for_month_number))
 
         return MonthDataSerializer(month_data, many=True).data
 
