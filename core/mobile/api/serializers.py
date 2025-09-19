@@ -159,7 +159,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         month_data = obj.month_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC', '-for_month_number')[:12]
+        ).order_by('-for_datapoint__year_EC', '-for_month__number')[:12]
 
         # reverse → chronological order by year, then month number
         month_data = sorted(month_data, key=lambda x: (x.for_datapoint.year_EC, x.for_month_number))
