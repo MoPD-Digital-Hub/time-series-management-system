@@ -9,7 +9,10 @@ import json
 from django.utils import timezone
 from datetime import datetime
 import re
-
+from django.db import models
+from django.db.models import F, Value, Case, When, IntegerField
+from django.db.models.functions import Cast
+from django.db.models import Func
 
 class MonthSerializer(serializers.ModelSerializer):
     class Meta:
@@ -330,20 +333,46 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
         return latest_data[1]
     
-    def natural_key(code):
-        if not code:
-            return ('', 0)
-        m = re.match(r'^(.*?)(?:\.(\d+))?$', code)
-        if m:
-            prefix = m.group(1) or ''
-            num = int(m.group(2)) if m.group(2) else 0
-            return (prefix, num)
-        return (code, 0)
+        # imports (put near top of your file)
+
 
     def get_children(self, obj):
-        children_qs = obj.children.all()
-        children_list = sorted(children_qs, key=lambda i: self.natural_key(i.code))
-        return IndicatorSerializer(children_list, many=True, context=self.context).data
+        children = obj.children.annotate(
+            # numeric part after the last dot:  VPR-01.10  ->  10
+            code_number=Cast(
+                Case(
+                    # only try regex extraction when there's a .<digits> at the end
+                    When(code__regex=r'\.\d+$',
+                        then=Func(
+                            F('code'),
+                            Value(r'^.*\.(\d+)$'),      # pattern
+                            Value(r'\1'),               # replacement -> the group with digits
+                            function='regexp_replace'
+                        )
+                    ),
+                    default=Value('0'),
+                    output_field=models.CharField()
+                ),
+                IntegerField()
+            ),
+
+            # prefix without the trailing .<digits>:  VPR-01.10 -> VPR-01
+            code_prefix=Case(
+                When(code__regex=r'\.\d+$',
+                    then=Func(
+                        F('code'),
+                        Value(r'\.\d+$'),
+                        Value(''),
+                        function='regexp_replace'
+                    )
+                ),
+                default=F('code'),
+                output_field=models.CharField()
+            )
+        ).order_by('code_prefix', 'code_number')
+
+        return IndicatorSerializer(children, many=True, context=self.context).data
+
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
     indicators = serializers.SerializerMethodField()
