@@ -1,6 +1,8 @@
 from mobile.models import MobileDahboardOverview
 from rest_framework import serializers
 from django.db.models import OuterRef, Subquery
+from django.db.models import IntegerField
+from django.db.models.functions import Cast, Substr
 from Base.models import *
 from django.db.models import Q, F
 import json
@@ -328,7 +330,10 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
         return latest_data[1]
     
     def get_children(self, obj):
-        return IndicatorSerializer(obj.children.all(), many=True, context=self.context).data
+        children = obj.children.annotate(
+            code_number=Cast(Substr('code', 8), IntegerField())
+        ).order_by("code", "code_number")
+        return IndicatorSerializer(children, many=True, context=self.context).data
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
     indicators = serializers.SerializerMethodField()
@@ -348,7 +353,10 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
                 Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)
             )
 
-        # Use IndicatorDetailSerializer instead of custom dict
+        indicators = indicators.annotate(
+            code_number=Cast(Substr('code', 8), IntegerField())  
+        ).order_by("code", "code_number")
+
         serializer = IndicatorSerializer(indicators, many=True)
         return serializer.data
 
