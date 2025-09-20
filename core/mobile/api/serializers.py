@@ -120,6 +120,8 @@ class IndicatorSerializer(serializers.ModelSerializer):
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
     month_data =serializers.SerializerMethodField()
     latest_data = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+    
    
 
     class Meta:
@@ -127,6 +129,12 @@ class IndicatorSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
 
+    def get_children(self, obj):
+        # safe, DB-agnostic fallback
+        children_qs = obj.children.all()
+        children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
+        return IndicatorSerializer(children_list, many=True, context=self.context).data
+    
     def get_annual_data(self, obj):
         subquery = obj.annual_data.filter(
             Q(for_datapoint__year_EC__isnull=False),
