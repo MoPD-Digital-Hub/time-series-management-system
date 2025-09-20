@@ -8,6 +8,7 @@ from django.db.models import Q, F
 import json
 from django.utils import timezone
 from datetime import datetime
+import re
 
 
 class MonthSerializer(serializers.ModelSerializer):
@@ -329,11 +330,20 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
         return latest_data[1]
     
+    def natural_key(code):
+        if not code:
+            return ('', 0)
+        m = re.match(r'^(.*?)(?:\.(\d+))?$', code)
+        if m:
+            prefix = m.group(1) or ''
+            num = int(m.group(2)) if m.group(2) else 0
+            return (prefix, num)
+        return (code, 0)
+
     def get_children(self, obj):
-        children = obj.children.annotate(
-            code_number=Cast(Substr('code', 8), IntegerField())
-        ).order_by("code", "code_number")
-        return IndicatorSerializer(children, many=True, context=self.context).data
+        children_qs = obj.children.all()
+        children_list = sorted(children_qs, key=lambda i: self.natural_key(i.code))
+        return IndicatorSerializer(children_list, many=True, context=self.context).data
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
     indicators = serializers.SerializerMethodField()
