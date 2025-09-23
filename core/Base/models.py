@@ -178,11 +178,11 @@ class Indicator(models.Model):
             next_number = (max(child_numbers) if child_numbers else 0) + 1
             self.code = f"{parent_code}.{next_number}"
 
-    def save(self , *args , **kwargs ):
-        super(Indicator, self).save(*args, **kwargs)
-        if not self.code:
-            self.generate_code()
-            self.save()
+    # def save(self , *args , **kwargs ):
+    #     super(Indicator, self).save(*args, **kwargs)
+    #     if not self.code:
+    #         self.generate_code()
+    #         self.save()
     
     def __str__(self):
         return f"{self.title_ENG} ({self.code})"
