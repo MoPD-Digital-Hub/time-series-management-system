@@ -78,17 +78,17 @@ class Indicator(models.Model):
         ('annual', 'annual'),
     ]
 
-    DISAGGREGATION_DIMENSION_CHOICE = [
-        ('gender', 'Gender'),
-        ('age', 'Age'),
-        ('location', 'Location'),
-        ('income', 'Income Level'), 
-        ('education', 'Education Level'),  
-        ('National', 'National'),
-        ('Regional', 'Regional'),
-        ('Rural', 'Rural'),
-        ('Urban', 'Urban'),
-    ]
+    # DISAGGREGATION_DIMENSION_CHOICE = [
+    #     ('gender', 'Gender'),
+    #     ('age', 'Age'),
+    #     ('location', 'Location'),
+    #     ('income', 'Income Level'), 
+    #     ('education', 'Education Level'),  
+    #     ('National', 'National'),
+    #     ('Regional', 'Regional'),
+    #     ('Rural', 'Rural'),
+    #     ('Urban', 'Urban'),
+    # ]
 
     DATA_TYPE_CHOICE = [
         ('number', 'Integer'),
@@ -103,12 +103,13 @@ class Indicator(models.Model):
         ('pending_review', 'Pending Review'), 
     ]
 
-    COLLECTION_INSTRUMENT_CHOICE = [
-        ('Survey', 'Survey'),
-        ('Admin', 'Administrative Record'),
-        ('census', 'Census'),
-        ('survey_other', 'Other Survey'),  
-    ]
+    # COLLECTION_INSTRUMENT_CHOICE = [
+    #     ('Survey', 'Survey'),
+    #     ('Admin', 'Administrative Record'),
+    #     ('census', 'Census'),
+    #     ('survey_other', 'Other Survey'),
+    #     ('government financial statistics ')  
+    # ]
 
     title_ENG = models.CharField(max_length=300)
     title_AMH = models.CharField(max_length=300, null=True, blank=True)
@@ -119,7 +120,7 @@ class Indicator(models.Model):
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, null=True, blank=True)
     source = models.TextField(null=True, blank=True)
     methodology = models.TextField(null=True, blank=True)
-    disaggregation_dimensions = models.CharField(max_length=30, choices=DISAGGREGATION_DIMENSION_CHOICE, null=True, blank=True)
+    disaggregation_dimensions = models.CharField(max_length=30, null=True, blank=True)
     time_coverage_start_year = models.ForeignKey("DataPoint", on_delete=models.SET_NULL, null=True, blank=True, related_name='indicator_start_year')
     time_coverage_end_year = models.ForeignKey("DataPoint", on_delete=models.SET_NULL, null=True, blank=True, related_name='indicator_end_year')
     data_type = models.CharField(max_length=20, choices=DATA_TYPE_CHOICE, null=True, blank=True)
@@ -128,7 +129,7 @@ class Indicator(models.Model):
     sdg_link = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICE, default="active")
     version = models.IntegerField(default=1)
-    collection_Instrument = models.CharField(max_length=30, choices=COLLECTION_INSTRUMENT_CHOICE, null=True, blank=True)
+    collection_Instrument = models.CharField(max_length=30, null=True, blank=True)
     parent = models.ForeignKey('self', related_name='children', on_delete=models.CASCADE, blank=True, null=True)
     kpi_characteristics = models.CharField(max_length=15, choices=KPI_CHARACTERISTIC_CHOICES, default="inc")
     is_dashboard_visible = models.BooleanField(default=True)
