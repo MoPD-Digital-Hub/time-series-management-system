@@ -409,7 +409,7 @@ class TopicDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_categories(self, obj):
-        categories = obj.categories.filter()
+        categories = obj.categories.filter(is_deleted = False)
         serializer = CategoryDetailSerializer(categories, many=True, context=self.context)
         # Remove categories that were skipped (returned as None)
         return [cat for cat in serializer.data if cat is not None]
