@@ -20,6 +20,7 @@ class CategoryAdmin(ImportExportModelAdmin):
     list_display = ('name_ENG', 'name_AMH', 'topic', 'is_dashboard_visible', 'rank' ,'is_deleted')
     list_editable = ('rank','is_dashboard_visible')
     search_fields = ['name_ENG', 'name_AMH', 'topic__title_ENG']
+    list_filter = ('topic',) 
 
 admin.site.register(Category, CategoryAdmin)
 
@@ -38,6 +39,7 @@ class IndicatorAdmin(ImportExportModelAdmin):
         'kpi_characteristics','frequency', 'status',
         'is_dashboard_visible', 'is_public'
     )
+    list_editable = ('is_dashboard_visible',)
     filter_horizontal = ('for_category',) 
     list_filter = ('for_category',)  
     search_fields = ['code','title_ENG', 'title_AMH']
