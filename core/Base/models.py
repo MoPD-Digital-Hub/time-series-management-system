@@ -27,7 +27,7 @@ class Topic(models.Model):
     def get_document_lists(self):
         return Document.objects.filter(topic = self)
     class Meta:
-        ordering = ['rank'] #Oldest First    
+        ordering = ['rank'] 
 
 class Document(models.Model):
     # Responsible to store file documents
@@ -46,8 +46,13 @@ class Category(models.Model):
     is_reginal = models.BooleanField(default=False)
     is_dashboard_visible = models.BooleanField(default = False)
     topic = models.ForeignKey(Topic, null=True, blank=True, on_delete=models.SET_NULL, related_name='categories')
+    rank = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     is_deleted = models.BooleanField(default=False)
+
+
+    class Meta:
+        ordering = ['rank'] 
 
     def __str__(self):
         return self.name_ENG

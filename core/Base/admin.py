@@ -17,7 +17,8 @@ admin.site.register(Document, DocumentAdmin)
 
 class CategoryAdmin(ImportExportModelAdmin):
     resource_classes = [CategoryResource]
-    list_display = ('name_ENG', 'name_AMH', 'topic', 'is_dashboard_visible', 'is_deleted')
+    list_display = ('name_ENG', 'name_AMH', 'topic', 'is_dashboard_visible', 'rank' ,'is_deleted')
+    list_editable = ('rank','is_dashboard_visible')
     search_fields = ['name_ENG', 'name_AMH', 'topic__title_ENG']
 
 admin.site.register(Category, CategoryAdmin)
