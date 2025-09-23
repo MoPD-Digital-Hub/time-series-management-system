@@ -53,14 +53,6 @@ class IndicatorResource(resources.ModelResource):
         widget=ForeignKeyWidget(Indicator, field='id'),
         saves_null_values=True,
     )
-
-    tags = fields.Field(
-        column_name='tags',
-        attribute='tags',
-        widget=ManyToManyWidget(Tag, field='title',separator=','),
-        saves_null_values=True,
-    )
-
     class Meta:
         model = Indicator
         import_id_fields = ('id',)             
