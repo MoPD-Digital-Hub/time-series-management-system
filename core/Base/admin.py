@@ -61,7 +61,7 @@ class AnnualDataAdmin(ImportExportModelAdmin):
     resource_classes = [AnnualDataWideResource]
     list_display = ('indicator_title', 'for_datapoint', 'performance', 'target')
     list_filter = ('indicator' , 'for_datapoint')
-    search_fields = ('indicator' , 'for_datapoint')
+    search_fields = ('indicator__code','indicator__title_ENG','for_datapoint__year_EC')
 
     autocomplete_fields = ['indicator']
     list_editable = ('performance','for_datapoint')
