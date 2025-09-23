@@ -142,42 +142,41 @@ class Indicator(models.Model):
 
     
     def generate_code(self):
-        if not self.code:
-            if self.parent is None:
-                categories = list(self.for_category.all().order_by('code'))
-                if categories:
-                    prefix = "-".join([cat.code.upper() for cat in categories])
-                    existing_codes = Indicator.objects.filter(
-                        code__startswith=f"{prefix}-", parent__isnull=True
-                    ).values_list('code', flat=True)
+        if not self.code and self.parent is None:
+            categories = list(self.for_category.all().order_by('code'))
+            if categories:
+                prefix = "-".join([cat.code.upper() for cat in categories])
+                existing_codes = Indicator.objects.filter(
+                    code__startswith=f"{prefix}-", parent__isnull=True
+                ).values_list('code', flat=True)
 
-                    max_suffix = 0
-                    for code in existing_codes:
-                        try:
-                            suffix = int(code.split("-")[-1])
-                            if suffix > max_suffix:
-                                max_suffix = suffix
-                        except (IndexError, ValueError):
-                            continue
-
-                    new_suffix = max_suffix + 1
-                    self.code = f"{prefix}-{new_suffix:02d}"
-            else:
-                parent_code = self.parent.code
-                siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
-                child_numbers = []
-
-                for s in siblings:
+                max_suffix = 0
+                for code in existing_codes:
                     try:
-                        suffix = s.code.replace(f"{parent_code}.", "")
-                        parts = suffix.split(".")
-                        if parts and parts[0].isdigit():
-                            child_numbers.append(int(parts[0]))
-                    except (AttributeError, ValueError):
+                        suffix = int(code.split("-")[-1])
+                        if suffix > max_suffix:
+                            max_suffix = suffix
+                    except (IndexError, ValueError):
                         continue
 
-                next_number = (max(child_numbers) if child_numbers else 0) + 1
-                self.code = f"{parent_code}.{next_number}"
+                new_suffix = max_suffix + 1
+                self.code = f"{prefix}-{new_suffix:02d}"
+        else:
+            parent_code = self.parent.code
+            siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
+            child_numbers = []
+
+            for s in siblings:
+                try:
+                    suffix = s.code.replace(f"{parent_code}.", "")
+                    parts = suffix.split(".")
+                    if parts and parts[0].isdigit():
+                        child_numbers.append(int(parts[0]))
+                except (AttributeError, ValueError):
+                    continue
+
+            next_number = (max(child_numbers) if child_numbers else 0) + 1
+            self.code = f"{parent_code}.{next_number}"
 
     # def save(self , *args , **kwargs ):
     #     super(Indicator, self).save(*args, **kwargs)
