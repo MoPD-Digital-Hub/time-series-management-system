@@ -125,7 +125,7 @@ class Indicator(models.Model):
     time_coverage_end_year = models.ForeignKey("DataPoint", on_delete=models.SET_NULL, null=True, blank=True, related_name='indicator_end_year')
     data_type = models.CharField(max_length=20, choices=DATA_TYPE_CHOICE, null=True, blank=True)
     responsible_entity = models.CharField(max_length=300, null=True, blank=True)
-    tags = models.CharField(max_length=300, null=True, blank=True)
+    tags = models.CharField(max_length=70,null=True, blank=True)
     sdg_link = models.CharField(max_length=300, null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICE, default="active")
     version = models.IntegerField(default=1)
