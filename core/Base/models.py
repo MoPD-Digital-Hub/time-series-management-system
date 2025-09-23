@@ -131,7 +131,7 @@ class Indicator(models.Model):
     collection_Instrument = models.CharField(max_length=30, choices=COLLECTION_INSTRUMENT_CHOICE, null=True, blank=True)
     parent = models.ForeignKey('self', related_name='children', on_delete=models.CASCADE, blank=True, null=True)
     kpi_characteristics = models.CharField(max_length=15, choices=KPI_CHARACTERISTIC_CHOICES, default="inc")
-    is_dashboard_visible = models.BooleanField(default=False)
+    is_dashboard_visible = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
