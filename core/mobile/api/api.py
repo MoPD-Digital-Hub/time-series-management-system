@@ -150,3 +150,34 @@ def general_search(request):
         "message": "SUCCESS",
         "data": serializer.data
     }, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['GET'])
+def indicators_filter(request):
+    category_id = request.GET.get("category_id")
+    name = request.GET.get("name")
+    print(request.GET.get("name"))
+
+    if not category_id or not name:
+        return Response(
+            {"error": "Both 'category_id' and 'name' query parameters are required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        category = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return Response(
+            {"error": f"Category with id {category_id} not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    indicators = Indicator.objects.filter(
+        for_category=category,
+        name=name
+    )
+
+    serializer = IndicatorSerializer(indicators, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

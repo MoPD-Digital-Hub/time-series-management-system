@@ -15,5 +15,8 @@ urlpatterns = [
     path('search-auto-complete/<str:id>/', api.mobile_topic_detail_search, name='mobile_topic_detail_search'),
     path('general_search/' , api.general_search),
     path('month-lists/' , api.month_lists),
-    path('year-lists/' , api.year_lists)
+    path('year-lists/' , api.year_lists),
+
+     path('indicators_filter/', api.indicators_filter, name='indicators-by-category-and-name'),
+
 ]
