@@ -136,10 +136,6 @@ class Indicator(models.Model):
     is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['code'] 
-
     
     def generate_code(self):
         if not self.code and self.parent is None:
