@@ -158,7 +158,6 @@ def general_search(request):
 def indicators_filter(request):
     category_id = request.GET.get("category_id")
     name = request.GET.get("name")
-    print(request.GET.get("name"))
 
     if not category_id or not name:
         return Response(
@@ -176,7 +175,7 @@ def indicators_filter(request):
 
     indicators = Indicator.objects.filter(
         for_category=category,
-        name=name
+        title_ENG__iexact=name
     )
 
     serializer = IndicatorSerializer(indicators, many=True)
