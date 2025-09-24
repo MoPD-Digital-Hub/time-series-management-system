@@ -43,6 +43,7 @@ class IndicatorAdmin(ImportExportModelAdmin):
     filter_horizontal = ('for_category',) 
     list_filter = ('for_category',)  
     search_fields = ['code','title_ENG', 'title_AMH']
+    autocomplete_fields = ['for_category']
     
 admin.site.register(Indicator, IndicatorAdmin)
 
@@ -60,7 +61,7 @@ admin.site.register(DataPoint,  DataPointAdmin)
 class AnnualDataAdmin(ImportExportModelAdmin):
     resource_classes = [AnnualDataWideResource]
     list_display = ('indicator_title', 'for_datapoint', 'performance', 'target')
-    list_filter = ('indicator' , 'for_datapoint')
+    list_filter = ('indicator__for_category' ,'indicator',  'for_datapoint')
     search_fields = ('indicator__code','indicator__title_ENG','for_datapoint__year_EC', 'performance')
 
     autocomplete_fields = ['indicator']
