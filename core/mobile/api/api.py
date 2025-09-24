@@ -179,4 +179,10 @@ def indicators_filter(request):
     )
 
     serializer = IndicatorSerializer(indicators, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        "result": "SUCCESS",
+        "message": "SUCCESS",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
+
+  
