@@ -37,7 +37,7 @@ class IndicatorAdmin(ImportExportModelAdmin):
     list_display = (
         'code','title_ENG', 'title_AMH','measurement_units',
         'kpi_characteristics','frequency', 'status',
-        'is_dashboard_visible', 'is_public'
+        'is_dashboard_visible', 'is_public', 'rank'
     )
     list_editable = ('rank','is_dashboard_visible',)
     filter_horizontal = ('for_category',) 
