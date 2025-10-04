@@ -385,7 +385,7 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
 
         indicators = indicators.annotate(
             code_number=Cast(Substr('code', 8), IntegerField())  
-        ).order_by("code", "code_number")
+        ).order_by("rank", "code", "code_number")
 
         serializer = IndicatorSerializer(indicators, many=True)
         return serializer.data

@@ -114,6 +114,7 @@ class Indicator(models.Model):
     title_ENG = models.CharField(max_length=300)
     title_AMH = models.CharField(max_length=300, null=True, blank=True)
     code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    rank = models.IntegerField(default=0)
     for_category = models.ManyToManyField("Category", related_name='indicators')
     description = models.TextField(null=True, blank=True)
     measurement_units = models.CharField(max_length=50, null=True, blank=True, default="")
