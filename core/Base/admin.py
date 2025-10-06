@@ -44,7 +44,7 @@ class IndicatorAdmin(ImportExportModelAdmin):
     filter_horizontal = ('for_category',) 
     list_filter = ('for_category',)  
     search_fields = ['code','title_ENG', 'title_AMH']
-    autocomplete_fields = ['for_category']
+    autocomplete_fields = ['for_category', 'parent']
     
 admin.site.register(Indicator, IndicatorAdmin)
 
