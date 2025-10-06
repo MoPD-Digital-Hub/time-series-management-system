@@ -376,11 +376,12 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         request = self.context
         q = request.get('q')
 
-        indicators = obj.indicators.filter(parent__isnull=True)
+        indicators = obj.indicators.filter(parent__isnull=True, is_dashboard_visible = True)
 
         if q:
             indicators = indicators.filter(
-                Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q)
+                Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q),
+                Q(is_dashboard_visible = True),
             )
 
         indicators = indicators.annotate(
