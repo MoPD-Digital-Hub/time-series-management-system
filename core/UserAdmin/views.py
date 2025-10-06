@@ -1392,6 +1392,14 @@ def projects(request):
         "initiatives" : initiatives,    
         "form" : form
     }
+    annual_data = AnnualData.objects.filter(for_datapoint = None)
+    data_point = DataPoint.objects.get(year_EC = 2017)
+    for i in annual_data:
+        if i.for_datapoint == None:
+            i.for_datapoint = data_point
+            print(data_point)
+            i.save()
+            print("Saved annual data with default data point:", i.for_datapoint)
     return render(request , 'user-admin/projects.html' , context)
 
 
