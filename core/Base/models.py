@@ -269,19 +269,19 @@ class MonthData(models.Model):
                         # For increasing KPIs, positive change is good, and negative change is bad
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" :str(round(performance_change_percent,1)) + ' %'
+                            "percent" :round(performance_change_percent,1)
                             }
                     elif self.indicator.kpi_characteristics == 'dec':
                         # For decreasing KPIs, negative change is good, and positive change is bad
                         return {
                             "change" : round(-performance_change, 1), 
-                            "percent" :str(round(-performance_change_percent,1)) + ' %'
+                            "percent" :round(-performance_change_percent,1)
                             }
                     else:
                         # For constant KPIs, return the change without modifying its sign
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" : str(round(performance_change_percent,1)) + ' %'
+                            "percent" : round(performance_change_percent,1)
                         }
                 else:
                     return None
@@ -420,19 +420,19 @@ class QuarterData(models.Model):
                         # For increasing KPIs, positive change is good, and negative change is bad
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" :str(round(performance_change_percent,1)) + ' %'
+                            "percent" :round(performance_change_percent,1)
                             }
                     elif self.indicator.kpi_characteristics == 'dec':
                         # For decreasing KPIs, negative change is good, and positive change is bad
                         return {
                             "change" : round(-performance_change, 1), 
-                            "percent" :str(round(-performance_change_percent,1)) + ' %'
+                            "percent" :round(-performance_change_percent,1)
                             }
                     else:
                         # For constant KPIs, return the change without modifying its sign
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" : str(round(performance_change_percent,1)) + ' %'
+                            "percent" : round(performance_change_percent,1)
                         }
                 else:
                     return None
@@ -578,19 +578,19 @@ class AnnualData(models.Model):
                         # For increasing KPIs, positive change is good, and negative change is bad
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" :str(round(performance_change_percent,1)) + ' %'
+                            "percent" :round(performance_change_percent,1)
                             }
                     elif self.indicator.kpi_characteristics == 'dec':
                         # For decreasing KPIs, negative change is good, and positive change is bad
                         return {
                             "change" : round(-performance_change, 1), 
-                            "percent" :str(round(-performance_change_percent,1))+ ' %'
+                            "percent" :round(-performance_change_percent,1)
                             }
                     else:
                         # For constant KPIs, return the change without modifying its sign
                         return {
                             "change" : round(performance_change, 1), 
-                            "percent" : str(round(performance_change_percent,1))+ ' %'
+                            "percent" : round(performance_change_percent,1)
                         }
                 else:
                     return None
