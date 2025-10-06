@@ -7,7 +7,7 @@ from import_export.admin import ImportExportModelAdmin
 
 class TopicAdmin(ImportExportModelAdmin):
     list_display = ('title_ENG', 'title_AMH', 'created', 'is_dashboard', 'is_initiative','rank')
-    list_editable = ('rank')
+    list_editable = ('rank',)
     resource_classes = [TopicResource]
 admin.site.register(Topic,TopicAdmin)
 
