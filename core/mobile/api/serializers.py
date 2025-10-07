@@ -379,24 +379,46 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
     
+    from django.db.models import Q, IntegerField
+    from django.db.models.functions import Cast, Substr
+
     def get_indicators(self, obj):
         request = self.context
         q = request.get('q')
 
-        indicators = obj.indicators.filter(parent__isnull=True, is_dashboard_visible = True)
+        # All indicators linked to this category and visible
+        all_indicators = obj.indicators.filter(is_dashboard_visible=True).select_related('parent')
 
+        # Get all indicator IDs for this category
+        category_indicator_ids = set(all_indicators.values_list('id', flat=True))
+
+        # Filter based on logic:
+        # 1. parent is None (true roots)
+        # 2. parent exists and is also in this category (normal hierarchy)
+        # 3. parent not in this category but indicator is main_parent=True
+        indicators = all_indicators.filter(
+            Q(parent__isnull=True)
+            | Q(parent_id__in=category_indicator_ids)
+            | Q(~Q(parent_id__in=category_indicator_ids) & Q(main_parent=True))
+        )
+
+        # Optional search filter
         if q:
             indicators = indicators.filter(
-                Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q),
-                Q(is_dashboard_visible = True),
+                Q(title_ENG__icontains=q)
+                | Q(for_category__name_ENG__icontains=q),
+                Q(is_dashboard_visible=True),
             )
 
+        # Order and annotate
         indicators = indicators.annotate(
-            code_number=Cast(Substr('code', 8), IntegerField())  
+            code_number=Cast(Substr('code', 8), IntegerField())
         ).order_by("rank", "code", "code_number")
 
+        # Serialize
         serializer = IndicatorSerializer(indicators, many=True)
         return serializer.data
+
 
     def to_representation(self, instance):
         q = self.context.get('q')

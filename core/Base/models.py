@@ -135,7 +135,7 @@ class Indicator(models.Model):
     kpi_characteristics = models.CharField(max_length=15, choices=KPI_CHARACTERISTIC_CHOICES, default="inc")
     is_dashboard_visible = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
-    #main_parent = models.BooleanField(default=False)
+    main_parent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
