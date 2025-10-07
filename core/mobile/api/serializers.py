@@ -131,9 +131,10 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         # safe, DB-agnostic fallback
-        children_qs = obj.children.all()
-        children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
-        return IndicatorSerializer(children_list, many=True, context=self.context).data
+        children_qs = obj.children.all().order_by("rank")
+        #children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
+        #return IndicatorSerializer(children_list, many=True, context=self.context).data
+        return IndicatorSerializer(children_qs, many=True, context=self.context).data
     
     def get_annual_data(self, obj):
         subquery = obj.annual_data.filter(
