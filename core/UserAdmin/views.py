@@ -285,9 +285,7 @@ def data_view_indicator_detail(request, id):
         }
         return render(request, 'user-admin/data_view_indicator_detail.html', context=context)
     elif request.method == 'POST':
-        print('post')
         if 'form_indicator_add_id' in request.POST:
-            print('form_indicator_add_id')
             parent_id = request.POST['form_indicator_add_id']
             try:
                 indicator = Indicator.objects.get(id = parent_id)
@@ -311,11 +309,9 @@ def data_view_indicator_detail(request, id):
             
 
             if quarter_id == "" and month_id == "":
-                print('ind',indicator_id, 'year',year_id, 'value',new_value)
                 try:
                     value = AnnualData.objects.filter(indicator__id = indicator_id, for_datapoint__year_EC = year_id).first()
                     value.performance = new_value
-                    print(value.performance)
                     value.save()
                 except:
                     try:
@@ -354,7 +350,6 @@ def data_view_indicator_detail(request, id):
 
             return JsonResponse({'response' : True})
     else: 
-        print('else')
         return HttpResponse("Bad Request!")
 
 @login_required(login_url='login')
@@ -375,7 +370,6 @@ def data_view_indicator_update(request, id):
     if request.method == 'POST':
         if form.is_valid():
             data = form.save(commit=False)
-            print(data)
             data.save
             messages.success(request, '😀 Hello User, Indicator Successfully Updated')
             return redirect('data_view_indicator_detail', previous_page)
@@ -1425,8 +1419,6 @@ def project_detail(request, id):
     if request.method == "POST":
         try:
             data = json.loads(request.body)  # Parse JSON from request
-            print("Incoming Data:", data)  # Log the data to check
-
             project.content = json.dumps(data.get("data", []))  # Update content
             project.save()  # Save the changes
             return JsonResponse({"message": "Project updated successfully"}, status=200)
@@ -1494,12 +1486,6 @@ def edit_project(request):
     # Convert checkbox value to boolean
     is_initiative = True if is_initiative in ["on", "true", "True", True] else False
 
-    print("ID:", id)
-    print("Title ENG:", title_ENG)      
-    print("Title AMH:", title_AMH)
-    print("Description:", description)
-    print("Is Initiative:", is_initiative)
-
     try:
         project = ProjectInitiatives.objects.get(id=id)
         project.title_ENG = title_ENG
@@ -1509,7 +1495,6 @@ def edit_project(request):
         project.save()
         response = {'success': True}
     except Exception as e:
-        print("Error:", e)
         response = {'success': False}
 
     return Response(response)

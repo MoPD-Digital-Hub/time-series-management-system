@@ -60,7 +60,7 @@ $(document).ready(function () {
                         <button 
                             id="${indicator_id}-${year.year_EC}"
                             data-indicator-id="${indicator_id}" 
-                            data-value="${getIndicatorValue && getIndicatorValue.performance != null ? Number(getIndicatorValue.performance.toFixed(1)) : "-"} 
+                            data-value="${getIndicatorValue && getIndicatorValue.performance != null ? Number(getIndicatorValue.performance.toFixed(1)) : "-"}" 
                             data-year="${year.year_EC}"
                             data-bs-toggle="modal" 
                             name="btnIndicator" 
@@ -595,6 +595,7 @@ $(document).ready(function () {
     //handle value button clicked for yearly
     $("[name='tableBody']").on("click", "button[name='btnIndicator']", function () {
         const buttonData = $(this).data()
+        console.log(buttonData)
         $("#IndicatorFormValue").val(buttonData.value)
         $("#form_indicator_id").val(buttonData.indicatorId)
         $("#form_year_id").val(buttonData.year)
