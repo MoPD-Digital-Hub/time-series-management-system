@@ -42,7 +42,7 @@ class IndicatorAdmin(ImportExportModelAdmin):
     )
     list_editable = ('rank','is_dashboard_visible','measurement_units',)
     filter_horizontal = ('for_category',) 
-    list_filter = ('for_category',)  
+    list_filter = ('for_category__topic','for_category',)  
     search_fields = ['code','title_ENG', 'title_AMH']
     autocomplete_fields = ['for_category', 'parent']
     
