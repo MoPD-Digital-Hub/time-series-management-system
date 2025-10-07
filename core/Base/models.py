@@ -143,8 +143,9 @@ class Indicator(models.Model):
 
     
     def generate_code(self):
+        # Top-level indicator
         if not self.code and self.parent is None:
-            categories = list(self.for_category.all().order_by('code'))
+            categories = list(self.for_category.all().order_by('code')) if self.for_category.exists() else []
             if categories:
                 prefix = "-".join([cat.code.upper() for cat in categories])
                 existing_codes = Indicator.objects.filter(
@@ -162,8 +163,9 @@ class Indicator(models.Model):
 
                 new_suffix = max_suffix + 1
                 self.code = f"{prefix}-{new_suffix:02d}"
-        else:
-            parent_code = self.parent.code
+        # Child indicator
+        elif self.parent:
+            parent_code = self.parent.code or "0"  # fallback if parent.code is None
             siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
             child_numbers = []
 

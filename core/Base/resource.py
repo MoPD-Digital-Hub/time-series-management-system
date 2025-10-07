@@ -57,14 +57,21 @@ class IndicatorResource(resources.ModelResource):
         model = Indicator
         import_id_fields = ('id',)             
         skip_unchanged = False                 
-        report_skipped = True  
-        use_bulk = False               
+        report_skipped = True          
     
-    def after_import_row(self, row, row_result, **kwargs):
-        instance = row_result.instance
-        if instance:
-            instance.generate_code()
-            instance.save(update_fields=['code'])
+    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+        if dry_run:
+            return  
+
+        imported_instances = [row_result.instance for row_result in result.rows if row_result.instance]
+
+        for instance in imported_instances:
+            try:
+                instance.generate_code()
+                instance.save(update_fields=['code'])
+            except Exception as e:
+                print(f"Error generating code for {instance.id}: {e}")
+
 
 class DataPointResource(resources.ModelResource):
 
