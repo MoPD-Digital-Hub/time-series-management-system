@@ -165,8 +165,8 @@ class Indicator(models.Model):
                 new_suffix = max_suffix + 1
                 self.code = f"{prefix}-{new_suffix:02d}"
         # Child indicator
-        elif self.parent:
-            parent_code = self.parent.code or "0"  # fallback if parent.code is None
+        elif self.parent and self.parent.code:
+            parent_code = self.parent.code
             siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
             child_numbers = []
 
