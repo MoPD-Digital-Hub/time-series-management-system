@@ -153,33 +153,46 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
 
     def get_quarter_data(self, obj):
+        # Subquery: cast to int and order by that
         subquery = obj.quarter_data.filter(
             Q(for_datapoint__year_EC__isnull=False),
-            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
-        ).order_by('-for_datapoint__year_EC')
+            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC'),
+            # optional: ensure only digit-only values are considered (Postgres regex)
+            # remove this line if all values are numeric
+            for_datapoint__year_EC__regex=r'^\d+$'
+        ).annotate(
+            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_ec_int')
 
-        quarter_data = obj.quarter_data.filter(
+        qs = obj.quarter_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+        ).annotate(
+            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_ec_int')[:12]
 
-        quarter_data = reversed(quarter_data)
-
-        return QuarterDataSerializer(quarter_data, many=True).data
+        # reverse safely by evaluating to a list first
+        quarter_list = list(qs)[::-1]
+        return QuarterDataSerializer(quarter_list, many=True).data
 
 
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
-            Q(for_datapoint__year_EC__isnull=False),
-            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
-        ).order_by('-for_datapoint__year_EC')
+        Q(for_datapoint__year_EC__isnull=False),
+        for_datapoint__year_EC=OuterRef('for_datapoint__year_EC'),
+        for_datapoint__year_EC__regex=r'^\d+$'  # optional
+        ).annotate(
+            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_ec_int')
 
-        month_data = obj.month_data.filter(
+        qs = obj.month_data.filter(
             id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+        ).annotate(
+            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_ec_int')[:12]
 
-        month_data = reversed(month_data)
+        month_list = list(qs)[::-1]
 
-        return MonthDataSerializer(month_data, many=True).data
+        return MonthDataSerializer(month_list, many=True).data
 
     
     def get_latest_data(self, obj):
