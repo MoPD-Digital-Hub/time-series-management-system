@@ -968,6 +968,12 @@ def document(request):
         'form' : form,
         'topics' : topics
     }
+
+    annual_data = AnnualData.objects.filter(for_datapoint = None)
+    year = DataPoint.objects.get(year_EC = 2017)
+    for i in annual_data:
+        i.for_datapoint = year
+        i.save()
     return render(request, 'user-admin/document.html', context=context)
 
 
