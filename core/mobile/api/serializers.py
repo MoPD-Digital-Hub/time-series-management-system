@@ -4,17 +4,11 @@ from django.db.models import OuterRef, Subquery
 from django.db.models import IntegerField
 from django.db.models.functions import Cast, Substr
 from Base.models import *
-from django.db.models import Q, F
+from django.db.models import Q
 import json
 from django.utils import timezone
 from datetime import datetime
 import re
-from django.db import models
-from django.db.models import F, Value, Case, When, IntegerField
-from django.db.models.functions import Cast
-from django.db.models import Func
-from django.db import connection
-
 
 class MonthSerializer(serializers.ModelSerializer):
     class Meta:
@@ -378,8 +372,7 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
     
-    from django.db.models import Q, IntegerField
-    from django.db.models.functions import Cast, Substr
+    
 
     def get_indicators(self, obj):
         request = self.context
