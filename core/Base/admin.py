@@ -36,17 +36,19 @@ admin.site.register(Tag, TagAdmin)
 class IndicatorAdmin(ImportExportModelAdmin):
     resource_classes = [IndicatorResource, AnnualDataResource]
     list_display = (
-        'code','title_ENG', 'title_AMH','measurement_units',
-        'kpi_characteristics','frequency', 'status',
-        'is_dashboard_visible', 'is_public', 'rank'
+         'title_ENG', 'code', 'measurement_units',
+        'kpi_characteristics', 'frequency',
+        'is_dashboard_visible',  'rank'
     )
-    list_editable = ('rank','is_dashboard_visible','measurement_units',)
-    filter_horizontal = ('for_category',) 
-    list_filter = ('for_category__topic','for_category',)  
-    search_fields = ['code','title_ENG', 'title_AMH']
+    list_display_links = ('title_ENG',)  # Makes 'title_ENG' the clickable link
+    list_editable = ('code', 'rank', 'is_dashboard_visible', 'measurement_units',)
+    filter_horizontal = ('for_category',)
+    list_filter = ('for_category__topic', 'for_category',)
+    search_fields = ['code', 'title_ENG', 'title_AMH']
     autocomplete_fields = ['for_category', 'parent']
-    
+
 admin.site.register(Indicator, IndicatorAdmin)
+
 
 
 
