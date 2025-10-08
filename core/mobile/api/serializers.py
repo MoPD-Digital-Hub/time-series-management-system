@@ -122,7 +122,6 @@ class IndicatorSerializer(serializers.ModelSerializer):
     latest_data = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
     
-   
 
     class Meta:
         model = Indicator
@@ -136,50 +135,50 @@ class IndicatorSerializer(serializers.ModelSerializer):
         #return IndicatorSerializer(children_list, many=True, context=self.context).data
         return IndicatorSerializer(children_qs, many=True, context=self.context).data
     
+
+    
     def get_annual_data(self, obj):
         subquery = obj.annual_data.filter(
-            Q(for_datapoint__year_EC__isnull=False),
-            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
-        ).order_by('-for_datapoint__year_EC')
+            Q(for_datapoint__year_EC__isnull=False)
+        ).annotate(
+            year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('year_num')  # ascending order (oldest → newest)
 
         annual_data = obj.annual_data.filter(
-            id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
-
-        # reverse to ascending order after slicing
-        annual_data = reversed(annual_data)
+            id__in=Subquery(subquery.values('id'))
+        )
 
         return AnnualDataSerializer(annual_data, many=True).data
 
 
     def get_quarter_data(self, obj):
         subquery = obj.quarter_data.filter(
-            Q(for_datapoint__year_EC__isnull=False),
-            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
-        ).order_by('-for_datapoint__year_EC')
+            Q(for_datapoint__year_EC__isnull=False)
+        ).annotate(
+            year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('year_num')  # ascending order by year
 
         quarter_data = obj.quarter_data.filter(
-            id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+            id__in=Subquery(subquery.values('id'))
+        )
 
-        quarter_data = reversed(quarter_data)
-
-        return QuarterDataSerializer(quarter_data, many=True).data
+        serializer = QuarterDataSerializer(quarter_data, many=True)
+        return serializer.data
 
 
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
-            Q(for_datapoint__year_EC__isnull=False),
-            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
-        ).order_by('-for_datapoint__year_EC')
+            Q(for_datapoint__year_EC__isnull=False)
+        ).annotate(
+            year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('year_num')  # ascending order by year
 
         month_data = obj.month_data.filter(
-            id=Subquery(subquery.values('id')[:1])
-        ).order_by('-for_datapoint__year_EC')[:12]
+            id__in=Subquery(subquery.values('id'))
+        )
 
-        month_data = reversed(month_data)
-
-        return MonthDataSerializer(month_data, many=True).data
+        serializer = MonthDataSerializer(month_data, many=True)
+        return serializer.data
 
     
     def get_latest_data(self, obj):
