@@ -4,11 +4,17 @@ from django.db.models import OuterRef, Subquery
 from django.db.models import IntegerField
 from django.db.models.functions import Cast, Substr
 from Base.models import *
-from django.db.models import Q
+from django.db.models import Q, F
 import json
 from django.utils import timezone
 from datetime import datetime
 import re
+from django.db import models
+from django.db.models import F, Value, Case, When, IntegerField
+from django.db.models.functions import Cast
+from django.db.models import Func
+from django.db import connection
+
 
 class MonthSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,6 +122,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
     latest_data = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
     
+   
 
     class Meta:
         model = Indicator
@@ -129,50 +136,50 @@ class IndicatorSerializer(serializers.ModelSerializer):
         #return IndicatorSerializer(children_list, many=True, context=self.context).data
         return IndicatorSerializer(children_qs, many=True, context=self.context).data
     
-
-    
     def get_annual_data(self, obj):
         subquery = obj.annual_data.filter(
-            Q(for_datapoint__year_EC__isnull=False)
-        ).annotate(
-            year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('year_num')  # ascending order (oldest → newest)
+            Q(for_datapoint__year_EC__isnull=False),
+            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
+        ).order_by('-for_datapoint__year_EC')
 
         annual_data = obj.annual_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        )
+            id=Subquery(subquery.values('id')[:1])
+        ).order_by('-for_datapoint__year_EC')[:12]
+
+        # reverse to ascending order after slicing
+        annual_data = reversed(annual_data)
 
         return AnnualDataSerializer(annual_data, many=True).data
 
 
     def get_quarter_data(self, obj):
         subquery = obj.quarter_data.filter(
-            Q(for_datapoint__year_EC__isnull=False)
-        ).annotate(
-            year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('year_num')  # ascending order by year
+            Q(for_datapoint__year_EC__isnull=False),
+            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
+        ).order_by('-for_datapoint__year_EC')
 
         quarter_data = obj.quarter_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        )
+            id=Subquery(subquery.values('id')[:1])
+        ).order_by('-for_datapoint__year_EC')[:12]
 
-        serializer = QuarterDataSerializer(quarter_data, many=True)
-        return serializer.data
+        quarter_data = reversed(quarter_data)
+
+        return QuarterDataSerializer(quarter_data, many=True).data
 
 
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
-            Q(for_datapoint__year_EC__isnull=False)
-        ).annotate(
-            year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('year_num')  # ascending order by year
+            Q(for_datapoint__year_EC__isnull=False),
+            for_datapoint__year_EC=OuterRef('for_datapoint__year_EC')
+        ).order_by('-for_datapoint__year_EC')
 
         month_data = obj.month_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        )
+            id=Subquery(subquery.values('id')[:1])
+        ).order_by('-for_datapoint__year_EC')[:12]
 
-        serializer = MonthDataSerializer(month_data, many=True)
-        return serializer.data
+        month_data = reversed(month_data)
+
+        return MonthDataSerializer(month_data, many=True).data
 
     
     def get_latest_data(self, obj):
@@ -372,45 +379,24 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
     
-    
-
     def get_indicators(self, obj):
         request = self.context
         q = request.get('q')
 
-        # All indicators linked to this category and visible
-        all_indicators = obj.indicators.filter(is_dashboard_visible=True).select_related('parent')
+        indicators = obj.indicators.filter(parent__isnull=True, is_dashboard_visible = True)
 
-        # Get all indicator IDs for this category
-        category_indicator_ids = set(all_indicators.values_list('id', flat=True))
-
-        # Filter based on logic:
-        # 1. parent is None (true roots)
-        # 2. parent exists and is also in this category (normal hierarchy)
-        # 3. parent not in this category but indicator is main_parent=True
-        indicators = all_indicators.filter(
-            Q(parent__isnull=True)
-            | Q(parent_id__in=category_indicator_ids)
-            | Q(~Q(parent_id__in=category_indicator_ids) & Q(main_parent=True))
-        )
-
-        # Optional search filter
         if q:
             indicators = indicators.filter(
-                Q(title_ENG__icontains=q)
-                | Q(for_category__name_ENG__icontains=q),
-                Q(is_dashboard_visible=True),
+                Q(title_ENG__icontains=q) | Q(for_category__name_ENG__icontains=q),
+                Q(is_dashboard_visible = True),
             )
 
-        # Order and annotate
         indicators = indicators.annotate(
-            code_number=Cast(Substr('code', 8), IntegerField())
+            code_number=Cast(Substr('code', 8), IntegerField())  
         ).order_by("rank", "code", "code_number")
 
-        # Serialize
         serializer = IndicatorSerializer(indicators, many=True)
         return serializer.data
-
 
     def to_representation(self, instance):
         q = self.context.get('q')
