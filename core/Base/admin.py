@@ -26,7 +26,6 @@ class CategoryAdmin(ImportExportModelAdmin):
 admin.site.register(Category, CategoryAdmin)
 
 
-
 class TagAdmin(ImportExportModelAdmin):
     resource_classes = [TagResource]
     list_display = ('title',)
