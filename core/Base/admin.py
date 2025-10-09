@@ -79,12 +79,9 @@ class AnnualDataAdmin(ImportExportModelAdmin):
 admin.site.register(AnnualData,  AnnualDataAdmin)
 
 
-
-
-
 class QuarterDataAdmin(ImportExportModelAdmin):
     resource_classes = [QuarterDataResource]
-    list_display = ('for_datapoint', 'for_quarter', 'performance', 'target')
+    list_display = ('id','for_datapoint', 'for_quarter', 'performance', 'target')
     list_filter = ('indicator__for_category__topic__title_ENG', 'indicator', 'for_datapoint')
     search_fields = (
         'indicator__for_category__topic__title_ENG',
@@ -93,6 +90,7 @@ class QuarterDataAdmin(ImportExportModelAdmin):
         'for_datapoint__year_EC',
     )
     autocomplete_fields = ['indicator']
+    list_editable = ('for_datapoint','for_quarter', 'performance', 'target')
 
     
 
@@ -101,11 +99,12 @@ admin.site.register(QuarterData,  QuarterDataAdmin)
 
 class MonthDataAdmin(ImportExportModelAdmin):
     resource_classes = [MonthDataResource]
-    list_display = ('for_datapoint' , 'for_month' ,'performance','target' , )
+    list_display = ('id','for_datapoint' , 'for_month' ,'performance','target' , )
     list_filter = ('indicator' , 'for_datapoint')
     search_fields = ('indicator' , 'for_datapoint')
 
     autocomplete_fields = ['indicator']
+    list_editable = ('for_datapoint','for_month', 'performance', 'target')
 
 admin.site.register(MonthData,  MonthDataAdmin)
 
