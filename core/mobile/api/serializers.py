@@ -79,31 +79,35 @@ class TopicSerializer(serializers.ModelSerializer):
     
 
 class AnnualDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
+    for_datapoint = serializers.SerializerMethodField()
     class Meta:
         model = AnnualData
         fields = ('for_datapoint', 'target' ,'performance')
 
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+
 
 
 class QuarterDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
-    for_quarter = serializers.StringRelatedField(read_only=True, slug_field='title_ENG')
+    for_datapoint = serializers.SerializerMethodField()
+    for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
     previous_year_performance_data = serializers.SerializerMethodField()
     class Meta:
         model = QuarterData
         fields = '__all__'
 
-     
-
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
+    
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
 
 
 
 class MonthDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
-    for_month = serializers.StringRelatedField(read_only=True, slug_field='month_AMH')
+    for_datapoint = serializers.SerializerMethodField()
+    for_month = serializers.SlugRelatedField(read_only=True, slug_field='month_AMH')
     previous_year_performance_data = serializers.SerializerMethodField()
     
     class Meta:
@@ -112,6 +116,9 @@ class MonthDataSerializer(serializers.ModelSerializer):
     
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
+    
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
     
 
     
