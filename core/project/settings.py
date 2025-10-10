@@ -139,7 +139,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #Import export
 IMPORT_FORMATS = [CSV, XLSX]
-
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 
 
 AUTH_USER_MODEL = 'UserManagement.CustomUser'
