@@ -34,7 +34,7 @@ class TagAdmin(ImportExportModelAdmin):
 admin.site.register(Tag, TagAdmin)
 
 class IndicatorAdmin(ImportExportModelAdmin):
-    resource_classes = [IndicatorResource, AnnualDataResource]
+    resource_classes = [IndicatorResource, AnnualDataResource , MonthDataResource , QuarterDataResource]
     list_display = (
          'title_ENG', 'code', 'measurement_units',
         'kpi_characteristics', 'frequency',

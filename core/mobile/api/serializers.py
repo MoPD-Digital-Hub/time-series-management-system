@@ -488,3 +488,6 @@ class CategoryWithIndicatorsSerializer(serializers.ModelSerializer):
     def get_indicators(self, category):
         indicators = self.context['indicators_by_category'].get(category.id, [])
         return IndicatorSerializer(indicators, many=True).data
+    
+
+

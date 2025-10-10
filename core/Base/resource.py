@@ -715,3 +715,136 @@ def create_aggregate_data_resource():
     return type('AnnualDataResource', (resources.ModelResource,), attrs)
 
 AnnualDataResource = create_aggregate_data_resource()
+
+def create_quarter_aggregate_resource():
+    YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
+    QUARTERS = list(Quarter.objects.order_by('number').values_list('number', flat=True).distinct())
+
+    attrs = {
+        'topic_name': fields.Field(column_name='Topic'),
+        'category_name': fields.Field(column_name='Category'),
+    }
+
+    def dehydrate_topic_name(self, indicator):
+        topics = set()
+        for category in indicator.for_category.all():
+            if category.topic:
+                topics.add(category.topic.title_ENG)
+        return ", ".join(sorted(topics)) if topics else ''
+    attrs['dehydrate_topic_name'] = dehydrate_topic_name
+
+    def dehydrate_category_name(self, indicator):
+        categories = [cat.name_ENG for cat in indicator.for_category.all()]
+        return ", ".join(categories) if categories else ''
+    attrs['dehydrate_category_name'] = dehydrate_category_name
+
+    def dehydrate_parent(self, indicator):
+        return indicator.parent.code if indicator.parent else ''
+    attrs['dehydrate_parent'] = dehydrate_parent
+
+    # Dynamic quarter fields per year
+    def make_dehydrate_quarter(year, quarter_number):
+        def f(self, indicator):
+            qdata = indicator.quarter_data.filter(for_datapoint__year_EC=year, for_quarter__number=quarter_number).first()
+            return qdata.performance if qdata else ''
+        return f
+
+    for year in YEARS:
+        for q_num in QUARTERS:
+            q_name = Quarter.objects.get(number=q_num).title_ENG
+            attrs[f'Q{q_num}_{year}'] = fields.Field(column_name=f'{q_name} {year}')
+            attrs[f'dehydrate_Q{q_num}_{year}'] = make_dehydrate_quarter(year, q_num)
+
+    class Meta:
+        model = Indicator
+        fields = (
+            'topic_name',
+            'category_name',
+            'title_ENG',
+            'code',
+            'description',
+            'measurement_units',
+            'frequency',
+            'source',
+            'methodology',
+            'disaggregation_dimensions',
+            'status',
+            'version',
+            'parent',
+            'kpi_characteristics',
+            *[f'Q{q_num}_{year}' for year in YEARS for q_num in QUARTERS],
+        )
+        export_order = fields
+
+    attrs['Meta'] = Meta
+    return type('QuarterDataResource', (resources.ModelResource,), attrs)
+
+
+def create_month_aggregate_resource():
+    YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
+    MONTHS = list(Month.objects.order_by('number').values_list('number', flat=True).distinct())
+
+    attrs = {
+        'topic_name': fields.Field(column_name='Topic'),
+        'category_name': fields.Field(column_name='Category'),
+    }
+
+    def dehydrate_topic_name(self, indicator):
+        topics = set()
+        for category in indicator.for_category.all():
+            if category.topic:
+                topics.add(category.topic.title_ENG)
+        return ", ".join(sorted(topics)) if topics else ''
+    attrs['dehydrate_topic_name'] = dehydrate_topic_name
+
+    def dehydrate_category_name(self, indicator):
+        categories = [cat.name_ENG for cat in indicator.for_category.all()]
+        return ", ".join(categories) if categories else ''
+    attrs['dehydrate_category_name'] = dehydrate_category_name
+
+    def dehydrate_parent(self, indicator):
+        return indicator.parent.code if indicator.parent else ''
+    attrs['dehydrate_parent'] = dehydrate_parent
+
+    # Dynamic month fields per year
+    def make_dehydrate_month(year, month_number):
+        def f(self, indicator):
+            mdata = indicator.month_data.filter(for_datapoint__year_EC=year, for_month__number=month_number).first()
+            return mdata.performance if mdata else ''
+        return f
+
+    for year in YEARS:
+        for m_num in MONTHS:
+            m_name = Month.objects.get(number=m_num).month_AMH
+            attrs[f'M{m_num}_{year}'] = fields.Field(column_name=f'{m_name} {year}')
+            attrs[f'dehydrate_M{m_num}_{year}'] = make_dehydrate_month(year, m_num)
+
+    class Meta:
+        model = Indicator
+        fields = (
+            'topic_name',
+            'category_name',
+            'title_ENG',
+            'code',
+            'description',
+            'measurement_units',
+            'frequency',
+            'source',
+            'methodology',
+            'disaggregation_dimensions',
+            'status',
+            'version',
+            'parent',
+            'kpi_characteristics',
+            *[f'M{m_num}_{year}' for year in YEARS for m_num in MONTHS],
+        )
+        export_order = fields
+
+    attrs['Meta'] = Meta
+    return type('MonthDataResource', (resources.ModelResource,), attrs)
+
+
+
+# Usage
+QuarterDataResource = create_quarter_aggregate_resource()
+MonthDataResource = create_month_aggregate_resource()

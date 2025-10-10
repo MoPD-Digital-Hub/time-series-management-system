@@ -8,6 +8,11 @@ from mobile.models import MobileDahboardOverview
 from Base.models import Topic , ProjectInitiatives , SubProject , Category , Indicator
 from django.db.models import Q
 
+from django.http import HttpResponse
+from Base.resource import AnnualDataResource , QuarterDataResource , MonthDataResource  # import your resource
+
+
+
 
 #Time series data
 @api_view(['GET'])
@@ -187,3 +192,90 @@ def indicators_filter(request):
     }, status=status.HTTP_200_OK)
 
   
+
+
+####### Export Data #########
+def get_resource_by_data_type(data_type):
+    """Return the correct resource class and filename suffix based on data type."""
+    data_type = data_type.lower()
+    if data_type == 'quarter':
+        return QuarterDataResource, "QuarterData"
+    elif data_type == 'month':
+        return MonthDataResource, "MonthData"
+    else:  # default to annual
+        return AnnualDataResource, "AnnualData"
+
+
+def export_dataset(indicators, resource_class, file_type, filename_prefix):
+    """Export indicators dataset in requested format and return HttpResponse."""
+    dataset = resource_class().export(indicators)
+
+    file_type = file_type.lower()
+    if file_type == 'csv':
+        content = dataset.csv
+        content_type = 'text/csv'
+        ext = 'csv'
+    elif file_type == 'html':
+        content = dataset.html
+        content_type = 'text/html'
+        ext = 'html'
+    else:  # default to Excel
+        content = dataset.xlsx
+        content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ext = 'xlsx'
+
+    response = HttpResponse(content, content_type=content_type)
+    response['Content-Disposition'] = f'attachment; filename="{filename_prefix}.{ext}"'
+    return response
+
+
+@api_view(['GET'])
+def download_topic_data(request, id):
+    data_type = request.GET.get("data_type", "annual")
+    file_type = request.GET.get("file_type", "xlsx")
+
+    try:
+        topic = Topic.objects.get(id=id)
+    except Topic.DoesNotExist:
+        return Response({"result": "FAILED", "message": "Topic not found", "data": None}, status=404)
+
+    indicators = Indicator.objects.filter(for_category__topic=topic).distinct()
+    resource_class, filename_suffix = get_resource_by_data_type(data_type)
+    filename_prefix = f"{topic.title_ENG}_{filename_suffix}"
+
+    return export_dataset(indicators, resource_class, file_type, filename_prefix)
+
+
+@api_view(['GET'])
+def download_category_data(request, id):
+    data_type = request.GET.get("data_type", "annual")
+    file_type = request.GET.get("file_type", "xlsx")
+
+    try:
+        category = Category.objects.get(id=id)
+    except Category.DoesNotExist:
+        return Response({"result": "FAILED", "message": "Category not found", "data": None}, status=404)
+
+    indicators = Indicator.objects.filter(for_category=category).distinct()
+    resource_class, filename_suffix = get_resource_by_data_type(data_type)
+    filename_prefix = f"{category.name_ENG}_{filename_suffix}"
+
+    return export_dataset(indicators, resource_class, file_type, filename_prefix)
+
+
+@api_view(['GET'])
+def download_indicator_data(request, id):
+    data_type = request.GET.get("data_type", "annual")
+    file_type = request.GET.get("file_type", "xlsx")
+
+    try:
+        indicator = Indicator.objects.get(id=id)
+    except Indicator.DoesNotExist:
+        return Response({"result": "FAILED", "message": "Indicator not found", "data": None}, status=404)
+
+    # Include the indicator itself and all its children
+    indicators = Indicator.objects.filter(models.Q(id=indicator.id) | models.Q(parent=indicator)).distinct()
+    resource_class, filename_suffix = get_resource_by_data_type(data_type)
+    filename_prefix = f"{indicator.title_ENG}_{filename_suffix}"
+
+    return export_dataset(indicators, resource_class, file_type, filename_prefix)

@@ -17,6 +17,10 @@ urlpatterns = [
     path('month-lists/' , api.month_lists),
     path('year-lists/' , api.year_lists),
 
-     path('indicators_filter/', api.indicators_filter, name='indicators-by-category-and-name'),
+    path('indicators_filter/', api.indicators_filter, name='indicators-by-category-and-name'),
+
+    path('export-topic-data/<int:id>/', api.download_topic_data, name='export-topic-data'),
+    path('export-category-data/<int:id>/', api.download_category_data, name='export-category-data'),
+    path('export-indicator-data/<int:id>/', api.download_indicator_data, name='export-indicator-data'),
 
 ]
