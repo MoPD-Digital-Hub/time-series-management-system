@@ -138,7 +138,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         # safe, DB-agnostic fallback
-        children_qs = obj.children.filter(is_dashboard_visible = True).order_by("rank")
+        children_qs = obj.children.filter().order_by("rank") #is_dashboard_visible = True
         #children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
         #return IndicatorSerializer(children_list, many=True, context=self.context).data
         return IndicatorSerializer(children_qs, many=True, context=self.context).data
@@ -374,7 +374,7 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     # in your serializer class
     def get_children(self, obj):
         # safe, DB-agnostic fallback
-        children_qs = obj.children.filter(is_dashboard_visible = True)
+        children_qs = obj.children.filter() #is_dashboard_visible = True
         children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
         return IndicatorSerializer(children_list, many=True, context=self.context).data
 
