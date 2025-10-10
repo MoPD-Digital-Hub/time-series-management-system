@@ -12,7 +12,7 @@ from django.db.models import Q
 #Time series data
 @api_view(['GET'])
 def dashboard_overview(request):
-    topics = Topic.objects.filter(is_initiative = False)
+    topics = Topic.objects.filter(is_initiative = False, is_dashboard = True)
     serializer = TopicSerializer(topics, many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
@@ -31,7 +31,7 @@ def mobile_topic(request):
 
 @api_view(['GET'])
 def initiatives(request):
-    topics = Topic.objects.filter(is_initiative = True)
+    topics = Topic.objects.filter(is_initiative = True, is_dashboard = True)
     serializer = TopicSerializer(topics, many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
