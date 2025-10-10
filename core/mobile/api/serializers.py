@@ -79,7 +79,7 @@ class TopicSerializer(serializers.ModelSerializer):
     
 
 class AnnualDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.StringRelatedField(read_only=True)
+    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
     class Meta:
         model = AnnualData
         fields = ('for_datapoint', 'target' ,'performance')
@@ -87,8 +87,8 @@ class AnnualDataSerializer(serializers.ModelSerializer):
 
 
 class QuarterDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.SlugRelatedField(read_only=True, slug_field='year_EC')
-    for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
+    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
+    for_quarter = serializers.StringRelatedField(read_only=True, slug_field='title_ENG')
     previous_year_performance_data = serializers.SerializerMethodField()
     class Meta:
         model = QuarterData
@@ -102,8 +102,8 @@ class QuarterDataSerializer(serializers.ModelSerializer):
 
 
 class MonthDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.SlugRelatedField(read_only=True, slug_field='year_EC')
-    for_month = serializers.SlugRelatedField(read_only=True, slug_field='month_AMH')
+    for_datapoint = serializers.StringRelatedField(read_only=True, slug_field='year_EC')
+    for_month = serializers.StringRelatedField(read_only=True, slug_field='month_AMH')
     previous_year_performance_data = serializers.SerializerMethodField()
     
     class Meta:
