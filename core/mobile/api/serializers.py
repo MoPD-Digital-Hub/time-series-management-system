@@ -79,7 +79,7 @@ class TopicSerializer(serializers.ModelSerializer):
     
 
 class AnnualDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.SlugRelatedField(read_only=True, slug_field='year_EC')
+    for_datapoint = serializers.StringRelatedField(read_only=True)
     class Meta:
         model = AnnualData
         fields = ('for_datapoint', 'target' ,'performance')
