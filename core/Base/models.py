@@ -192,15 +192,15 @@ class Indicator(models.Model):
         return f"{self.title_ENG} ({self.code})"
     
 class DataPoint(models.Model):
-    year_EC = models.CharField(max_length=50, null=True, blank=True, unique=True)
-    year_GC = models.CharField(max_length=50, null=True, blank=True, unique = True)
+    year_EC = models.IntegerField(unique=True)
+    year_GC = models.CharField(max_length=10,unique = True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     class Meta:
-        ordering = ['year_EC'] #Oldest First
+        ordering = ['year_EC'] 
 
     def __str__(self):
-        return self.year_EC
+        return str(self.year_EC)
     def save(self, *args, **kwargs):
         self.year_GC = f'{str(int(self.year_EC )+ 7)}/{str(int(self.year_EC)+ 8)}'
         super(DataPoint, self).save(*args, **kwargs)

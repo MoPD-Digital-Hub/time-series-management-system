@@ -372,10 +372,7 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
         )
 
         return latest_data[1]
-    
-        # imports (put near top of your file)
-
-    
+        
 
     # in your serializer class
     def get_children(self, obj):
