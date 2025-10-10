@@ -196,29 +196,24 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
     
     def get_latest_data(self, obj):
-     
-        latest_annual = obj.annual_data.order_by('-created_at').first() if obj.annual_data.exists() else None
-        latest_quarter = obj.quarter_data.order_by('-created_at').first() if obj.quarter_data.exists() else None
-        latest_month = obj.month_data.order_by('-created_at').first() if obj.month_data.exists() else None
+        # Get the latest entry based on for_datapoint__year_EC from each dataset
+        latest_annual = obj.annual_data.order_by('-for_datapoint__year_EC').first() if obj.annual_data.exists() else None
+        latest_quarter = obj.quarter_data.order_by('-for_datapoint__year_EC').first() if obj.quarter_data.exists() else None
+        latest_month = obj.month_data.order_by('-for_datapoint__year_EC').first() if obj.month_data.exists() else None
 
+        # Extract year_EC values safely
+        annual_year = getattr(latest_annual.for_datapoint, 'year_EC', None) if latest_annual else None
+        quarter_year = getattr(latest_quarter.for_datapoint, 'year_EC', None) if latest_quarter else None
+        month_year = getattr(latest_month.for_datapoint, 'year_EC', None) if latest_month else None
 
-        def ensure_aware(dt):
-            if dt and dt.tzinfo is None: 
-                return timezone.make_aware(dt)
-            return dt 
+        # Default to a very old year for comparison if missing
+        annual_year = annual_year or 0
+        quarter_year = quarter_year or 0
+        month_year = month_year or 0
 
-        latest_annual_time = ensure_aware(latest_annual.created_at) if latest_annual else None
-        latest_quarter_time = ensure_aware(latest_quarter.created_at) if latest_quarter else None
-        latest_month_time = ensure_aware(latest_month.created_at) if latest_month else None
-
-
-        latest_annual_time = latest_annual_time or timezone.make_aware(datetime.min)
-        latest_quarter_time = latest_quarter_time or timezone.make_aware(datetime.min)
-        latest_month_time = latest_month_time or timezone.make_aware(datetime.min)
-
- 
+        # Compare the year_EC values to determine the most recent dataset
         latest_data = max(
-            [(latest_annual_time, 'annual'), (latest_quarter_time, 'quarterly'), (latest_month_time, 'monthly')],
+            [(annual_year, 'annual'), (quarter_year, 'quarterly'), (month_year, 'monthly')],
             key=lambda x: x[0]
         )
 
@@ -345,29 +340,24 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     
     
     def get_latest_data(self, obj):
-        # Get the latest data from each dataset
-        latest_annual = obj.annual_data.order_by('-created_at').first() if obj.annual_data.exists() else None
-        latest_quarter = obj.quarter_data.order_by('-created_at').first() if obj.quarter_data.exists() else None
-        latest_month = obj.month_data.order_by('-created_at').first() if obj.month_data.exists() else None
+        # Get the latest entry based on for_datapoint__year_EC from each dataset
+        latest_annual = obj.annual_data.order_by('-for_datapoint__year_EC').first() if obj.annual_data.exists() else None
+        latest_quarter = obj.quarter_data.order_by('-for_datapoint__year_EC').first() if obj.quarter_data.exists() else None
+        latest_month = obj.month_data.order_by('-for_datapoint__year_EC').first() if obj.month_data.exists() else None
 
-        # Convert to aware if necessary (avoid using make_aware on already aware datetime)
-        def ensure_aware(dt):
-            if dt and dt.tzinfo is None:  # Check if it's naive
-                return timezone.make_aware(dt)
-            return dt  # Return as is if already aware
+        # Extract year_EC values safely
+        annual_year = getattr(latest_annual.for_datapoint, 'year_EC', None) if latest_annual else None
+        quarter_year = getattr(latest_quarter.for_datapoint, 'year_EC', None) if latest_quarter else None
+        month_year = getattr(latest_month.for_datapoint, 'year_EC', None) if latest_month else None
 
-        latest_annual_time = ensure_aware(latest_annual.created_at) if latest_annual else None
-        latest_quarter_time = ensure_aware(latest_quarter.created_at) if latest_quarter else None
-        latest_month_time = ensure_aware(latest_month.created_at) if latest_month else None
+        # Default to a very old year for comparison if missing
+        annual_year = annual_year or 0
+        quarter_year = quarter_year or 0
+        month_year = month_year or 0
 
-        # If there is no data in a dataset, set it to a very old date for comparison
-        latest_annual_time = latest_annual_time or timezone.make_aware(datetime.min)
-        latest_quarter_time = latest_quarter_time or timezone.make_aware(datetime.min)
-        latest_month_time = latest_month_time or timezone.make_aware(datetime.min)
-
-        # Compare the dates of the most recent entries from each dataset
+        # Compare the year_EC values to determine the most recent dataset
         latest_data = max(
-            [(latest_annual_time, 'annual'), (latest_quarter_time, 'quarterly'), (latest_month_time, 'monthly')],
+            [(annual_year, 'annual'), (quarter_year, 'quarterly'), (month_year, 'monthly')],
             key=lambda x: x[0]
         )
 
