@@ -145,7 +145,7 @@ class Indicator(models.Model):
     
     def generate_code(self):
         # Top-level indicator
-        if not self.code and self.parent is None:
+        if self.parent is None: #not self.code and 
             categories = list(self.for_category.all().order_by('code')) if self.for_category.exists() else []
             if categories:
                 prefix = "-".join([cat.code.upper() for cat in categories])
