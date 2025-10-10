@@ -556,7 +556,7 @@ class AnnualData(models.Model):
             return str(self.performance)
     
     class Meta:
-        ordering = ['-for_datapoint__year_EC']
+        ordering = ['for_datapoint__year_EC']
         #unique_together = ('indicator', 'for_datapoint')
     
     def get_previous_year_performance(self):
