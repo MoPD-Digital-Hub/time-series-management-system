@@ -39,11 +39,11 @@ class IndicatorAdmin(ImportExportModelAdmin):
         'id',
          'title_ENG', 'code', 'frequency', 'measurement_units',
         'kpi_characteristics', 
-        'is_dashboard_visible',  'rank'
+        'is_dashboard_visible',  'rank', 'parent'
     )
     list_editable = ('frequency','is_dashboard_visible',) #'title_ENG', 'code', 'rank',  'measurement_units',
     filter_horizontal = ('for_category',)
-    list_filter = ('for_category__topic', 'for_category',)
+    list_filter = ('for_category__topic', 'for_category', 'is_dashboard_visible')
     search_fields = ['code', 'title_ENG', 'title_AMH']
     autocomplete_fields = ['for_category', 'parent']
 
