@@ -37,11 +37,11 @@ class IndicatorAdmin(ImportExportModelAdmin):
     resource_classes = [IndicatorResource, AnnualDataResource , MonthDataResource , QuarterDataResource]
     list_display = (
         'id',
-         'title_ENG', 'code', 'measurement_units',
-        'kpi_characteristics', 'frequency',
+         'title_ENG', 'code', 'frequency', 'measurement_units',
+        'kpi_characteristics', 
         'is_dashboard_visible',  'rank'
     )
-    list_editable = ('title_ENG', 'code', 'rank', 'is_dashboard_visible', 'measurement_units',)
+    list_editable = ('frequency',) #'title_ENG', 'code', 'rank', 'is_dashboard_visible', 'measurement_units',
     filter_horizontal = ('for_category',)
     list_filter = ('for_category__topic', 'for_category',)
     search_fields = ['code', 'title_ENG', 'title_AMH']
