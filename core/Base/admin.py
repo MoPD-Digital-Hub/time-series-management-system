@@ -34,7 +34,7 @@ class TagAdmin(ImportExportModelAdmin):
 admin.site.register(Tag, TagAdmin)
 
 class IndicatorAdmin(ImportExportModelAdmin):
-    resource_classes = [IndicatorResource, AnnualDataResource , MonthDataResource , QuarterDataResource]
+    resource_classes = [IndicatorResource, AnnualDataResource , MonthDataWideResource , QuarterDataWideResource]
     list_display = (
         'id',
          'title_ENG', 'code', 'frequency', 'measurement_units',
@@ -80,7 +80,7 @@ admin.site.register(AnnualData,  AnnualDataAdmin)
 
 
 class QuarterDataAdmin(ImportExportModelAdmin):
-    resource_classes = [QuarterDataResource]
+    resource_classes = [QuarterDataResource, QuarterDataWideResource]
     list_display = ('id','for_datapoint', 'for_quarter', 'performance', 'target')
     list_filter = ('indicator__for_category__topic__title_ENG', 'indicator', 'for_datapoint')
     search_fields = (
@@ -98,7 +98,7 @@ admin.site.register(QuarterData,  QuarterDataAdmin)
 
 
 class MonthDataAdmin(ImportExportModelAdmin):
-    resource_classes = [MonthDataResource]
+    resource_classes = [MonthDataResource,MonthDataWideResource]
     list_display = ('id','for_datapoint' , 'for_month' ,'performance','target' , )
     list_filter = ('indicator' , 'for_datapoint')
     search_fields = ('indicator' , 'for_datapoint')

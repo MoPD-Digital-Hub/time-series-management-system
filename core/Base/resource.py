@@ -777,7 +777,7 @@ def create_quarter_aggregate_resource():
         export_order = fields
 
     attrs['Meta'] = Meta
-    return type('QuarterDataResource', (resources.ModelResource,), attrs)
+    return type('QuarterDataWideResource', (resources.ModelResource,), attrs)
 
 
 def create_month_aggregate_resource():
@@ -841,10 +841,10 @@ def create_month_aggregate_resource():
         export_order = fields
 
     attrs['Meta'] = Meta
-    return type('MonthDataResource', (resources.ModelResource,), attrs)
+    return type('MonthDataWideResource', (resources.ModelResource,), attrs)
 
 
 
 # Usage
-QuarterDataResource = create_quarter_aggregate_resource()
-MonthDataResource = create_month_aggregate_resource()
+QuarterDataWideResource = create_quarter_aggregate_resource()
+MonthDataWideResource = create_month_aggregate_resource()
