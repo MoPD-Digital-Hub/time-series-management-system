@@ -14,6 +14,12 @@ class MobileDahboardOverviewResource(resources.ModelResource):
 class MobileDahboardOverviewAdmin(ImportExportModelAdmin):
     resource_class = MobileDahboardOverviewResource
     autocomplete_fields = ['indicator']
+    list_display =('id', 'title' ,'rank')
+    list_editable = ('rank',)
+
+    def title(self, obj):
+        return obj.indicator.title_ENG  
+    title.short_description = "Indicator Title (ENG)"
 
 
 admin.site.register(MobileDahboardOverview, MobileDahboardOverviewAdmin)
