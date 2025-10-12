@@ -246,7 +246,7 @@ class MonthData(models.Model):
             return self.indicator.title_ENG + " " + self.for_month.month_AMH
     
     class Meta:
-        ordering = ['-for_datapoint__year_EC']
+        ordering = ['for_datapoint__year_EC' , 'for_month__number']
     
       
     def get_previous_year_performance(self):
@@ -398,7 +398,7 @@ class QuarterData(models.Model):
         
     
     class Meta:
-        ordering = ['-for_datapoint__year_EC']
+        ordering = ['for_datapoint__year_EC' , 'for_quarter__number']
     
     def get_previous_year_performance(self):
         # Calculate and return the change in performance compared to the previous year

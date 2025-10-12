@@ -98,6 +98,7 @@ class QuarterDataSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_previous_year_performance_data(self, obj):
+        
         return obj.get_previous_year_performance()
     
     def get_for_datapoint(self, obj):
