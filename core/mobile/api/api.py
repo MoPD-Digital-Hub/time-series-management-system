@@ -287,7 +287,7 @@ def export_json(request, topic_id):
         return HttpResponse('Topic not found!', status=404)
 
     all_data = []
-    categories = topic.categories.filter(is_deleted = True)
+    categories = topic.categories.filter(is_deleted = False)
     
     for category in categories:
     
