@@ -118,6 +118,8 @@ class Indicator(models.Model):
     for_category = models.ManyToManyField("Category", related_name='indicators')
     description = models.TextField(null=True, blank=True)
     measurement_units = models.CharField(max_length=50, null=True, blank=True, default="")
+    measurement_units_quarter = models.CharField(max_length=50, null=True, blank=True, default="")
+    measurement_units_month = models.CharField(max_length=50, null=True, blank=True, default="")
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, null=True, blank=True)
     source = models.TextField(null=True, blank=True)
     methodology = models.TextField(null=True, blank=True)
