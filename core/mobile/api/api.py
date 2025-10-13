@@ -279,7 +279,6 @@ def download_indicator_data(request, id):
 
 
 
-
 def export_json(request, topic_id):
     try:
         topic = Topic.objects.get(id=topic_id)
@@ -287,21 +286,19 @@ def export_json(request, topic_id):
         return HttpResponse('Topic not found!', status=404)
 
     all_data = []
-    categories = topic.categories.filter(is_deleted = False)
+    categories = topic.categories.filter(is_deleted=False)
     
     for category in categories:
-    
-        indicators = category.indicators.filter(is_dashboard_visible = True)
+        indicators = category.indicators.filter(is_dashboard_visible=True)
         
         for indicator in indicators:
-        
             if hasattr(indicator.for_category, 'all'):
-                categories = indicator.for_category.all()
+                categories_list = indicator.for_category.all()
             else:
-                categories = [indicator.for_category] if indicator.for_category else []
+                categories_list = [indicator.for_category] if indicator.for_category else []
 
-            category_names = [c.name_ENG for c in categories if hasattr(c, 'name_ENG')]
-            topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories if getattr(c, 'topic', None)]
+            category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
+            topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
             category_names_str = ", ".join(category_names)
             topic_titles_str = ", ".join(topic_titles)
 
@@ -320,33 +317,45 @@ def export_json(request, topic_id):
                 'kpi_characteristics': indicator.kpi_characteristics or "",
             }
 
+
             annual_values = {
                 annual.for_datapoint.year_EC: annual.performance
-                for annual in indicator.annual_data.all() if annual.performance
+                for annual in indicator.annual_data.all()
+                if annual.performance is not None
             }
 
-            quarter_values = {
-                f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
-                for q in indicator.quarter_data.all() if q.performance and q.for_datapoint
-            }
-
-            month_values = {
-                f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
-                for m in indicator.month_data.all() if  m.performance and m.for_datapoint
-            }
+            for year, value in annual_values.items():
+                data[f"annual_data_{year}"] = value
 
             if annual_values:
-                data['annual_data'] = annual_values
+                data["annual_data"] = json.dumps(annual_values, ensure_ascii=False)
+
+            quarter_values = {
+                f"{q.for_datapoint.year_EC}-{q.for_quarter.title_ENG}": q.performance
+                for q in indicator.quarter_data.all()
+                if q.performance is not None and q.for_datapoint
+            }
+
+            for key, value in quarter_values.items():
+                data[f"quarter_data_{key}"] = value
             if quarter_values:
-                data['quarter_data'] = quarter_values
+                data["quarter_data"] = json.dumps(quarter_values, ensure_ascii=False)
+
+            month_values = {
+                f"{m.for_datapoint.year_EC}-{m.for_month.month_AMH}": m.performance
+                for m in indicator.month_data.all()
+                if m.performance is not None and m.for_datapoint
+            }
+
+            for key, value in month_values.items():
+                data[f"month_data_{key}"] = value
             if month_values:
-                data['month_data'] = month_values
+                data["month_data"] = json.dumps(month_values, ensure_ascii=False)
 
             all_data.append(data)
 
-    
     response = HttpResponse(
-    json.dumps(all_data, ensure_ascii=False, indent=4),
+        json.dumps(all_data, ensure_ascii=False, indent=4),
         content_type='application/json; charset=utf-8'
     )
     response['Content-Disposition'] = f'attachment; filename="{topic.title_ENG}_data.json"'
