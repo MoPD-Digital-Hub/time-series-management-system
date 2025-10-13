@@ -292,6 +292,7 @@ def export_json(request, topic_id):
         indicators = category.indicators.filter(is_dashboard_visible=True)
         
         for indicator in indicators:
+            # Handle ManyToMany or ForeignKey relations
             if hasattr(indicator.for_category, 'all'):
                 categories_list = indicator.for_category.all()
             else:
@@ -299,6 +300,7 @@ def export_json(request, topic_id):
 
             category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
             topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
+
             category_names_str = ", ".join(category_names)
             topic_titles_str = ", ".join(topic_titles)
 
@@ -317,40 +319,29 @@ def export_json(request, topic_id):
                 'kpi_characteristics': indicator.kpi_characteristics or "",
             }
 
-
             annual_values = {
-                annual.for_datapoint.year_EC: annual.performance
+                str(annual.for_datapoint.year_EC): annual.performance
                 for annual in indicator.annual_data.all()
                 if annual.performance is not None
             }
-
-            for year, value in annual_values.items():
-                data[f"annual_data_{year}"] = value
-
             if annual_values:
-                data["annual_data"] = json.dumps(annual_values, ensure_ascii=False)
+                data.update(annual_values)
 
             quarter_values = {
-                f"{q.for_datapoint.year_EC}-{q.for_quarter.title_ENG}": q.performance
+                f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
                 for q in indicator.quarter_data.all()
                 if q.performance is not None and q.for_datapoint
             }
-
-            for key, value in quarter_values.items():
-                data[f"quarter_data_{key}"] = value
             if quarter_values:
-                data["quarter_data"] = json.dumps(quarter_values, ensure_ascii=False)
-
+                data.update(quarter_values)
+                
             month_values = {
-                f"{m.for_datapoint.year_EC}-{m.for_month.month_AMH}": m.performance
+                f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
                 for m in indicator.month_data.all()
                 if m.performance is not None and m.for_datapoint
             }
-
-            for key, value in month_values.items():
-                data[f"month_data_{key}"] = value
             if month_values:
-                data["month_data"] = json.dumps(month_values, ensure_ascii=False)
+                data.update(month_values)  
 
             all_data.append(data)
 
