@@ -280,70 +280,77 @@ def download_indicator_data(request, id):
 
 
 
-def export_json(request, category_id):
+def export_json(request, topic_id):
     try:
-        category = Category.objects.get(id=category_id)
-    except Category.DoesNotExist:
-        return HttpResponse('Category not found!', status=404)
+        topic = Topic.objects.get(id=topic_id)
+    except Topic.DoesNotExist:
+        return HttpResponse('Topic not found!', status=404)
     
-    indicators = category.indicators.filter(is_dashboard_visible = True)
+
     all_data = []
-
-    for indicator in indicators:
+    categories = topic.categories.all()
     
-        if hasattr(indicator.for_category, 'all'):
-            categories = indicator.for_category.all()
-        else:
-            categories = [indicator.for_category] if indicator.for_category else []
 
-        category_names = [c.name_ENG for c in categories if hasattr(c, 'name_ENG')]
-        topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories if getattr(c, 'topic', None)]
-        category_names_str = ", ".join(category_names)
-        topic_titles_str = ", ".join(topic_titles)
+    for category in categories:
+    
+        indicators = category.indicators.filter(is_dashboard_visible = True)
+        
 
-        data = {
-            'Topic': topic_titles_str,
-            'Category': category_names_str,
-            'name': indicator.title_ENG,
-            'code': indicator.code,
-            'description': indicator.description,
-            'measurement_units': indicator.measurement_units,
-            'frequency': indicator.frequency,
-            'source': indicator.source,
-            'methodology': indicator.methodology,
-            'disaggregation_dimensions': indicator.disaggregation_dimensions,
-            'version': indicator.version,
-            'parent': getattr(indicator.parent, 'title_ENG', None),
-            'kpi_characteristics': indicator.kpi_characteristics,
-        }
+        for indicator in indicators:
+        
+            if hasattr(indicator.for_category, 'all'):
+                categories = indicator.for_category.all()
+            else:
+                categories = [indicator.for_category] if indicator.for_category else []
 
-        annual_values = {
-            annual.for_datapoint.year_EC: annual.performance
-            for annual in indicator.annual_data.all() if annual.performance
-        }
+            category_names = [c.name_ENG for c in categories if hasattr(c, 'name_ENG')]
+            topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories if getattr(c, 'topic', None)]
+            category_names_str = ", ".join(category_names)
+            topic_titles_str = ", ".join(topic_titles)
 
-        quarter_values = {
-            f"{q.for_datapoint.year_EC}-{q.for_quarter.title_ENG}": q.performance
-            for q in indicator.quarter_data.all() if q.performance and q.for_datapoint
-        }
+            data = {
+                'Topic': topic_titles_str,
+                'Category': category_names_str,
+                'name': indicator.title_ENG,
+                'code': indicator.code,
+                'description': indicator.description,
+                'measurement_units': indicator.measurement_units,
+                'source': indicator.source,
+                'methodology': indicator.methodology,
+                'disaggregation_dimensions': indicator.disaggregation_dimensions,
+                'version': indicator.version,
+                'parent': getattr(indicator.parent, 'title_ENG', None),
+                'kpi_characteristics': indicator.kpi_characteristics,
+            }
 
-        month_values = {
-            f"{m.for_datapoint.year_EC}-{m.for_month.month_AMH}": m.performance
-            for m in indicator.month_data.all() if  m.performance and m.for_datapoint
-        }
+            annual_values = {
+                annual.for_datapoint.year_EC: annual.performance
+                for annual in indicator.annual_data.all() if annual.performance
+            }
 
-        if annual_values:
-            data['annual_data'] = annual_values
-        if quarter_values:
-            data['quarter_data'] = quarter_values
-        if month_values:
-            data['month_data'] = month_values
+            quarter_values = {
+                f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
+                for q in indicator.quarter_data.all() if q.performance and q.for_datapoint
+            }
 
-        all_data.append(data)
+            month_values = {
+                f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
+                for m in indicator.month_data.all() if  m.performance and m.for_datapoint
+            }
 
+            if annual_values:
+                data['annual_data'] = annual_values
+            if quarter_values:
+                data['quarter_data'] = quarter_values
+            if month_values:
+                data['month_data'] = month_values
+
+            all_data.append(data)
+
+    
     response = HttpResponse(
-        json.dumps(all_data, indent=4),
-        content_type='application/json'
+    json.dumps(all_data, ensure_ascii=False, indent=4),
+        content_type='application/json; charset=utf-8'
     )
-    response['Content-Disposition'] = f'attachment; filename="{category.name_ENG}_data.json"'
+    response['Content-Disposition'] = f'attachment; filename="{topic.title_ENG}_data.json"'
     return response
