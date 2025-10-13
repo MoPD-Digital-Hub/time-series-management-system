@@ -279,75 +279,73 @@ def download_indicator_data(request, id):
 
 
 
-def export_json(request, topic_id):
+def export_json(request, category_id):
     try:
-        topic = Topic.objects.get(id=topic_id)
-    except Topic.DoesNotExist:
-        return HttpResponse('Topic not found!', status=404)
+        category = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return HttpResponse('Category not found!', status=404)
 
     all_data = []
-    categories = topic.categories.filter(is_deleted=False)
+
+    indicators = category.indicators.filter(is_dashboard_visible=True)
     
-    for category in categories:
-        indicators = category.indicators.filter(is_dashboard_visible=True)
-        
-        for indicator in indicators:
-            # Handle ManyToMany or ForeignKey relations
-            if hasattr(indicator.for_category, 'all'):
-                categories_list = indicator.for_category.all()
-            else:
-                categories_list = [indicator.for_category] if indicator.for_category else []
+    for indicator in indicators:
+        # Handle ManyToMany or ForeignKey relations
+        if hasattr(indicator.for_category, 'all'):
+            categories_list = indicator.for_category.all()
+        else:
+            categories_list = [indicator.for_category] if indicator.for_category else []
 
-            category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
-            topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
+        category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
+        topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
 
-            category_names_str = ", ".join(category_names)
-            topic_titles_str = ", ".join(topic_titles)
+        category_names_str = ", ".join(category_names)
+        topic_titles_str = ", ".join(topic_titles)
 
-            data = {
-                'Topic': topic_titles_str or "",
-                'Category': category_names_str or "",
-                'name': indicator.title_ENG or "",
-                'code': indicator.code or "",
-                'description': indicator.description or "",
-                'measurement_units': indicator.measurement_units or "",
-                'source': indicator.source or "",
-                'methodology': indicator.methodology or "",
-                'disaggregation_dimensions': indicator.disaggregation_dimensions or "",
-                'version': indicator.version or "",
-                'parent': getattr(indicator.parent, 'title_ENG', ""),
-                'kpi_characteristics': indicator.kpi_characteristics or "",
-            }
+        data = {
+            'Topic': topic_titles_str or "",
+            'Category': category_names_str or "",
+            'name': indicator.title_ENG or "",
+            'code': indicator.code or "",
+            'description': indicator.description or "",
+            'measurement_units': indicator.measurement_units or "",
+            'source': indicator.source or "",
+            'methodology': indicator.methodology or "",
+            'disaggregation_dimensions': indicator.disaggregation_dimensions or "",
+            'version': indicator.version or "",
+            'parent': getattr(indicator.parent, 'title_ENG', ""),
+            'kpi_characteristics': indicator.kpi_characteristics or "",
+        }
 
-            annual_values = {
-                str(annual.for_datapoint.year_EC): annual.performance
-                for annual in indicator.annual_data.all()
-                if annual.performance is not None
-            }
-            if annual_values:
-                data.update(annual_values)
+        annual_values = {
+            str(annual.for_datapoint.year_EC): annual.performance
+            for annual in indicator.annual_data.all()
+            if annual.performance is not None
+        }
+        if annual_values:
+            data.update(annual_values)
 
-            quarter_values = {
-                f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
-                for q in indicator.quarter_data.all()
-                if q.performance is not None and q.for_datapoint
-            }
-            if quarter_values:
-                data.update(quarter_values)
-                
-            month_values = {
-                f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
-                for m in indicator.month_data.all()
-                if m.performance is not None and m.for_datapoint
-            }
-            if month_values:
-                data.update(month_values)  
+        quarter_values = {
+            f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
+            for q in indicator.quarter_data.all()
+            if q.performance is not None and q.for_datapoint
+        }
+        if quarter_values:
+            data.update(quarter_values)
+            
+        month_values = {
+            f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
+            for m in indicator.month_data.all()
+            if m.performance is not None and m.for_datapoint
+        }
+        if month_values:
+            data.update(month_values)  
 
-            all_data.append(data)
+        all_data.append(data)
 
     response = HttpResponse(
-        json.dumps(all_data, ensure_ascii=False, indent=4),
-        content_type='application/json; charset=utf-8'
-    )
-    response['Content-Disposition'] = f'attachment; filename="{topic.title_ENG}_data.json"'
+            json.dumps(all_data, ensure_ascii=False, indent=4),
+            content_type='application/json; charset=utf-8'
+        )
+    response['Content-Disposition'] = f'attachment; filename="{category.name_ENG}_data.json"'
     return response
