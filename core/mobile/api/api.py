@@ -288,9 +288,8 @@ def export_json(request, topic_id):
     
 
     all_data = []
-    categories = topic.categories.all()
+    categories = topic.categories.filter(is_dashboard_visible = True)
     
-
     for category in categories:
     
         indicators = category.indicators.filter(is_dashboard_visible = True)
