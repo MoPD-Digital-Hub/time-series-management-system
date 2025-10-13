@@ -285,16 +285,14 @@ def export_json(request, topic_id):
         topic = Topic.objects.get(id=topic_id)
     except Topic.DoesNotExist:
         return HttpResponse('Topic not found!', status=404)
-    
 
     all_data = []
-    categories = topic.categories.filter(is_dashboard_visible = True)
+    categories = topic.categories.filter(is_deleted = True)
     
     for category in categories:
     
         indicators = category.indicators.filter(is_dashboard_visible = True)
         
-
         for indicator in indicators:
         
             if hasattr(indicator.for_category, 'all'):
