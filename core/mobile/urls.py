@@ -23,4 +23,6 @@ urlpatterns = [
     path('export-category-data/<int:id>/', api.download_category_data, name='export-category-data'),
     path('export-indicator-data/<int:id>/', api.download_indicator_data, name='export-indicator-data'),
 
+    path('export-all-data-json/<int:category_id>/', api.export_json, name='export-all-data'),
+
 ]
