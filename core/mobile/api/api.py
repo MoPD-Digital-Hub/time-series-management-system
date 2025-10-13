@@ -303,18 +303,18 @@ def export_json(request, topic_id):
             topic_titles_str = ", ".join(topic_titles)
 
             data = {
-                'Topic': topic_titles_str,
-                'Category': category_names_str,
-                'name': indicator.title_ENG,
-                'code': indicator.code,
-                'description': indicator.description,
-                'measurement_units': indicator.measurement_units,
-                'source': indicator.source,
-                'methodology': indicator.methodology,
-                'disaggregation_dimensions': indicator.disaggregation_dimensions,
-                'version': indicator.version,
-                'parent': getattr(indicator.parent, 'title_ENG', None),
-                'kpi_characteristics': indicator.kpi_characteristics,
+                'Topic': topic_titles_str or "",
+                'Category': category_names_str or "",
+                'name': indicator.title_ENG or "",
+                'code': indicator.code or "",
+                'description': indicator.description or "",
+                'measurement_units': indicator.measurement_units or "",
+                'source': indicator.source or "",
+                'methodology': indicator.methodology or "",
+                'disaggregation_dimensions': indicator.disaggregation_dimensions or "",
+                'version': indicator.version or "",
+                'parent': getattr(indicator.parent, 'title_ENG', ""),
+                'kpi_characteristics': indicator.kpi_characteristics or "",
             }
 
             # === Annual Data ===
