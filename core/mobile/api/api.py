@@ -8,11 +8,8 @@ from mobile.models import MobileDahboardOverview
 from Base.models import Topic , ProjectInitiatives , SubProject , Category , Indicator
 from django.db.models import Q
 
-from django.http import HttpResponse
+from django.http import JsonResponse, HttpResponse
 from Base.resource import AnnualDataResource , QuarterDataResource , MonthDataResource  # import your resource
-
-
-
 
 #Time series data
 @api_view(['GET'])
@@ -279,3 +276,110 @@ def download_indicator_data(request, id):
     filename_prefix = f"{indicator.title_ENG}_{filename_suffix}"
 
     return export_dataset(indicators, resource_class, file_type, filename_prefix)
+
+
+
+def export_json(request, category_id):
+    try:
+        category = Category.objects.get(id=category_id)
+    except Category.DoesNotExist:
+        return HttpResponse('Category not found!', status=404)
+
+    all_data = []
+
+    indicators = category.indicators.filter(is_dashboard_visible=True)
+    
+    for indicator in indicators:
+        # Handle ManyToMany or ForeignKey relations
+        if hasattr(indicator.for_category, 'all'):
+            categories_list = indicator.for_category.all()
+        else:
+            categories_list = [indicator.for_category] if indicator.for_category else []
+
+        category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
+        topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
+
+        category_names_str = ", ".join(category_names)
+        topic_titles_str = ", ".join(topic_titles)
+
+        data = {
+            'Topic': topic_titles_str or "",
+            'Category': category_names_str or "",
+            'name': indicator.title_ENG or "",
+            'code': indicator.code or "",
+            'description': indicator.description or "",
+            'measurement_units': indicator.measurement_units or "",
+            'source': indicator.source or "",
+            'methodology': indicator.methodology or "",
+            'disaggregation_dimensions': indicator.disaggregation_dimensions or "",
+            'version': indicator.version or "",
+            'parent': getattr(indicator.parent, 'title_ENG', ""),
+            'kpi_characteristics': indicator.kpi_characteristics or "",
+        }
+
+        # Get the last 10 years range (Ethiopian Calendar)
+        current_year_EC = 2018  
+
+        # === Annual data: last 10 years ===
+        annual_years = [a.for_datapoint.year_EC for a in indicator.annual_data.all() if a.for_datapoint]
+        if annual_years:
+            max_annual_year = max(annual_years)
+            min_annual_year = max_annual_year - 9  # last 10 years
+            annual_values = {
+                str(a.for_datapoint.year_EC): a.performance
+                for a in indicator.annual_data.all()
+                if a.performance is not None and min_annual_year <= a.for_datapoint.year_EC <= max_annual_year
+            }
+            if annual_values:
+                data.update(annual_values)
+        else:
+            annual_values = {}
+
+        # # === Quarterly data: last 4 years ===
+        # quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
+        # if quarter_years:
+        #     max_quarter_year = max(quarter_years)
+        #     min_quarter_year = max_quarter_year - 3  # last 4 years
+        #     quarter_values = {
+        #         f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
+        #         for q in indicator.quarter_data.all()
+        #         if (
+        #             q.performance is not None
+        #             and q.for_datapoint
+        #             and min_quarter_year <= q.for_datapoint.year_EC <= max_quarter_year
+        #         )
+        #     }
+        #     if quarter_values:
+        #         data.update(quarter_values)
+        # else:
+        #     quarter_values = {}
+
+        # # === Monthly data: last 2 years ===
+        # month_years = [m.for_datapoint.year_EC for m in indicator.month_data.all() if m.for_datapoint]
+        # if month_years:
+        #     max_month_year = max(month_years)
+        #     min_month_year = max_month_year - 1  # last 2 years
+        #     month_values = {
+        #         f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
+        #         for m in indicator.month_data.all()
+        #         if (
+        #             m.performance is not None
+        #             and m.for_datapoint
+        #             and min_month_year <= m.for_datapoint.year_EC <= max_month_year
+        #         )
+        #     }
+        #     if month_values:
+        #         data.update(month_values)
+        # else:
+        #     month_values = {}
+
+
+
+        all_data.append(data)
+
+    response = HttpResponse(
+            json.dumps(all_data, ensure_ascii=False, indent=4),
+            content_type='application/json; charset=utf-8'
+        )
+    response['Content-Disposition'] = f'attachment; filename="{category.name_ENG}_data.json"'
+    return response
