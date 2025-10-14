@@ -335,43 +335,43 @@ def export_json(request, category_id):
         else:
             annual_values = {}
 
-        # === Quarterly data: last 4 years ===
-        quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
-        if quarter_years:
-            max_quarter_year = max(quarter_years)
-            min_quarter_year = max_quarter_year - 3  # last 4 years
-            quarter_values = {
-                f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
-                for q in indicator.quarter_data.all()
-                if (
-                    q.performance is not None
-                    and q.for_datapoint
-                    and min_quarter_year <= q.for_datapoint.year_EC <= max_quarter_year
-                )
-            }
-            if quarter_values:
-                data.update(quarter_values)
-        else:
-            quarter_values = {}
+        # # === Quarterly data: last 4 years ===
+        # quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
+        # if quarter_years:
+        #     max_quarter_year = max(quarter_years)
+        #     min_quarter_year = max_quarter_year - 3  # last 4 years
+        #     quarter_values = {
+        #         f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
+        #         for q in indicator.quarter_data.all()
+        #         if (
+        #             q.performance is not None
+        #             and q.for_datapoint
+        #             and min_quarter_year <= q.for_datapoint.year_EC <= max_quarter_year
+        #         )
+        #     }
+        #     if quarter_values:
+        #         data.update(quarter_values)
+        # else:
+        #     quarter_values = {}
 
-        # === Monthly data: last 2 years ===
-        month_years = [m.for_datapoint.year_EC for m in indicator.month_data.all() if m.for_datapoint]
-        if month_years:
-            max_month_year = max(month_years)
-            min_month_year = max_month_year - 1  # last 2 years
-            month_values = {
-                f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
-                for m in indicator.month_data.all()
-                if (
-                    m.performance is not None
-                    and m.for_datapoint
-                    and min_month_year <= m.for_datapoint.year_EC <= max_month_year
-                )
-            }
-            if month_values:
-                data.update(month_values)
-        else:
-            month_values = {}
+        # # === Monthly data: last 2 years ===
+        # month_years = [m.for_datapoint.year_EC for m in indicator.month_data.all() if m.for_datapoint]
+        # if month_years:
+        #     max_month_year = max(month_years)
+        #     min_month_year = max_month_year - 1  # last 2 years
+        #     month_values = {
+        #         f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
+        #         for m in indicator.month_data.all()
+        #         if (
+        #             m.performance is not None
+        #             and m.for_datapoint
+        #             and min_month_year <= m.for_datapoint.year_EC <= max_month_year
+        #         )
+        #     }
+        #     if month_values:
+        #         data.update(month_values)
+        # else:
+        #     month_values = {}
 
 
 
