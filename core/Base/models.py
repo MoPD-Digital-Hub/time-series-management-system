@@ -447,6 +447,7 @@ class QuarterData(models.Model):
 
     def get_performance_value_5_years_ago(self):
         # Calculate and return the change in performance compared to the previous year
+        
         if self.for_datapoint:
             previous_year = int (self.for_datapoint.year_EC) - 5
             previous_year = str(previous_year)
