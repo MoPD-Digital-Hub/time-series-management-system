@@ -178,7 +178,8 @@ def indicators_filter(request):
 
     indicators = Indicator.objects.filter(
         for_category=category,
-        title_ENG__iexact=name
+        title_ENG__iexact=name,
+        is_dashboard_visible=True
     )
 
     serializer = IndicatorSerializer(indicators, many=True)
