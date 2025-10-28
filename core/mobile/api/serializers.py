@@ -192,7 +192,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
             
         )[:12]
 
-        month_list = list(qs)[::-1]
+        month_list = list(qs)
 
         return MonthDataSerializer(month_list, many=True).data
     
