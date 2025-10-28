@@ -188,9 +188,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
         Q(for_datapoint__year_EC__isnull=False)
         )
 
-        qs = obj.month_data.filter(
-            
-        )[:12]
+        qs = obj.month_data.filter()[::-1][:12][::-1]
 
         month_list = list(qs)
 
