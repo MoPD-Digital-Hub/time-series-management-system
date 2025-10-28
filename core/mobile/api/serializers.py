@@ -185,22 +185,17 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
-        Q(for_datapoint__year_EC__isnull=False),
-        for_datapoint__year_EC=OuterRef('for_datapoint__year_EC'),
-        for_datapoint__year_EC__regex=r'^\d+$'  # optional
-        ).annotate(
-            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_ec_int')[:12]
+        Q(for_datapoint__year_EC__isnull=False)
+        )
 
         qs = obj.month_data.filter(
-            id=Subquery(subquery.values('id')[:1])
-        ).annotate(
-            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_ec_int')[:12]
+            
+        )[:12]
 
         month_list = list(qs)[::-1]
 
-        return MonthDataSerializer(subquery, many=True).data
+        return MonthDataSerializer(month_list, many=True).data
+    
 
     
     def get_latest_data(self, obj):
