@@ -190,7 +190,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
         for_datapoint__year_EC__regex=r'^\d+$'  # optional
         ).annotate(
             year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_ec_int')
+        ).order_by('-year_ec_int')[:12]
 
         qs = obj.month_data.filter(
             id=Subquery(subquery.values('id')[:1])
@@ -200,7 +200,7 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         month_list = list(qs)[::-1]
 
-        return MonthDataSerializer(month_list, many=True).data
+        return MonthDataSerializer(subquery, many=True).data
 
     
     def get_latest_data(self, obj):
