@@ -5,6 +5,22 @@ from import_export.admin import ImportExportModelAdmin
 
 
 
+@admin.register(KPIRecord)
+class KPIRecordAdmin(ImportExportModelAdmin):
+    resource_classes = [WeekKPIRecordResource , DayKPIRecordResource]
+    list_display = (
+        'indicator', 'ethio_date_display', 'target', 'performance' , 'record_type'
+    )
+    autocomplete_fields = ['indicator']
+    search_fields = ('indicator__name',)
+    date_hierarchy = 'date'
+
+    def ethio_date_display(self, obj):
+        """Show Ethiopian date in list_display"""
+        return obj.ethio_date
+    
+    
+
 class TopicAdmin(ImportExportModelAdmin):
     list_display = ('title_ENG', 'title_AMH', 'created', 'is_dashboard', 'is_initiative','rank')
     list_editable = ('rank',)

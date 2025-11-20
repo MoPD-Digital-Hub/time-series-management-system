@@ -4,6 +4,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 import json
 from UserManagement.models import ResponsibleEntity
+from ethiopian_date_converter.ethiopian_date_convertor import to_ethiopian, to_gregorian, EthDate
+from datetime import date
 
 
 class Topic(models.Model):
@@ -691,7 +693,122 @@ class AnnualData(models.Model):
             except AnnualData.DoesNotExist:
                 return None
         return None
-     
+
+
+class KPIRecord(models.Model):
+    """
+    Stores KPI performance and target data for a specific organization and date.
+    Supports dynamic allocation (from_org -> to_org) and weighted performance.
+    """
+    RECORD_TYPE_CHOICES = [
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+    ]
+
+    indicator = models.ForeignKey(
+        Indicator, null=True ,on_delete=models.SET_NULL, related_name='records',
+        help_text="Select the KPI this record belongs to"
+    )
+    record_type = models.CharField(max_length=100, choices=RECORD_TYPE_CHOICES, default='quarterly')
+    target = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Target value for this KPI"
+    )
+    performance = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Actual performance value for this KPI"
+    )
+    date = models.DateField(
+        help_text="The date this KPI record is associated with"
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['indicator', 'date']),
+            models.Index(fields=['date']),
+            models.Index(fields=['record_type']),
+        ]
+        ordering = ['-date']
+        verbose_name = "KPI Record"
+        verbose_name_plural = "KPI Records"
+        unique_together = ('indicator', 'record_type', 'date')
+
+    @property
+    def ethio_date(self):
+        """
+        Returns the Ethiopian date formatted according to the KPI frequency:
+        - yearly: YYYY
+        - quarterly/monthly: YYYY-MM
+        - daily/weekly: YYYY-MM-DD
+        """
+      
+
+        gregorian_date = EthDate(self.date.day, self.date.month, self.date.year)
+        eth_date = to_ethiopian(gregorian_date)
+
+        freq = getattr(self, 'record_type', 'daily')
+      
+
+        if  freq == 'weekly':
+            eth_year = eth_date.year
+            eth_month = eth_date.month 
+            week = ((eth_date.day  - 1) // 7) + 1
+            week = min(week , 4)
+            return f"{eth_year}-{eth_month}-{week}"
+        elif freq in ('daily'):
+            return f"{eth_date.year}-{eth_date.month:02d}-{eth_date.day:02d}"
+        else:
+            return f"{eth_date.year}-{eth_date.month:02d}-{eth_date.day:02d}"
+    
+    @staticmethod
+    def create_aggregate_data(indicator):
+        daily = KPIRecord.objects.filter(
+            indicator=indicator,
+            record_type='daily'
+        )
+
+        groups = {}
+
+        for r in daily:
+            # Convert Gregorian -> Ethiopian using your method
+            eth = to_ethiopian(EthDate(r.date.day, r.date.month, r.date.year))
+
+            week = min(((eth.day - 1) // 7) + 1, 4)
+            key = (eth.year, eth.month, week)
+
+            groups.setdefault(key, []).append(r)
+
+        # Aggregate
+        for key, items in groups.items():
+            if len(items) < 5:
+                continue
+
+            tot_perf = sum(i.performance or 0 for i in items)
+            tot_target = sum(i.target or 0 for i in items)
+
+            first_date = items[0].date
+
+            KPIRecord.objects.update_or_create(
+                indicator=indicator,
+                record_type='weekly',
+                date=first_date,
+                defaults={
+                    'performance': tot_perf,
+                    'target': tot_target,
+                }
+            )
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.record_type == 'daily':
+            KPIRecord.create_aggregate_data(self.indicator)
+        
+    
+    def __str__(self):
+        return f"{self.indicator} ({self.date}) - Target: {self.target}, Perf: {self.performance}"
+    
+
 class ProjectInitiatives(models.Model):
     title_ENG = models.CharField(max_length=50)
     title_AMH = models.CharField(max_length=50)

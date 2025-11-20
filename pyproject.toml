@@ -17,6 +17,7 @@ openpyxl = "^3.1.2"
 python-decouple = "^3.8"
 uwsgi = "^2.0.30"
 django-cors-headers = "^4.7.0"
+py-ethiopian-date-converter = "0.1.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

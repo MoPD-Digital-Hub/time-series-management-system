@@ -5,6 +5,7 @@ from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 from import_export.results import RowResult, Result
 from .models import *
 from tablib import Dataset
+from datetime import datetime
 #############Import export Model Resources################
 
 
@@ -355,7 +356,6 @@ class QuarterDataResource(resources.ModelResource):
 
         return result
 
-
 class MonthDataResource(resources.ModelResource):    
     indicator = fields.Field(
         column_name='indicator',
@@ -496,6 +496,219 @@ class MonthDataResource(resources.ModelResource):
         result.diff_headers = ['indicator',  'for_datapoint', 'for_month', 'performance']
 
         return result
+
+class WeekKPIRecordResource(resources.ModelResource):
+    indicator = fields.Field(
+        column_name='indicator',
+        attribute='indicator',
+        widget=ForeignKeyWidget(Indicator, 'code'),  
+    )
+    class Meta:
+        model = KPIRecord
+        fields = ('indicator', 'record_type', 'target', 'performance', 'date')
+        import_id_fields =  ('indicator', 'record_type','date')
+        skip_unchanged = True
+        report_skipped = True
+
+    
+    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, **kwargs):
+        result_dataset = Dataset(headers=['indicator', 'record_type', 'target', 'performance', 'date'])
+        record_type = 'weekly'
+    
+        new_count = 0
+        updated_count = 0
+        
+        for row_number, row in enumerate(dataset.dict, start=1):
+            code = row.get('code')
+            
+            if not code:
+                continue
+
+        
+            for year, value in row.items():
+                if str(year).lower() in ['code', 'indicator'] or value in [None, '']:
+                    continue
+                
+                try:
+                    val = float(value)
+                except ValueError:
+                    continue
+
+                try:
+                    kpi = Indicator.objects.get(code = code)
+                except Indicator.DoesNotExist:
+                    continue
+
+                dt = datetime.strptime(str(year), "%Y-%m-%d %H:%M:%S")
+
+
+
+                year = dt.year
+                month = dt.month
+                week = min(dt.day , 4)
+
+                                
+                start_week = ((week - 1) * 7 ) +1
+                end_week = start_week + 6
+                if start_week == 22:
+                    end_week = start_week + 8
+
+                ethiopia_date_start = EthDate(start_week, month, year)
+                greg_start = to_gregorian(ethiopia_date_start)
+
+                ethiopia_date_end = EthDate(end_week, month, year)
+                greg_end = to_gregorian(ethiopia_date_end)
+
+                
+              
+                
+                result_dataset.append([
+                    code, 
+                    record_type,
+                    None,
+                    val ,
+                    greg_start
+                ])
+
+
+                if not dry_run:
+                    update_fields = {
+                        'indicator': kpi,
+                        'record_type': record_type,
+                        'date': greg_start,
+                        'performance' : val
+                    }
+
+                    
+                    obj, created = KPIRecord.objects.update_or_create(
+                        indicator__code=code,
+                        date__gte=greg_start,
+                        date__lte=greg_end,
+                        record_type = record_type,
+                        defaults=update_fields,
+                    )
+
+                    if created:
+                        new_count += 1
+                    else:
+                        updated_count += 1
+
+        if dry_run:
+            return super().import_data(result_dataset, dry_run=True, raise_errors=raise_errors, **kwargs)
+        
+        result = Result()
+        result.rows = []
+        result.totals = {
+            'new': new_count,
+            'update': updated_count,
+            'skip': 0,
+            'failed': 0,
+            'delete': 0,
+        }
+        result.diff_headers = ['indicator', 'record_type', 'target', 'performance', 'date']
+
+        return result
+
+class DayKPIRecordResource(resources.ModelResource):
+    indicator = fields.Field(
+        column_name='indicator',
+        attribute='indicator',
+        widget=ForeignKeyWidget(Indicator, 'code'),  
+    )
+    class Meta:
+        model = KPIRecord
+        fields = ('indicator', 'record_type', 'target', 'performance', 'date')
+        import_id_fields =  ('indicator', 'record_type','date')
+        skip_unchanged = True
+        report_skipped = True
+
+    
+    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, **kwargs):
+        result_dataset = Dataset(headers=['indicator', 'record_type', 'target', 'performance', 'date'])
+        record_type = 'daily'
+    
+        new_count = 0
+        updated_count = 0
+        
+        for row_number, row in enumerate(dataset.dict, start=1):
+            code = row.get('code')
+            
+            if not code:
+                continue
+
+        
+            for year, value in row.items():
+                if str(year).lower() in ['code', 'indicator'] or value in [None, '']:
+                    continue
+                
+                try:
+                    val = float(value)
+                except ValueError:
+                    continue
+
+                try:
+                    kpi = Indicator.objects.get(code = code)
+                except Indicator.DoesNotExist:
+                    continue
+
+                dt = datetime.strptime(str(year), "%Y-%m-%d %H:%M:%S")
+                year = dt.year
+                month = dt.month
+                day = dt.day
+
+
+                             
+                ethiopia_date_start = EthDate(day, month, year)
+                greg_start = to_gregorian(ethiopia_date_start)
+
+
+                
+                result_dataset.append([
+                    code, 
+                    record_type,
+                    None,
+                    val ,
+                    greg_start
+                ])
+
+
+                if not dry_run:
+                    update_fields = {
+                        'indicator': kpi,
+                        'record_type': record_type,
+                        'date': greg_start,
+                        'performance' : val
+                    }
+
+                    
+                    obj, created = KPIRecord.objects.update_or_create(
+                        indicator__code=code,
+                        date = greg_start ,
+                        record_type = record_type,
+                        defaults=update_fields,
+                    )
+
+                    if created:
+                        new_count += 1
+                    else:
+                        updated_count += 1
+        
+        if dry_run:
+            return super().import_data(result_dataset, dry_run=True, raise_errors=raise_errors, **kwargs)
+        
+        result = Result()
+        result.rows = []
+        result.totals = {
+            'new': new_count,
+            'update': updated_count,
+            'skip': 0,
+            'failed': 0,
+            'delete': 0,
+        }
+        result.diff_headers = ['indicator', 'record_type', 'target', 'performance', 'date']
+        
+        return result
+
 
 
 #############Handle uploaded excel files################

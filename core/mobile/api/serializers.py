@@ -88,7 +88,6 @@ class AnnualDataSerializer(serializers.ModelSerializer):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
 
 
-
 class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
@@ -122,11 +121,53 @@ class MonthDataSerializer(serializers.ModelSerializer):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
     
 
+class WeekDataSerializer(serializers.ModelSerializer):
+    day_data = serializers.SerializerMethodField()
+
+    class Meta:
+        model = KPIRecord
+        fields = ('target', 'performance', 'ethio_date', 'day_data')
+
+    def get_day_data(self, obj):
+        # Convert weekly date → Ethiopian
+        eth = to_ethiopian(EthDate(obj.date.day, obj.date.month, obj.date.year))
+
+        # Extract week (YYYY-MM-W)
+        week = int(obj.ethio_date.split("-")[-1])
+
+        # Ethiopian week day range
+        start_day = (week - 1) * 7 + 1
+        end_day = week * 7
+
+        # Fetch all daily records for this indicator
+        daily_qs = KPIRecord.objects.filter(
+            indicator=obj.indicator, record_type="daily"
+        )
+
+        # Filter Ethiopian dates directly
+        filtered = []
+        for r in daily_qs:
+            d = to_ethiopian(EthDate(r.date.day, r.date.month, r.date.year))
+            if d.year == eth.year and d.month == eth.month and start_day <= d.day <= end_day:
+                filtered.append(r)
+
+        return DayDataSerializer(filtered, many=True).data
+
+    
+class DayDataSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = KPIRecord
+        fields = ('target', 'performance', 'ethio_date')
+    
+ 
     
 class IndicatorSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
     month_data =serializers.SerializerMethodField()
+    week_data =serializers.SerializerMethodField()
+    day_data =serializers.SerializerMethodField()
     latest_data = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
     
@@ -194,6 +235,14 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         return MonthDataSerializer(month_list, many=True).data
     
+    def get_week_data(self, obj):
+        weekly_qs = obj.records.filter(record_type="weekly").order_by('date')
+        return WeekDataSerializer(weekly_qs, many=True).data
+
+   
+    def get_day_data(self, obj):
+        daily_qs = obj.records.filter(record_type="daily").order_by('date')
+        return DayDataSerializer(daily_qs, many=True).data
 
     
     def get_latest_data(self, obj):
@@ -287,6 +336,8 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
     month_data = MonthDataSerializer(many = True , read_only = True)
+    week_data =serializers.SerializerMethodField()
+    day_data =serializers.SerializerMethodField()
     for_category = CategorySerializer2(many=True, read_only=True)
     latest_data = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
@@ -337,6 +388,15 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
         serializer = MonthDataSerializer(month_data, many=True)
         return serializer.data
+    
+    def get_week_data(self, obj):
+        weekly_qs = obj.records.filter(record_type="weekly").order_by('date')
+        return WeekDataSerializer(weekly_qs, many=True).data
+
+   
+    def get_day_data(self, obj):
+        daily_qs = obj.records.filter(record_type="daily").order_by('date')
+        return DayDataSerializer(daily_qs, many=True).data
 
     
     
