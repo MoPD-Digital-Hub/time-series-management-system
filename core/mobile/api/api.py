@@ -304,35 +304,41 @@ def export_json(request, category_id):
         topic_titles_str = ", ".join(topic_titles)
 
         data = {
-            'Topic': topic_titles_str or "",
-            'Category': category_names_str or "",
-            'name': indicator.title_ENG or "",
             'code': indicator.code or "",
+            'name': indicator.title_ENG or "",
             'description': indicator.description or "",
-            'measurement_units': indicator.measurement_units or "",
-            'source': indicator.source or "",
-            'methodology': indicator.methodology or "",
-            'disaggregation_dimensions': indicator.disaggregation_dimensions or "",
-            'version': indicator.version or "",
-            'parent': getattr(indicator.parent, 'title_ENG', ""),
-            'kpi_characteristics': indicator.kpi_characteristics or "",
+            
+            'topic': topic_titles_str or "",
+            'category': category_names_str or "",
+
+            'metadata': {
+                "unit": indicator.measurement_units or "",
+                'source': indicator.source or "",
+                'kpi_type': indicator.kpi_characteristics or "",
+                'version': indicator.version or "",
+                'parent': getattr(indicator.parent, 'title_ENG', ""),
+            },     
+     
         }
 
-        # Get the last 10 years range (Ethiopian Calendar)
-        current_year_EC = 2018  
 
-        # === Annual data: last 10 years ===
         annual_years = [a.for_datapoint.year_EC for a in indicator.annual_data.all() if a.for_datapoint]
         if annual_years:
             max_annual_year = max(annual_years)
-            min_annual_year = max_annual_year - 9  # last 10 years
-            annual_values = {
-                str(a.for_datapoint.year_EC): a.performance
+            min_annual_year = max_annual_year
+            annual_rows = [
+                {
+                    "year": str(a.for_datapoint.year_EC),
+                    "value": float(a.performance),
+                }
                 for a in indicator.annual_data.all()
-                if a.performance is not None and min_annual_year <= a.for_datapoint.year_EC <= max_annual_year
-            }
-            if annual_values:
-                data.update(annual_values)
+                if a.for_datapoint and a.performance is not None
+            ]
+
+            if annual_rows:
+                data["time_series"] = annual_rows
+            else:
+                data["time_series"] = []
         else:
             annual_values = {}
 
@@ -373,8 +379,6 @@ def export_json(request, category_id):
         #         data.update(month_values)
         # else:
         #     month_values = {}
-
-
 
         all_data.append(data)
 
