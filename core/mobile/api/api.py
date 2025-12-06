@@ -311,14 +311,13 @@ def export_json(request, category_id):
             'topic': topic_titles_str or "",
             'category': category_names_str or "",
 
-            'metadata': {
-                "unit": indicator.measurement_units or "",
-                'source': indicator.source or "",
-                'kpi_type': indicator.kpi_characteristics or "",
-                'version': indicator.version or "",
-                'parent': getattr(indicator.parent, 'title_ENG', ""),
-            },     
-     
+            "unit": indicator.measurement_units or "",
+            'source': indicator.source or "",
+            'kpi_type': indicator.kpi_characteristics or "",
+            'version': indicator.version or "",
+            'parent': getattr(indicator.parent, 'title_ENG', ""),   
+    
+    
         }
 
 
