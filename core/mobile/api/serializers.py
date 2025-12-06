@@ -401,29 +401,58 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     
     
     def get_latest_data(self, obj):
-        # Get the latest entry based on for_datapoint__year_EC from each dataset
+   
+        # --- Fetch latest entries safely ---
         latest_annual = obj.annual_data.order_by('-for_datapoint__year_EC').first() if obj.annual_data.exists() else None
         latest_quarter = obj.quarter_data.order_by('-for_datapoint__year_EC').first() if obj.quarter_data.exists() else None
         latest_month = obj.month_data.order_by('-for_datapoint__year_EC').first() if obj.month_data.exists() else None
 
-        # Extract year_EC values safely
-        annual_year = getattr(latest_annual.for_datapoint, 'year_EC', None) if latest_annual else None
-        quarter_year = getattr(latest_quarter.for_datapoint, 'year_EC', None) if latest_quarter else None
-        month_year = getattr(latest_month.for_datapoint, 'year_EC', None) if latest_month else None
+        # Weekly & Daily from KPIRecord (use ethio_date!)
+        latest_week = obj.records.filter(record_type='weekly').first()
+        latest_day = obj.records.filter(record_type='daily').first()
 
-        # Default to a very old year for comparison if missing
-        annual_year = annual_year or 0
-        quarter_year = quarter_year or 0
-        month_year = month_year or 0
+        # --- Extract EC year for annual/quarter/month ---
+        def get_year(entry):
+            if not entry:
+                return 0
+            if hasattr(entry, "for_datapoint") and entry.for_datapoint:
+                return int(entry.for_datapoint.year_EC)
+            return 0
 
-        # Compare the year_EC values to determine the most recent dataset
+        annual_year = get_year(latest_annual)
+        quarter_year = get_year(latest_quarter)
+        month_year = get_year(latest_month)
+
+        # --- Convert ethio_date → comparable tuple (year, month, day) ---
+        def parse_ethio_date(e_date):
+            """e_date: '2017-2-1' or '2017-02-01' → (2017, 2, 1)"""
+            if not e_date:
+                return (0, 0, 0)
+            try:
+                parts = [int(p) for p in e_date.split('-')]
+                if len(parts) == 3:
+                    return (parts[0], parts[1], parts[2])
+            except:
+                pass
+            return (0, 0, 0)
+
+        week_ec = parse_ethio_date(latest_week.ethio_date) if latest_week else (0, 0, 0)
+        day_ec  = parse_ethio_date(latest_day.ethio_date) if latest_day else (0, 0, 0)
+
+        # --- Build comparable list ---
         latest_data = max(
-            [(annual_year, 'annual'), (quarter_year, 'quarterly'), (month_year, 'monthly')],
+            [
+                ((annual_year, 0, 0), 'annual'),
+                ((quarter_year, 0, 0), 'quarterly'),
+                ((month_year, 0, 0), 'monthly'),
+                (week_ec, 'weekly'),
+                (day_ec, 'daily'),
+            ],
             key=lambda x: x[0]
         )
 
         return latest_data[1]
-        
+
 
     # in your serializer class
     def get_children(self, obj):
