@@ -351,13 +351,12 @@ def export_json(request, topic_id):
                         "latest_value": float(latest_value) if latest_value is not None else None,
                     })
 
-                    # Add year_XXXX fields
-                    year_rows = {
-                        f"year_{year}": float(value)
-                        for year, value in annual_data
-                    }
+                    # year_rows = {
+                    #     f"year_{year}": float(value)
+                    #     for year, value in annual_data
+                    # }
 
-                    data.update(year_rows)
+                    # data.update(year_rows)
 
 
             # # === Quarterly data: last 4 years ===
