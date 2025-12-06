@@ -328,7 +328,7 @@ def export_json(request, topic_id):
                 annual_data = [
                     (a.for_datapoint.year_EC, a.performance)
                     for a in indicator.annual_data.all()
-                    if a.for_datapoint and a.performance is not None
+                    if a.for_datapoint and a.performance is not None and a.performance != 0
                 ]
 
                 if annual_data:
@@ -408,3 +408,29 @@ def export_json(request, topic_id):
         )
     response['Content-Disposition'] = f'attachment; filename="{category.name_ENG}_data.json"'
     return response
+
+
+
+@api_view(['GET'])
+def get_annual_value(request):
+    code = request.query_params.get('code')
+    year = request.query_params.get('year')
+
+    if not code or not year:
+        return Response({"error": "Missing 'code' or 'year' parameter"}, status=400)
+    
+    try:
+        year = int(year)
+    except ValueError:
+        return Response({"error": "'year' must be an integer"}, status=400)
+    
+    try:
+        annual_data = AnnualData.objects.get(indicator__code=code, for_datapoint__year_EC=year)
+        serializer = AIAnnualDataSerializer(annual_data)
+        return Response({
+            "indicator": code,
+            "year": year,
+            "value": serializer.data['performance']
+        })
+    except AnnualData.DoesNotExist:
+        return Response({"error": "Data not found"}, status=404)

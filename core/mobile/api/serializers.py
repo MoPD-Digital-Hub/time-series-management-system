@@ -77,7 +77,6 @@ class TopicSerializer(serializers.ModelSerializer):
     def get_count_category(self, obj):
         return obj.categories.all().count()
     
-
 class AnnualDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     class Meta:
@@ -87,6 +86,19 @@ class AnnualDataSerializer(serializers.ModelSerializer):
     def get_for_datapoint(self, obj):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
 
+
+class AIAnnualDataSerializer(serializers.ModelSerializer):
+    for_datapoint = serializers.SerializerMethodField()
+    indicator = serializers.SerializerMethodField()
+    class Meta:
+        model = AnnualData
+        fields = ('indicator', 'for_datapoint', 'performance')
+
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+
+    def get_indicator(self, obj):
+            return str(obj.indicator.title_ENG)
 
 class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
