@@ -329,7 +329,7 @@ def export_json(request, category_id):
             annual_rows = [
                 {
                     "year": str(a.for_datapoint.year_EC),
-                    "value": float(a.performance),
+                    "value": str(float(a.performance)),
                     "unit": indicator.measurement_units or "Number",
                 }
                 for a in indicator.annual_data.all()
