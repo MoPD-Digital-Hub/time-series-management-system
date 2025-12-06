@@ -325,16 +325,40 @@ def export_json(request, topic_id):
 
             annual_years = [a.for_datapoint.year_EC for a in indicator.annual_data.all() if a.for_datapoint]
             if annual_years:
-                max_annual_year = max(annual_years)
-                min_annual_year = max_annual_year
-                annual_rows = {
-                    f"year_{str(a.for_datapoint.year_EC)}":str(float(a.performance))
+                annual_data = [
+                    (a.for_datapoint.year_EC, a.performance)
                     for a in indicator.annual_data.all()
                     if a.for_datapoint and a.performance is not None
-                }
+                ]
 
-                if annual_rows:
-                    data.update(annual_rows)
+                if annual_data:
+                    # Extract years and determine min/max
+                    years = [year for year, value in annual_data]
+                    min_year = min(years)
+                    max_year = max(years)
+
+                    # Compute latest value
+                    latest_value = next(
+                        (value for year, value in annual_data if year == max_year),
+                        None
+                    )
+
+                    # Update summary data
+                    data.update({
+                        "start_year": min_year,
+                        "end_year": max_year,
+                        "latest_year": max_year,
+                        "latest_value": float(latest_value) if latest_value is not None else None,
+                    })
+
+                    # Add year_XXXX fields
+                    year_rows = {
+                        f"year_{year}": float(value)
+                        for year, value in annual_data
+                    }
+
+                    data.update(year_rows)
+
 
             # # === Quarterly data: last 4 years ===
             # quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
