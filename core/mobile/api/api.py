@@ -410,26 +410,41 @@ def export_json(request, topic_id):
 
 
 
+
 @api_view(['GET'])
 def get_annual_value(request):
     code = request.query_params.get('code')
     year = request.query_params.get('year')
 
-    if not code or not year:
-        return Response({"error": "Missing 'code' or 'year' parameter"}, status=400)
+    if not code:
+        return Response({"error": "Missing 'code' parameter"}, status=400)
     
-    try:
-        year = int(year)
-    except ValueError:
-        return Response({"error": "'year' must be an integer"}, status=400)
-    
-    try:
-        annual_data = AnnualData.objects.get(indicator__code=code, for_datapoint__year_EC=year)
-        serializer = AIAnnualDataSerializer(annual_data)
+    if year:
+        try:
+            year = int(year)
+        except ValueError:
+            return Response({"error": "'year' must be an integer"}, status=400)
+        
+        try:
+            annual_data = AnnualData.objects.get(indicator__code=code, for_datapoint__year_EC=year)
+            serializer = AIAnnualDataSerializer(annual_data)
+            return Response({
+                "indicator": code,
+                "year": year,
+                "value": serializer.data['performance']
+            })
+        except AnnualData.DoesNotExist:
+            return Response({"error": "Data not found"}, status=404)
+    else:
+        # Return full time series
+        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('for_datapoint__year_EC').exclude(performance = 0)
+        if not annual_queryset.exists():
+            return Response({"error": "Data not found"}, status=404)
+
+        serializer = AIAnnualDataSerializer(annual_queryset, many=True)
+        # Build dict {year: value} for convenience
+        full_series = {item['for_datapoint']: item['performance'] for item in serializer.data}
         return Response({
             "indicator": code,
-            "year": year,
-            "value": serializer.data['performance']
+            "time_series": full_series
         })
-    except AnnualData.DoesNotExist:
-        return Response({"error": "Data not found"}, status=404)
