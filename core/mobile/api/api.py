@@ -443,13 +443,7 @@ def get_annual_value(request):
 
         serializer = AIAnnualDataSerializer(annual_queryset, many=True)
         # Build dict {year: value} for convenience
-        full_series = [
-            {
-                'year' : item['for_datapoint'],
-                'value': item['performance'] 
-            }
-            for item in serializer.data
-        ]
+        full_series = {item['for_datapoint']: item['performance'] for item in serializer.data}
         return Response({
             "indicator": code,
             "time_series": full_series
