@@ -316,8 +316,7 @@ def export_json(request, category_id):
             'kpi_type': indicator.kpi_characteristics or "",
             'version': indicator.version or "",
             'parent': getattr(indicator.parent, 'title_ENG', ""),   
-    
-    
+     
         }
 
 
@@ -325,22 +324,14 @@ def export_json(request, category_id):
         if annual_years:
             max_annual_year = max(annual_years)
             min_annual_year = max_annual_year
-            annual_rows = [
-                {
-                    "year": str(a.for_datapoint.year_EC),
-                    "value": str(float(a.performance)),
-                    "unit": indicator.measurement_units or "Number",
-                }
+            annual_rows = {
+                f"year_{str(a.for_datapoint.year_EC)}":str(float(a.performance))
                 for a in indicator.annual_data.all()
                 if a.for_datapoint and a.performance is not None
-            ]
+            }
 
             if annual_rows:
-                data["time_series"] = annual_rows
-            else:
-                data["time_series"] = []
-        else:
-            annual_values = {}
+                data.update(annual_rows)
 
         # # === Quarterly data: last 4 years ===
         # quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
