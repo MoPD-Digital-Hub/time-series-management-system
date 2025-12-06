@@ -344,12 +344,12 @@ def export_json(request, topic_id):
                     )
 
                     # Update summary data
-                    data.update({
-                        "start_year": min_year,
-                        "end_year": max_year,
-                        "latest_year": max_year,
-                        "latest_value": float(latest_value) if latest_value is not None else None,
-                    })
+                    # data.update({
+                    #     "start_year": min_year,
+                    #     "end_year": max_year,
+                    #     "latest_year": max_year,
+                    #     "latest_value": float(latest_value) if latest_value is not None else None,
+                    # })
 
                     # year_rows = {
                     #     f"year_{year}": float(value)
