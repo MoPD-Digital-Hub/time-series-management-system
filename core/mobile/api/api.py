@@ -436,21 +436,50 @@ def get_annual_value(request):
         except AnnualData.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
     else:
-        # Return full time series
         annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('for_datapoint__year_EC').exclude(performance = 0)
-        if not annual_queryset.exists():
+        quarter_queryset = QuarterData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_quarter__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)
+        month_queryset = MonthData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_month__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)
+
+        if not (annual_queryset.exists() or quarter_queryset.exists() or month_queryset.exists()):
             return Response({"error": "Data not found"}, status=404)
 
-        serializer = AIAnnualDataSerializer(annual_queryset, many=True)
-        # Build dict {year: value} for convenience
-        full_series = [
+        annual_serializer = AIAnnualDataSerializer(annual_queryset, many=True)
+        quarter_serializer = AIQuarterDataSerializer(quarter_queryset, many=True)
+        month_serializer = AIMonthDataSerializer(month_queryset, many=True)
+
+        annual_full_series = [
             {
                 'year' : item['for_datapoint'],
                 'value': item['performance'] 
             }
-            for item in serializer.data
+            for item in annual_serializer.data
         ]
+
+        quarter_full_series = [
+            {
+                'year' : item['for_datapoint'],
+                'quarter' : item['for_quarter'], 
+                'value': item['performance'] 
+            }
+            for item in quarter_serializer.data
+        ]
+
+        month_full_series = [
+            {
+                'year' : item['for_datapoint'],
+                'month' : item['for_month'], 
+                'value': item['performance'] 
+            }
+            for item in month_serializer.data
+        ]
+
+    
+
         return Response({
             "indicator": code,
-            "time_series": full_series
+            "time_series": {
+                "annual" : annual_full_series,
+                "quarter" : quarter_full_series,
+                "month" : month_full_series
+            }
         })

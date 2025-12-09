@@ -87,18 +87,6 @@ class AnnualDataSerializer(serializers.ModelSerializer):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
 
 
-class AIAnnualDataSerializer(serializers.ModelSerializer):
-    for_datapoint = serializers.SerializerMethodField()
-    indicator = serializers.SerializerMethodField()
-    class Meta:
-        model = AnnualData
-        fields = ('indicator', 'for_datapoint', 'performance')
-
-    def get_for_datapoint(self, obj):
-        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
-
-    def get_indicator(self, obj):
-            return str(obj.indicator.title_ENG)
 
 class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
@@ -586,3 +574,46 @@ class CategoryWithIndicatorsSerializer(serializers.ModelSerializer):
     
 
 
+
+#### AI Serializer ###
+class AIAnnualDataSerializer(serializers.ModelSerializer):
+    for_datapoint = serializers.SerializerMethodField()
+    indicator = serializers.SerializerMethodField()
+    class Meta:
+        model = AnnualData
+        fields = ('indicator', 'for_datapoint', 'performance')
+
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+
+    def get_indicator(self, obj):
+            return str(obj.indicator.title_ENG)
+
+
+class AIQuarterDataSerializer(serializers.ModelSerializer):
+    for_datapoint = serializers.SerializerMethodField()
+    for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
+
+    class Meta:
+        model = QuarterData
+        fields = '__all__'
+
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+
+    def get_indicator(self, obj):
+            return str(obj.indicator.title_ENG)
+    
+class AIMonthDataSerializer(serializers.ModelSerializer):
+    for_datapoint = serializers.SerializerMethodField()
+    for_month = serializers.SlugRelatedField(read_only=True, slug_field='month_ENG')
+
+    class Meta:
+        model = MonthData
+        fields = '__all__'
+
+    def get_for_datapoint(self, obj):
+        return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+
+    def get_indicator(self, obj):
+            return str(obj.indicator.title_ENG)
