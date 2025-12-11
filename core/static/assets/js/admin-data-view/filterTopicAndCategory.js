@@ -29,6 +29,7 @@ $(document).ready(function () {
         $("#tableLoader").html(LOADING_HTML)
 
         let response = await axios.get(url)
+        console.log(response)
         try {
             contractAnnualTable(response.data)
             contractQuarterTable(response.data)
