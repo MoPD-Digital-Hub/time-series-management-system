@@ -436,9 +436,9 @@ def get_annual_value(request):
         except AnnualData.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
     else:
-        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('for_datapoint__year_EC').exclude(performance = 0)
-        quarter_queryset = QuarterData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_quarter__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)
-        month_queryset = MonthData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_month__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)
+        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
+        quarter_queryset = QuarterData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_quarter__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
+        month_queryset = MonthData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_month__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
 
         if not (annual_queryset.exists() or quarter_queryset.exists() or month_queryset.exists()):
             return Response({"error": "Data not found"}, status=404)
@@ -473,7 +473,6 @@ def get_annual_value(request):
             for item in month_serializer.data
         ]
 
-    
 
         return Response({
             "indicator": code,
