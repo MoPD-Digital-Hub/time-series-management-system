@@ -402,16 +402,13 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
     
     def get_latest_data(self, obj):
    
-        # --- Fetch latest entries safely ---
         latest_annual = obj.annual_data.order_by('-for_datapoint__year_EC').first() if obj.annual_data.exists() else None
         latest_quarter = obj.quarter_data.order_by('-for_datapoint__year_EC').first() if obj.quarter_data.exists() else None
         latest_month = obj.month_data.order_by('-for_datapoint__year_EC').first() if obj.month_data.exists() else None
 
-        # Weekly & Daily from KPIRecord (use ethio_date!)
         latest_week = obj.records.filter(record_type='weekly').first()
         latest_day = obj.records.filter(record_type='daily').first()
 
-        # --- Extract EC year for annual/quarter/month ---
         def get_year(entry):
             if not entry:
                 return 0
@@ -423,7 +420,6 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
         quarter_year = get_year(latest_quarter)
         month_year = get_year(latest_month)
 
-        # --- Convert ethio_date → comparable tuple (year, month, day) ---
         def parse_ethio_date(e_date):
             """e_date: '2017-2-1' or '2017-02-01' → (2017, 2, 1)"""
             if not e_date:
@@ -438,8 +434,6 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
         week_ec = parse_ethio_date(latest_week.ethio_date) if latest_week else (0, 0, 0)
         day_ec  = parse_ethio_date(latest_day.ethio_date) if latest_day else (0, 0, 0)
-
-        # --- Build comparable list ---
         latest_data = max(
             [
                 ((annual_year, 0, 0), 'annual'),
@@ -453,11 +447,8 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
 
         return latest_data[1]
 
-
-    # in your serializer class
     def get_children(self, obj):
-        # safe, DB-agnostic fallback
-        children_qs = obj.children.filter() #is_dashboard_visible = True
+        children_qs = obj.children.filter() 
         children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
         return IndicatorSerializer(children_list, many=True, context=self.context).data
 

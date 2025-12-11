@@ -164,44 +164,55 @@ def filter_indicator_annual_value(request):
       
       
 
-      quarter_data_value =list( QuarterData.objects.filter(indicator__id__in = indicator_list_id_with_children ).values(
-         'id',
-         'indicator__title_ENG',
-         'indicator__title_AMH',
-         'indicator__id',
-         'indicator__parent_id',
-         'for_datapoint__year_EC',
-         'for_datapoint__year_GC',
-         'for_quarter__number',
-         'performance',
-         'target'
-      ))
+      quarter_data_value = list(
+         QuarterData.objects.filter(indicator__id__in=indicator_list_id_with_children)
+         .order_by('-for_datapoint__year_GC', '-for_quarter__number')  # Order by year_GC and quarter number
+         .values(
+            'id',
+            'indicator__title_ENG',
+            'indicator__title_AMH',
+            'indicator__id',
+            'indicator__parent_id',
+            'for_datapoint__year_EC',
+            'for_datapoint__year_GC',
+            'for_quarter__number',
+            'performance',
+            'target'
+         )
+      )
 
+      month_data_value = list(
+         MonthData.objects.filter(indicator__id__in=indicator_list_id_with_children)
+         .order_by('-for_datapoint__year_GC', '-for_month__number')  # Order by year_GC and month number
+         .values(
+            'id',
+            'indicator__title_ENG',
+            'indicator__title_AMH',
+            'indicator__id',
+            'indicator__parent_id',
+            'for_datapoint__year_EC',
+            'for_datapoint__year_GC',
+            'for_month__number',
+            'performance',
+            'target'
+         )
+      )
 
-      month_data_value =list( MonthData.objects.filter(indicator__id__in = indicator_list_id_with_children ).values(
-         'id',
-         'indicator__title_ENG',
-         'indicator__title_AMH',
-         'indicator__id',
-         'indicator__parent_id',
-         'for_datapoint__year_EC',
-         'for_datapoint__year_GC',
-         'for_month__number',
-         'performance',
-         'target'
-      ))
-
-      annual_data_value =list( AnnualData.objects.filter(indicator__id__in = indicator_list_id_with_children ).values(
-         'id',
-         'indicator__title_ENG',
-         'indicator__title_AMH',
-         'indicator__id',
-         'indicator__parent_id',
-         'for_datapoint__year_EC',
-         'for_datapoint__year_GC',
-         'performance',
-         'target'
-      ))
+      annual_data_value = list(
+         AnnualData.objects.filter(indicator__id__in=indicator_list_id_with_children)
+         .order_by('-for_datapoint__year_GC')  # Order by year_GC in descending order
+         .values(
+            'id',
+            'indicator__title_ENG',
+            'indicator__title_AMH',
+            'indicator__id',
+            'indicator__parent_id',
+            'for_datapoint__year_EC',
+            'for_datapoint__year_GC',
+            'performance',
+            'target'
+         )
+      )
 
 
 
