@@ -436,7 +436,7 @@ def get_annual_value(request):
         except AnnualData.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
     else:
-        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
+        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('-for_datapoint__year_EC').exclude(performance = 0)[:10]
         quarter_queryset = QuarterData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_quarter__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
         month_queryset = MonthData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_month__isnull = False).order_by('for_datapoint__year_EC').exclude(performance = 0)[:10]
 
