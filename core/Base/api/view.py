@@ -205,13 +205,17 @@ def filter_indicator_annual_value(request):
 
 
 
-      year = list(DataPoint.objects.all().values('year_EC', 'year_GC'))
+      
 
       indicator_lists = Indicator.objects.filter(id__in = indicator_list_id_with_children).select_related().values()
 
-      quarter = list(Quarter.objects.all().values('title_ENG', 'title_AMH', 'number'))
+      year = list(DataPoint.objects.all().order_by('-year_GC').values('year_EC', 'year_GC'))
+      quarter = list(Quarter.objects.all().order_by('-number') .values('title_ENG', 'title_AMH', 'number'))
+      month = list(Month.objects.all().order_by('-number').values('month_ENG', 'month_AMH', 'number')
+)
 
-      month = list(Month.objects.all().values('month_ENG', 'month_AMH', 'number'))
+
+
 
       context = {
          'year' : year,
