@@ -202,7 +202,7 @@ class DataPoint(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     class Meta:
-        ordering = ['year_EC'] 
+        ordering = ['-year_EC'] 
 
     def __str__(self):
         return str(self.year_EC)
