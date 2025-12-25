@@ -80,17 +80,6 @@ class Indicator(models.Model):
         ('annual', 'annual'),
     ]
 
-    # DISAGGREGATION_DIMENSION_CHOICE = [
-    #     ('gender', 'Gender'),
-    #     ('age', 'Age'),
-    #     ('location', 'Location'),
-    #     ('income', 'Income Level'), 
-    #     ('education', 'Education Level'),  
-    #     ('National', 'National'),
-    #     ('Regional', 'Regional'),
-    #     ('Rural', 'Rural'),
-    #     ('Urban', 'Urban'),
-    # ]
 
     DATA_TYPE_CHOICE = [
         ('number', 'Integer'),
@@ -105,13 +94,6 @@ class Indicator(models.Model):
         ('pending_review', 'Pending Review'), 
     ]
 
-    # COLLECTION_INSTRUMENT_CHOICE = [
-    #     ('Survey', 'Survey'),
-    #     ('Admin', 'Administrative Record'),
-    #     ('census', 'Census'),
-    #     ('survey_other', 'Other Survey'),
-    #     ('government financial statistics ')  
-    # ]
 
     title_ENG = models.CharField(max_length=300)
     title_AMH = models.CharField(max_length=300, null=True, blank=True)

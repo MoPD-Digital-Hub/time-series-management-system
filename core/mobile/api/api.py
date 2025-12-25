@@ -279,6 +279,28 @@ def download_indicator_data(request, id):
     return export_dataset(indicators, resource_class, file_type, filename_prefix)
 
 
+def serialize_indicator(indicator):
+    """
+    Recursively serialize an indicator and all its children.
+    """
+    data = {
+        'code': indicator.code or "",
+        'name': indicator.title_ENG or "",
+        'description': indicator.description or "",
+        'unit': indicator.measurement_units or "Number",
+        'source': indicator.source or "MoPD",
+        'kpi_type': indicator.kpi_characteristics or "",
+        'version': indicator.version or "",
+        'parent': getattr(indicator.parent, 'title_ENG', None),
+        'child': []
+    }
+
+    # Recursive children
+    children = indicator.children.filter(is_dashboard_visible=True)
+    for child in children:
+        data['child'].append(serialize_indicator(child))
+
+    return data
 
 def export_json(request, topic_id):
     try:
@@ -286,120 +308,19 @@ def export_json(request, topic_id):
     except Topic.DoesNotExist:
         return HttpResponse('Topic not found!', status=404)
     
-    all_data = []
+
     categories = topic.categories.all()
+    all_data = []
 
     for category in categories:
+        # Get top-level indicators (parents only)
+        indicators = category.indicators.filter(
+            is_dashboard_visible=True,
+            parent__isnull=True
+        )
 
-        indicators = category.indicators.filter(is_dashboard_visible=True)
-        
         for indicator in indicators:
-            # Handle ManyToMany or ForeignKey relations
-            if hasattr(indicator.for_category, 'all'):
-                categories_list = indicator.for_category.all()
-            else:
-                categories_list = [indicator.for_category] if indicator.for_category else []
-
-            category_names = [c.name_ENG for c in categories_list if hasattr(c, 'name_ENG')]
-            topic_titles = [getattr(c.topic, 'title_ENG', None) for c in categories_list if getattr(c, 'topic', None)]
-
-            category_names_str = ", ".join(category_names)
-            topic_titles_str = ", ".join(topic_titles)
-
-            data = {
-                'code': indicator.code or "",
-                'name': indicator.title_ENG or "",
-                'description': indicator.description or "",
-                
-                'topic': topic_titles_str or "",
-                'category': category_names_str or "",
-
-                "unit": indicator.measurement_units or "Number",
-                'source': indicator.source or "MoPD",
-                'kpi_type': indicator.kpi_characteristics or "",
-                'version': indicator.version or "",
-                'parent': getattr(indicator.parent, 'title_ENG', ""),   
-        
-            }
-
-
-            annual_years = [a.for_datapoint.year_EC for a in indicator.annual_data.all() if a.for_datapoint]
-            if annual_years:
-                annual_data = [
-                    (a.for_datapoint.year_EC, a.performance)
-                    for a in indicator.annual_data.all()
-                    if a.for_datapoint and a.performance is not None and a.performance != 0
-                ]
-
-                if annual_data:
-                    # Extract years and determine min/max
-                    years = [year for year, value in annual_data]
-                    min_year = min(years)
-                    max_year = max(years)
-
-                    # Compute latest value
-                    latest_value = next(
-                        (value for year, value in annual_data if year == max_year),
-                        None
-                    )
-
-                    # Update summary data
-                    # data.update({
-                    #     "start_year": min_year,
-                    #     "end_year": max_year,
-                    #     "latest_year": max_year,
-                    #     "latest_value": float(latest_value) if latest_value is not None else None,
-                    # })
-
-                    # year_rows = {
-                    #     f"year_{year}": float(value)
-                    #     for year, value in annual_data
-                    # }
-
-                    # data.update(year_rows)
-
-
-            # # === Quarterly data: last 4 years ===
-            # quarter_years = [q.for_datapoint.year_EC for q in indicator.quarter_data.all() if q.for_datapoint]
-            # if quarter_years:
-            #     max_quarter_year = max(quarter_years)
-            #     min_quarter_year = max_quarter_year - 3  # last 4 years
-            #     quarter_values = {
-            #         f"{q.for_datapoint.year_EC} - {q.for_quarter.title_ENG}": q.performance
-            #         for q in indicator.quarter_data.all()
-            #         if (
-            #             q.performance is not None
-            #             and q.for_datapoint
-            #             and min_quarter_year <= q.for_datapoint.year_EC <= max_quarter_year
-            #         )
-            #     }
-            #     if quarter_values:
-            #         data.update(quarter_values)
-            # else:
-            #     quarter_values = {}
-
-            # # === Monthly data: last 2 years ===
-            # month_years = [m.for_datapoint.year_EC for m in indicator.month_data.all() if m.for_datapoint]
-            # if month_years:
-            #     max_month_year = max(month_years)
-            #     min_month_year = max_month_year - 1  # last 2 years
-            #     month_values = {
-            #         f"{m.for_datapoint.year_EC} - {m.for_month.month_AMH}": m.performance
-            #         for m in indicator.month_data.all()
-            #         if (
-            #             m.performance is not None
-            #             and m.for_datapoint
-            #             and min_month_year <= m.for_datapoint.year_EC <= max_month_year
-            #         )
-            #     }
-            #     if month_values:
-            #         data.update(month_values)
-            # else:
-            #     month_values = {}
-
-            all_data.append(data)
-
-    
+            all_data.append(serialize_indicator(indicator))
     
     response = HttpResponse(
             json.dumps(all_data, ensure_ascii=False, indent=4),
@@ -407,8 +328,6 @@ def export_json(request, topic_id):
         )
     response['Content-Disposition'] = f'attachment; filename="{category.name_ENG}_data.json"'
     return response
-
-
 
 
 @api_view(['GET'])

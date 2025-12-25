@@ -24,6 +24,6 @@ urlpatterns = [
     path('export-indicator-data/<int:id>/', api.download_indicator_data, name='export-indicator-data'),
 
     path('export-all-data-json/<int:topic_id>/', api.export_json, name='export-all-data'),
-     path("annual_value/", api.get_annual_value, name="get_annual_value"),
+    path("annual_value/", api.get_annual_value, name="get_annual_value"),
 
 ]
