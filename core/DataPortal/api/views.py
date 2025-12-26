@@ -28,7 +28,7 @@ def data_points(request):
 @api_view(['GET'])
 def topic_lists(request):
     if request.method == 'GET':
-        topics = Topic.objects.filter(is_dashboard=True).annotate(category_count=Count('categories')).select_related()
+        topics = Topic.objects.filter(is_dashboard=True , is_initiative=False).annotate(category_count=Count('categories')).select_related()
         serializer = TopicSerializers(topics, many=True)
         return Response(serializer.data)
     
