@@ -367,44 +367,43 @@ $(document).ready(function () {
         })
     }
 
-    const getWays = async() =>{
+    const getWays = async () => {
 
+    // ===== Topics =====
+    handleTopicSkeleton(true)
+    const topics = await fetchData('/data-portal/api/topic-lists/')
+    handleTopicSkeleton(false)
 
-        handleTopicSkeleton(true) // show loading before fetching data
-        const topics = await fetchData('/data-portal/api/topic-lists')
-        handleTopicSkeleton(false)  // hide loading
+    topicListHtml(topics)
 
+    // ===== Default Category =====
+    handleCardSkeleton(true)
+    const defaultCategories = await fetchData('/data-portal/api/category-with-indicator/9/')
+    const lastTenYear = await fetchData('/data-portal/api/data-points-last-five/')
+    handleCardSkeleton(false)
 
-        
-        topicListHtml(topics) //contract the topic cards
+    categoryHtml(defaultCategories)
+    handleCategoryClicked(defaultCategories, lastTenYear)
 
-        //default category
+    // ===== On Topic Click =====
+    $("[name='topic-card']").click(async function () {
+        let cardData = $(this).data()
+        $("#topic-title").html(cardData.topicName)
+
         handleCardSkeleton(true)
-        const defaultCategories = await fetchData(`/data-portal/api/category-with-indicator/19`)
-        const lastTenYear = await fetchData(`/data-portal/api/data-points-last-five/`)
+
+        // 🔥 FIXED: added trailing slash
+        const categories = await fetchData(
+            `/data-portal/api/category-with-indicator/${cardData.id}/`
+        )
+
         handleCardSkeleton(false)
-        categoryHtml(defaultCategories)
-        handleCategoryClicked(defaultCategories, lastTenYear) // handle modal data
-       
 
+        categoryHtml(categories)
+        handleCategoryClicked(categories, lastTenYear)
+    })
+}
 
-         //handle on topic clicked
-        $("[name='topic-card']").click(async function () {
-            let cardData = $(this).data();
-            $("#topic-title").html(cardData.topicName)  //change title of topic
-
-            handleCardSkeleton(true)
-            const categories = await fetchData(`/data-portal/api/category-with-indicator/${cardData.id}`)
-           
-            handleCardSkeleton(false)
-
-            categoryHtml(categories)
-            handleCategoryClicked(categories, lastTenYear)
-
-        })
-
-
-    }
 
     getWays()
 
@@ -415,7 +414,7 @@ $(document).ready(function () {
         let searchItem = $("#searchItemValue").val()
 
         handleCardSkeleton(true)  //enable loading
-        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/19?search=${searchItem}`)
+        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/9?search=${searchItem}`)
         handleCardSkeleton(false) //disable loading
 
         categoryHtml(searchResult)

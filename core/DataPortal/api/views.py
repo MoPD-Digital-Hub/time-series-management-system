@@ -28,7 +28,7 @@ def data_points(request):
 @api_view(['GET'])
 def topic_lists(request):
     if request.method == 'GET':
-        topics = Topic.objects.filter(is_dashboard=True, is_deleted=False).annotate(category_count=Count('categories')).select_related()
+        topics = Topic.objects.filter(is_dashboard=True).annotate(category_count=Count('categories')).select_related()
         serializer = TopicSerializers(topics, many=True)
         return Response(serializer.data)
     
@@ -36,7 +36,7 @@ def topic_lists(request):
 @api_view(['GET'])
 def category_with_indicator(request, id):
     try:
-        topic = Topic.objects.get(pk = id)
+        topic = Topic.objects.get(id = id)
     except Topic.DoesNotExist:
         return HttpResponse(status=status.HTTP_404_NOT_FOUND)
     
