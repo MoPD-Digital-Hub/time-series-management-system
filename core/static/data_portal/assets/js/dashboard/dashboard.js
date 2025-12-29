@@ -355,7 +355,7 @@ $(document).ready(function () {
 
         //default category
         handleCardSkeleton(true)
-        const defaultCategories = await fetchData(`/data-portal/api/category-with-indicator/58`)
+        const defaultCategories = await fetchData(`/data-portal/api/category-with-indicator/13`)
         const lastTenYear = await fetchData(`/data-portal/api/data-points-last-five/`)
         handleCardSkeleton(false)
         categoryHtml(defaultCategories)
