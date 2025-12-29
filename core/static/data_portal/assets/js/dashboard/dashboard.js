@@ -77,7 +77,6 @@ $(document).ready(function () {
     }
 
     const categoryHtml = (data) => {
-        $("#category-card-list").html('')
         for(item of data){
             let color = randomColor()
             $("#category-card-list").append(
@@ -180,7 +179,7 @@ $(document).ready(function () {
     }
 
     const cardGraph = (indicator, color) =>{
-        
+        const chart_id = `chart${indicator.id}`
         
         
         console.log(indicator_ids)
