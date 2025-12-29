@@ -399,6 +399,7 @@ $(document).ready(function () {
 
         handleCardSkeleton(false)
 
+        $("#category-card-list").html('')  //clear inner html
         categoryHtml(categories)
         handleCategoryClicked(categories, lastTenYear)
     })
