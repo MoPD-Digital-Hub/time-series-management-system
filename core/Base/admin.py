@@ -120,7 +120,12 @@ class MonthDataAdmin(ImportExportModelAdmin):
     resource_classes = [MonthDataResource,MonthDataWideResource]
     list_display = ('id','for_datapoint' , 'for_month' ,'performance','target' , )
     list_filter = ('indicator' , 'for_datapoint')
-    search_fields = ('indicator' , 'for_datapoint')
+    search_fields = (
+        'indicator__for_category__topic__title_ENG',
+        'indicator__code',
+        'indicator__title_ENG',
+        'for_datapoint__year_EC',
+    )
 
     autocomplete_fields = ['indicator']
     list_editable = ('for_datapoint','for_month', 'performance', 'target')
