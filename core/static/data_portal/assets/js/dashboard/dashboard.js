@@ -76,6 +76,7 @@ $(document).ready(function () {
     }
 
     const categoryHtml = (data) => {
+        $("#category-card-list").html('') 
         for(item of data){
             let color = randomColor()
             $("#category-card-list").append(
@@ -177,71 +178,46 @@ $(document).ready(function () {
         return card.length > 0 ?  card : `<p class="text-center text-danger">No data found</p>`
     }
 
-    const cardGraph = (indicator, color) =>{
-        
-        const seriesData = indicator.annual_data.map((value) => {
-            return {
-              x: value.for_datapoint, // year
-              y: value.performance, // value
-            };
-          }).reverse();
+    const cardGraph = (indicator, color) => {
 
+    const chartEl = document.querySelector(`#chart${indicator.id}`)
+    if (!chartEl) return
 
-        var options = {
-            series: [
-                {
-                  data: seriesData,
-                },
-              ],
-          chart: {
-              type: "bar",
-              height: 100,
-              sparkline: {
-                  enabled: true,
-              },
-          },
-          colors: [COLORS_CODE[COLORS.indexOf(color)]],
-          plotOptions: {
-              bar: {
-                  columnWidth: "80%",
-              },
-          },
-          dataLabels: {
-            enabled: false,
-          },
-          
-          xaxis: {
-              crosshairs: {
-                  width: 1,
-              },
-          },
-          tooltip: {
-              fixed: {
-                  enabled: true,
-              },
-              x: {
-                  show: true,
-                  formatter: function (val) {
-                      return `Year: ${val}`; // Access x value (year) directly
-                  },
-              },
-              y: {
-                  title: {
-                      formatter: function (e) {
-                          return "";
-                      },
-                  },
-              },
-              marker: {
-              show: false,
-          },
-          },
-          };
-  
-          var chart = new ApexCharts(document.querySelector(`#chart${indicator.id}`), options);
-          chart.render();
-          return ''
+    // 🔥 Destroy existing chart if exists
+    if (chartInstances[indicator.id]) {
+        chartInstances[indicator.id].destroy()
     }
+
+    const seriesData = indicator.annual_data
+        .map(v => ({ x: v.for_datapoint, y: v.performance }))
+        .reverse()
+
+    const options = {
+        series: [{ data: seriesData }],
+        chart: {
+            type: "bar",
+            height: 100,
+            sparkline: { enabled: true }
+        },
+        colors: [COLORS_CODE[COLORS.indexOf(color)]],
+        plotOptions: {
+            bar: { columnWidth: "80%" }
+        },
+        dataLabels: { enabled: false },
+        tooltip: {
+            x: {
+                formatter: val => `Year: ${val}`
+            }
+        }
+    }
+
+    const chart = new ApexCharts(chartEl, options)
+    chart.render()
+
+    // 🔥 Store instance
+    chartInstances[indicator.id] = chart
+}
+
 
     const handleCategoryClicked = (categories, lastTenYear) =>{
          // handle detail category clicked
@@ -399,7 +375,6 @@ $(document).ready(function () {
 
         handleCardSkeleton(false)
 
-        $("#category-card-list").html('')  //clear inner html
         categoryHtml(categories)
         handleCategoryClicked(categories, lastTenYear)
     })
@@ -410,18 +385,22 @@ $(document).ready(function () {
 
 
      //handle on Search
-     $("#searchItemForm").on('submit', async function(e){
-        e.preventDefault()
-        let searchItem = $("#searchItemValue").val()
+    $("#searchItemForm").on('submit', async function(e){
+    e.preventDefault()
 
-        handleCardSkeleton(true)  //enable loading
-        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/9?search=${searchItem}`)
-        handleCardSkeleton(false) //disable loading
+    $("#category-card-list").html('')  // 🔥 ADD THIS
 
-        categoryHtml(searchResult)
-        $("#topic-title").html('Search Result')  //change title of topic
-       
-    })
+    let searchItem = $("#searchItemValue").val()
+
+    handleCardSkeleton(true)
+    const searchResult = await fetchData(
+        `/data-portal/api/category-with-indicator/9/?search=${searchItem}`
+    )
+    handleCardSkeleton(false)
+
+    categoryHtml(searchResult)
+    $("#topic-title").html('Search Result')
+})
 
    
 
