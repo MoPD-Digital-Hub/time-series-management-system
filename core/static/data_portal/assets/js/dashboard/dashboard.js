@@ -81,7 +81,7 @@ $(document).ready(function () {
             let color = randomColor()
             $("#category-card-list").append(
             `
-                <h4 class="text-center text-${color} mt-3">${item.name_ENG} 
+                <h4 class="text-center text-${color} mt-3 ">${item.name_ENG} 
                     <button 
                         data-category-id="${item.id}" 
                         type="button" 
