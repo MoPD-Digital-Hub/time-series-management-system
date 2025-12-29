@@ -1,6 +1,7 @@
 $(document).ready(function () {
     const COLORS = ['primary', 'secondary', 'success', 'danger', 'warning', 'info']
     const COLORS_CODE = ['#007bff', '#6c757d', '#28a745', '#dc3545', '#ffc107', '#17a2b8']
+    const chartInstances = {}
 
     const fetchData = async(url) =>{
         const response = await axios.get(url)
