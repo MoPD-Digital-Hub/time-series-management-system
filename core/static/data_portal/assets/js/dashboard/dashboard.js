@@ -76,7 +76,6 @@ $(document).ready(function () {
     }
 
     const categoryHtml = (data) => {
-        $("#category-card-list").html('') 
         for(item of data){
             let color = randomColor()
             $("#category-card-list").append(
@@ -178,46 +177,71 @@ $(document).ready(function () {
         return card.length > 0 ?  card : `<p class="text-center text-danger">No data found</p>`
     }
 
-    const cardGraph = (indicator, color) => {
+    const cardGraph = (indicator, color) =>{
+        
+        const seriesData = indicator.annual_data.map((value) => {
+            return {
+              x: value.for_datapoint, // year
+              y: value.performance, // value
+            };
+          }).reverse();
 
-    const chartEl = document.querySelector(`#chart${indicator.id}`)
-    if (!chartEl) return
 
-    // 🔥 Destroy existing chart if exists
-    if (chartInstances[indicator.id]) {
-        chartInstances[indicator.id].destroy()
+        var options = {
+            series: [
+                {
+                  data: seriesData,
+                },
+              ],
+          chart: {
+              type: "bar",
+              height: 100,
+              sparkline: {
+                  enabled: true,
+              },
+          },
+          colors: [COLORS_CODE[COLORS.indexOf(color)]],
+          plotOptions: {
+              bar: {
+                  columnWidth: "80%",
+              },
+          },
+          dataLabels: {
+            enabled: false,
+          },
+          
+          xaxis: {
+              crosshairs: {
+                  width: 1,
+              },
+          },
+          tooltip: {
+              fixed: {
+                  enabled: true,
+              },
+              x: {
+                  show: true,
+                  formatter: function (val) {
+                      return `Year: ${val}`; // Access x value (year) directly
+                  },
+              },
+              y: {
+                  title: {
+                      formatter: function (e) {
+                          return "";
+                      },
+                  },
+              },
+              marker: {
+              show: false,
+          },
+          },
+          };
+  
+          var chart = new ApexCharts(document.querySelector(`#chart${indicator.id}`), options);
+          chart.render();
+          return ''
     }
-
-    const seriesData = indicator.annual_data
-        .map(v => ({ x: v.for_datapoint, y: v.performance }))
-        .reverse()
-
-    const options = {
-        series: [{ data: seriesData }],
-        chart: {
-            type: "bar",
-            height: 100,
-            sparkline: { enabled: true }
-        },
-        colors: [COLORS_CODE[COLORS.indexOf(color)]],
-        plotOptions: {
-            bar: { columnWidth: "80%" }
-        },
-        dataLabels: { enabled: false },
-        tooltip: {
-            x: {
-                formatter: val => `Year: ${val}`
-            }
-        }
-    }
-
-    const chart = new ApexCharts(chartEl, options)
-    chart.render()
-
-    // 🔥 Store instance
-    chartInstances[indicator.id] = chart
-}
-
 
     const handleCategoryClicked = (categories, lastTenYear) =>{
          // handle detail category clicked
@@ -343,64 +367,61 @@ $(document).ready(function () {
         })
     }
 
-    const getWays = async () => {
+    const getWays = async() =>{
 
-    // ===== Topics =====
-    handleTopicSkeleton(true)
-    const topics = await fetchData('/data-portal/api/topic-lists/')
-    handleTopicSkeleton(false)
 
-    topicListHtml(topics)
+        handleTopicSkeleton(true) // show loading before fetching data
+        const topics = await fetchData('/data-portal/api/topic-lists')
+        handleTopicSkeleton(false)  // hide loading
 
-    // ===== Default Category =====
-    handleCardSkeleton(true)
-    const defaultCategories = await fetchData('/data-portal/api/category-with-indicator/9/')
-    const lastTenYear = await fetchData('/data-portal/api/data-points-last-five/')
-    handleCardSkeleton(false)
 
-    categoryHtml(defaultCategories)
-    handleCategoryClicked(defaultCategories, lastTenYear)
+        
+        topicListHtml(topics) //contract the topic cards
 
-    // ===== On Topic Click =====
-    $("[name='topic-card']").click(async function () {
-        let cardData = $(this).data()
-        $("#topic-title").html(cardData.topicName)
-
+        //default category
         handleCardSkeleton(true)
-
-        // 🔥 FIXED: added trailing slash
-        const categories = await fetchData(
-            `/data-portal/api/category-with-indicator/${cardData.id}/`
-        )
-
+        const defaultCategories = await fetchData(`/data-portal/api/category-with-indicator/19`)
+        const lastTenYear = await fetchData(`/data-portal/api/data-points-last-five/`)
         handleCardSkeleton(false)
+        categoryHtml(defaultCategories)
+        handleCategoryClicked(defaultCategories, lastTenYear) // handle modal data
+       
 
-        categoryHtml(categories)
-        handleCategoryClicked(categories, lastTenYear)
-    })
-}
 
+         //handle on topic clicked
+        $("[name='topic-card']").click(async function () {
+            let cardData = $(this).data();
+            $("#topic-title").html(cardData.topicName)  //change title of topic
+
+            handleCardSkeleton(true)
+            const categories = await fetchData(`/data-portal/api/category-with-indicator/${cardData.id}`)
+           
+            handleCardSkeleton(false)
+
+            categoryHtml(categories)
+            handleCategoryClicked(categories, lastTenYear)
+
+        })
+
+
+    }
 
     getWays()
 
 
      //handle on Search
-    $("#searchItemForm").on('submit', async function(e){
-    e.preventDefault()
+     $("#searchItemForm").on('submit', async function(e){
+        e.preventDefault()
+        let searchItem = $("#searchItemValue").val()
 
-    $("#category-card-list").html('')  // 🔥 ADD THIS
+        handleCardSkeleton(true)  //enable loading
+        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/19?search=${searchItem}`)
+        handleCardSkeleton(false) //disable loading
 
-    let searchItem = $("#searchItemValue").val()
-
-    handleCardSkeleton(true)
-    const searchResult = await fetchData(
-        `/data-portal/api/category-with-indicator/9/?search=${searchItem}`
-    )
-    handleCardSkeleton(false)
-
-    categoryHtml(searchResult)
-    $("#topic-title").html('Search Result')
-})
+        categoryHtml(searchResult)
+        $("#topic-title").html('Search Result')  //change title of topic
+       
+    })
 
    
 
