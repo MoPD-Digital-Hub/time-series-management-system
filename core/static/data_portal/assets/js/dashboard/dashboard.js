@@ -1,7 +1,6 @@
 $(document).ready(function () {
     const COLORS = ['primary', 'secondary', 'success', 'danger', 'warning', 'info']
     const COLORS_CODE = ['#007bff', '#6c757d', '#28a745', '#dc3545', '#ffc107', '#17a2b8']
-    const  chart_ids = []
 
     const fetchData = async(url) =>{
         const response = await axios.get(url)
@@ -81,7 +80,7 @@ $(document).ready(function () {
             let color = randomColor()
             $("#category-card-list").append(
             `
-                <h4 class="text-center text-${color} mt-3 ">${item.name_ENG} 
+                <h4 class="text-center text-${color} mt-3">${item.name_ENG} 
                     <button 
                         data-category-id="${item.id}" 
                         type="button" 
@@ -179,11 +178,7 @@ $(document).ready(function () {
     }
 
     const cardGraph = (indicator, color) =>{
-        const chart_id = `chart${indicator.id}`
         
-        
-        console.log(indicator_ids)
-
         const seriesData = indicator.annual_data.map((value) => {
             return {
               x: value.for_datapoint, // year
@@ -242,8 +237,6 @@ $(document).ready(function () {
           },
           },
           };
-
-          
   
           var chart = new ApexCharts(document.querySelector(`#chart${indicator.id}`), options);
           chart.render();
