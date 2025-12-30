@@ -82,7 +82,7 @@ admin.site.register(DataPoint,  DataPointAdmin)
 
 class AnnualDataAdmin(ImportExportModelAdmin):
     resource_classes = [AnnualDataWideResource]
-    list_display = ('indicator_title', 'for_datapoint', 'performance', 'target')
+    list_display = ('indicator_title', 'for_datapoint', 'performance', 'target', 'is_verified',)
     list_filter = ('indicator__for_category__topic','indicator__for_category' ,'indicator',  'for_datapoint')
     search_fields = ('indicator__code','indicator__title_ENG','for_datapoint__year_EC', 'performance')
 
@@ -100,7 +100,7 @@ admin.site.register(AnnualData,  AnnualDataAdmin)
 
 class QuarterDataAdmin(ImportExportModelAdmin):
     resource_classes = [QuarterDataResource, QuarterDataWideResource]
-    list_display = ('id','for_datapoint', 'for_quarter', 'performance', 'target')
+    list_display = ('id','for_datapoint', 'for_quarter', 'performance', 'target', 'is_verified')
     list_filter = ('indicator__for_category__topic__title_ENG', 'indicator', 'for_datapoint')
     search_fields = (
         'indicator__for_category__topic__title_ENG',
@@ -118,7 +118,7 @@ admin.site.register(QuarterData,  QuarterDataAdmin)
 
 class MonthDataAdmin(ImportExportModelAdmin):
     resource_classes = [MonthDataResource,MonthDataWideResource]
-    list_display = ('id','for_datapoint' , 'for_month' ,'performance','target' , )
+    list_display = ('id','for_datapoint' , 'for_month' ,'performance','target', 'is_verified', )
     list_filter = ('indicator' , 'for_datapoint')
     search_fields = (
         'indicator__for_category__topic__title_ENG',
@@ -129,6 +129,28 @@ class MonthDataAdmin(ImportExportModelAdmin):
 
     autocomplete_fields = ['indicator']
     list_editable = ('for_datapoint','for_month', 'performance', 'target')
+
+
+
+class TrendingIndicatorAdmin(admin.ModelAdmin):
+    list_display = ("indicator", "performance", "direction", "note", "created_at")
+    list_filter = ("direction", "indicator")
+    search_fields = ("indicator__title_ENG", "note")
+
+    def get_changeform_initial_data(self, request):
+        """Prefill performance from latest AnnualData for the selected indicator"""
+        initial = super().get_changeform_initial_data(request)
+        indicator_id = request.GET.get('indicator')
+        if indicator_id:
+            from .models import AnnualData
+            latest = AnnualData.objects.filter(
+                indicator_id=indicator_id, is_verified=True
+            ).order_by('-for_datapoint__year_GC').first()
+            if latest:
+                initial['performance'] = latest.performance
+        return initial
+    
+
 
 admin.site.register(MonthData,  MonthDataAdmin)
 

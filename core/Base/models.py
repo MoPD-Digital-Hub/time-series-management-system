@@ -226,6 +226,7 @@ class MonthData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
 
     def __str__(self):
         if self.indicator:
@@ -377,6 +378,7 @@ class QuarterData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
 
     def __str__(self):
         if self.indicator:
@@ -526,6 +528,7 @@ class AnnualData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
 
     def save(self, *args, **kwargs):
         # Round performance to two decimal places before saving
@@ -840,7 +843,27 @@ class SubProject(models.Model):
         ordering = ['project__title_ENG'] #Oldest First
          
             
+class TrendingIndicator(models.Model):
+    indicator = models.ForeignKey(Indicator, related_name="trending_entries", on_delete=models.CASCADE, verbose_name="Indicator", null=True, blank=True)
+    performance = models.DecimalField(max_digits=20, decimal_places=5, blank=True, null=True)
+    direction = models.CharField(max_length=4, choices=[('up','Up'),('down','Down')])
+    note = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = "Trending Indicator"
+        verbose_name_plural = "Trending Indicators"
+
+    def save(self, *args, **kwargs):
+        if self.performance is None and self.indicator_id:
+            from .models import AnnualData
+            latest = AnnualData.objects.filter(indicator_id=self.indicator_id).order_by('-data_point__year_gc').first()
+            if latest:
+                self.value = latest.value
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.indicator.title_ENG} ({self.performance}) {self.direction}"
 
 
 
