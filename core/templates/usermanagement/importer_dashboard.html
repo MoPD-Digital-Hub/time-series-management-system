@@ -1,0 +1,109 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<body>
+    {% include 'usermanagement/common/nav.html' %}
+    {% include 'usermanagement/common/header.html' %}
+
+    </div><!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Add Data Importer</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Submit indicators and data for review</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'user_management_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Admin Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+                <div class="card">
+                    <div class="card-body">
+
+                        <form id="data-form" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label">Entry Mode *</label>
+                                <div>
+                                    <label class="me-3"><input type="radio" name="entry-mode" value="single" checked>
+                                        Single</label>
+                                    <label><input type="radio" name="entry-mode" value="multiple"> Multiple</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data-kind" class="form-label">Data Type *</label>
+                                <select class="form-select" id="data-kind" required>
+                                    <option value="annual">Annual</option>
+                                    <option value="quarter">Quarterly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                                <div class="mt-2">
+                                    <a id="download-sample-link" href="{% url 'sample_template_api' %}?type=annual"
+                                        class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-download mr-1"></i> Download Sample Template
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data-indicator" class="form-label">Select Indicator *</label>
+                                <select class="form-select" id="data-indicator" name="indicator_id" required>
+                                    <option value="">Select an indicator...</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="data-file" class="form-label">Data File</label>
+                                <input type="file" class="form-control" id="data-file" name="data_file"
+                                    accept=".csv,.xlsx,.xls">
+                                <div class="form-text">Supported formats: CSV, Excel (.xlsx, .xls)</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="data-notes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="data-notes" name="notes" rows="3"
+                                    placeholder="Add any notes or comments about this data submission..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-upload mr-2"></i>Submit Data
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div><!-- [ Main Content ] end -->
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+<script>
+    const UNASSIGNED_CATEGORIES_API_URL = "{% url 'unassigned_categories_api' %}";
+    const INDICATOR_SUBMISSIONS_API_URL = "{% url 'indicators_list_api' %}";
+    const DATA_SUBMISSIONS_API_URL = "{% url 'data_submissions_api' %}";
+    const DASHBOARD_STATS_URL = "{% url 'indicator_submissions_api' %}";
+    const SUBMIT_INDICATOR_URL = "{% url 'submit_indicator_api' %}";
+    const SUBMIT_DATA_URL = "{% url 'submit_data_api' %}";
+    const SUBMIT_BULK_DATA_URL = "{% url 'submit_bulk_data_api' %}";
+    const SAMPLE_TEMPLATE_URL = "{% url 'sample_template_api' %}";
+</script>
+
+<script src="{% static 'assets/js/importer_dashboard.js' %}"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,47 @@
+{% load static %}
+<!-- [ Header ] start -->
+<header class="pc-header">
+    <div class="header-wrapper">
+        <div class="me-auto pc-mob-drp-search">
+            <ul class="list-unstyled">
+                <li class="dropdown pc-h-item">
+                    <a class="pc-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                        <svg class="pc-icon">
+                            <use xlink:href="#custom-search"></use>
+                        </svg>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end pc-h-dropdown drp-search">
+                        <form class="px-3">
+                            <div class="form-group mb-0 d-flex align-items-center">
+                                <a href="#!" class="me-2">
+                                    <svg class="pc-icon">
+                                        <use xlink:href="#custom-search"></use>
+                                    </svg>
+                                </a>
+                                <input type="search" class="form-control border-0 shadow-none" placeholder="Search everything. . .">
+                            </div>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="ms-auto">
+            <ul class="list-unstyled">
+
+                <li class="dropdown pc-h-item">
+         
+                    <div class="dropdown-menu dropdown-menu-end pc-h-dropdown">
+                        <div class="px-3 py-2">
+                            <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                            <span class="text-muted">{{ user.email }}</span>
+                        </div>
+                        <div class="px-3 py-2">
+                            <a href="/admin/logout/" class="btn btn-link text-decoration-none m-0 p-0">Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header><!-- [ Header ] end -->
+

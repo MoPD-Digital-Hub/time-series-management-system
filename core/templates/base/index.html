@@ -1,0 +1,273 @@
+﻿{% load static %}
+
+<!doctype html>
+
+{% include 'base/common/head.html' %}
+
+<body>
+    {% include 'base/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+
+    </div><!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-primary-500/10 text-primary-500">
+                                        <i class="fas fa-layer-group fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Total Topic">Total Topics</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="total-topic-count"
+                                        class="px-2 py-1 rounded-xl bg-blue-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                    <a href="topics/"
+                                        class="text-blue-500 text-xs underline hover:text-blue-700 mt-1 block whitespace-nowrap">View
+                                        details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-warning-500/10 text-warning-500">
+                                        <i class="fas fa-sitemap fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Total Category">Total Categorys</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="total-category-count"
+                                        class="px-2 py-1 rounded-xl bg-warning-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                    <a href="categories/"
+                                        class="text-blue-500 text-xs underline hover:text-blue-700 mt-1 block whitespace-nowrap">View
+                                        details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-success-500/10 text-success-500">
+                                        <i class="fas fa-chart-line fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Total Indicators">Total Indicators</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="total-indicator-count"
+                                        class="px-2 py-1 rounded-xl bg-success-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                    <a href="indicators/"
+                                        class="text-blue-500 text-xs underline hover:text-blue-700 mt-1 block whitespace-nowrap">View
+                                        details</a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <!-- Search and Filter-->
+            <form id="search-filter-form" class="w-full flex justify-center mb-4" autocomplete="off" onsubmit="return false;">
+                <div class="flex items-center gap-2 max-w-xl w-full p-2 bg-white rounded shadow-sm">
+            
+                    <select id="topic-select"
+                        class="form-select px-2 py-1 rounded border border-theme-border focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                        <option value="">All Topics</option>
+                        {% for topic in topics %}
+                        <option value="{{ topic.id }}">{{ topic.title_ENG }}</option>
+                        {% endfor %}
+                    </select>
+            
+                    <select id="category-select"
+                        class="form-select px-2 py-1 rounded border border-theme-border focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm hidden">
+                        <option value="">All Categories</option>
+                    </select>
+            
+                    <input type="text" id="indicator-search-input"
+                        class="form-input px-2 py-1 rounded border border-theme-border focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm hidden"
+                        placeholder="Search Indicators...">
+            
+                    <button id="filter-btn" type="button" class="btn btn-primary px-3 py-1 ml-1 text-sm">
+                        Filter
+                    </button>
+            
+                    <button id="clear-btn" type="button"
+                        class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded border border-gray-300 transition">
+                        Clear
+                    </button>
+            
+                </div>
+            </form>
+
+
+            <!-- search result section -->
+            <div id="search-result-section" style="display:none;"></div>
+
+
+             <!-- Topics List Section -->
+            <div class="col-span-12 mb-6">
+                <div class="flex flex-wrap gap-6">
+                    {% for topic in topics %}
+                    <div class="topic-card card border-0 shadow-sm overflow-hidden relative w-full group"
+                        style="height: 140px; cursor: pointer; flex: 0 0 calc(50% - 0.75rem); max-width: calc(50% - 0.75rem);"
+                        data-topicid="{{ topic.id }}" 
+                        {% if topic.background_image %}data-bg="{{ topic.background_image.url }}"{% endif %}
+                        {% if topic.image_icons %}data-bgicon="{{ topic.image_icons.url }}"{% endif %}>
+            
+                        {% if topic.background_image %}
+                        <div class="absolute inset-0 overflow-hidden">
+                            <img src="{{ topic.background_image.url }}" alt="{{ topic.title_ENG }}" class="topic-bg">
+                        </div>
+                        {% endif %}
+            
+                        <div class="absolute inset-0"
+                            style="background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.45) 100%);">
+                        </div>
+            
+                        <div class="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                            <h6 class="mb-0 text-white truncate pr-2">
+                                <span class="font-semibold">{{ topic.title_ENG }}</span>
+                            </h6>
+                            <span class="px-3 py-1 rounded-full bg-black bg-opacity-50 text-white text-sm font-semibold">
+                                <span class="font-bold">{{ topic.categories.count }}</span>
+                            </span>
+                        </div>
+            
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+
+
+                <!-- Chart Section-->
+                <div class="col-span-12">
+                    {% for topic in topics %}
+                    <div class="subcat-section" id="subcat-section-{{ topic.id }}" style="display:none;">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-4">
+                                    {% for cat in topic.categories.all %}
+                                    <div
+                                        class="subcat-card p-3 rounded bg-white text-gray-800 shadow h-full flex flex-col">
+                                        <div class="font-semibold mb-2">{{ cat.name_ENG }}</div>
+                                        <div
+                                            class="indicator-list mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            {% for ind in cat.indicators.all %}
+                                            {% if ind.is_verified %}
+                                            <div class="indicator-item card h-80 flex flex-col">
+                                                <div class="card-body flex flex-col flex-1">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <h5 class="mb-0 text-base font-bold">{{ ind.title_ENG }}</h5>
+                                                        <span
+                                                            class="badge bg-primary-100 text-primary-700 text-xs font-semibold">
+                                                            {% if ind.annual_data.exists %}Annual{% elif
+                                                            ind.month_data.exists %}Monthly{% elif
+                                                            ind.quarter_data.exists %}Quarterly{% else %}N/A{% endif %}
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex-1 flex items-center justify-center">
+                                                        <canvas id="chart-{{ ind.id }}" class="w-full h-full"></canvas>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            {% endfor %}
+
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+
+                <div class="col-span-12 md:col-span-6 flex flex-col md:flex-row gap-4">
+                    <div class="card flex-1" style="max-width:100%; overflow:hidden;">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="mb-0">Total Indicators in Categories</h5>
+                                <input type="text" id="indicatorSearch" placeholder="Search category..."
+                                    class="border rounded px-2 py-1">
+                            </div>
+                            <div style="overflow-x:auto; width:100%; min-height:300px;">
+                                <canvas id="totalIndicatorsGraph" style="height:400px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal-->
+                    <div id="indicatorModal"
+                        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div
+                            class="bg-white rounded-lg shadow-lg w-11/12 md:w-2/3 lg:w-1/2 p-5 relative max-h-[80vh] flex flex-col">
+                            <button onclick="$('#indicatorModal').addClass('hidden')"
+                                class="absolute top-2 right-2 text-gray-500">✕</button>
+                            <h3 id="modalTitle" class="text-xl font-bold mb-4"></h3>
+                            <div id="indicatorList" class="overflow-y-auto" style="max-height: calc(80vh - 80px);">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trending List Section-->
+                    <div class="card flex-1 shadow-lg rounded-2xl border-0 bg-white dark:bg-themedark-bodybg">
+                        <div class="card-body p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <h5 class="mb-0 font-bold text-lg tracking-tight text-gray-800 dark:text-gray-100">
+                                    Trending</h5>
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold"><i
+                                        class="fas fa-bolt mr-1"></i>Live</span>
+                            </div>
+                            <ul id="trending-list" class="divide-y divide-gray-100">
+                                <li class="text-gray-400 text-sm py-4 text-center">Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- [ Main Content ] end -->
+
+
+    {% include 'base/common/footer.html' %}
+
+    {% include 'base/common/js.html' %}
+
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'assets/js/category_cards.js' %}"></script>
+    <script src="{% static 'assets/js/charts_total.js' %}"></script>
+    <script src="{% static 'assets/js/table_scripts.js' %}"></script>
+    <script>
+
+    </script>
+</body>
+
+</html>

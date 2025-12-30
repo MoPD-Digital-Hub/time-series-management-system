@@ -1,0 +1,168 @@
+{% extends 'base/base.html' %}
+<title>{{ category.title_eng|default:'base' }}</title>
+{% load static %}
+{% block content %}
+{% include 'base/common/nav.html' %}
+{% include 'base/common/header.html' %}
+<style>
+
+</style>
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold"></h2>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                    <h5 class="mb-0 font-bold text-lg">{{ category.name_ENG|default:'Category Data' }}</h5>
+                    <div class="flex items-center gap-2">
+                        <button id="clear-all"
+                            class="px-3 py-1 rounded border border-theme-border text-gray-700 hover:bg-gray-50 text-sm">Clear</button>
+                        <button id="apply-selection" class="btn btn-primary btn-sm">Apply</button>
+                    </div>
+                </div>
+
+
+                <div class="mb-2 flex flex-row gap-6 items-start">
+                    <!-- Frequency Dropdown -->
+                    <div class="relative flex-1 min-w-[220px]">
+                        <button type="button" id="dd-freq-btn"
+                            class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
+                            <i class="fas fa-clock text-indigo-500"></i><span>Frequency</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="dd-freq"
+                            class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg"
+                            style="min-width: 100%; width: max-content;">
+                            <div class="p-2 border-b">
+                                <div id="freq-list" class="p-2 space-y-1">
+                                    <form id="freq-form">
+                                        <label class="block mb-2"><input type="radio" name="frequency" value="month">
+                                            Monthly</label>
+                                        <label class="block mb-2"><input type="radio" name="frequency" value="quarter">
+                                            Quarterly</label>
+                                        <label class="block mb-2"><input type="radio" name="frequency" value="annual">
+                                            Annual</label>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicators Dropdown -->
+                    <div class="relative flex-1 min-w-[220px]">
+                        <button type="button" id="dd-ind-btn"
+                            class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
+                            <i class="fas fa-chart-line text-success-500"></i><span>Indicators</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="dd-ind"
+                            class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg"
+                            style="min-width: 100%; width: max-content;">
+                            <div class="p-2 border-b">
+                                <div class="p-2 flex items-center justify-between">
+                                    <label><input type="checkbox" id="select-all-ind"> Select All</label>
+                                </div>
+                                <div id="ind-list" class="p-2 space-y-1">
+                                    {% for indicator in indicators %}
+                                    <label class="block mb-2">
+                                        <input type="checkbox" class="ind-checkbox" value="{{ indicator.code }}"
+                                            data-frequency="{{ indicator.frequency|default:''|lower }}">
+                                        {{ indicator.title_ENG }}
+                                    </label>
+                                    {% empty %}
+                                    <span class="text-gray-400">No indicators available</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-gray-500">Tip: make sure to select frequency first, then indicators</div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="data-table" class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Code
+                            </th>
+
+                            {% for indicator in indicators %}
+                            <th data-code="{{ indicator.code }}" class="value-cell"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">
+                                {{ indicator.title_ENG }} <br> - {{ indicator.title_AMH }}
+                            </th>
+                            {% endfor %}
+
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Topic
+                            </th>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Category
+                            </th>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Unit
+                            </th>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Frequency
+                            </th>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                Description
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in indicators %}
+                        <tr data-code="{{ row.code }}" data-frequency="{{ row.frequency|default:'' }}">
+                            <td>{{ row.code }}</td>
+
+                            {% for indicator in indicators %}
+                            <td class="value-cell"
+                                data-annual-perf="{{ indicator.annual_data.last.performance|default:'-' }}"
+                                data-month-perf="{{ indicator.monthly_data.last.performance|default:'-' }}"
+                                data-quarter-perf="{{ indicator.quarterly_data.last.performance|default:'-' }}">
+                                {% if indicator.id == row.id %}
+                                {{ indicator.annual_data.last.performance|default_if_none:"-" }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+
+                            <td>{{ category.topic.title_ENG }}</td>
+                            <td>{{ category.name_ENG }}</td>
+                            <td>{{ row.measurement_units }}</td>
+                            <td class="frequency-cell">{{ row.frequency|capfirst|default:"-" }}</td>
+                            <td>{{ row.description }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ indicators|length|add:'6' }}" class="text-center py-4">No indicators
+                                available for this subcategory.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+    <input type="hidden" id="cat-id" value="{{ category.id }}">
+
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+    <script src="{% static 'assets/js/data_view.js' %}"></script>
+
+    {% endblock %}

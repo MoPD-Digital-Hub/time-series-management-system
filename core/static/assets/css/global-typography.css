@@ -1,0 +1,338 @@
+/**
+ * Global Typography Styles
+ * Professional, Clean, and Elegant font configuration for all pages
+ */
+
+/* Import Professional Fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* Root Font Configuration */
+:root {
+    /* Primary Font Family - Inter (Modern, Professional) */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+
+    /* Secondary Font Family - Poppins (Elegant, Friendly) */
+    --font-secondary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Font Weights */
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    /* Font Sizes */
+    --font-size-xs: 0.75rem;
+    /* 12px */
+    --font-size-sm: 0.875rem;
+    /* 14px */
+    --font-size-base: 1rem;
+    /* 16px */
+    --font-size-lg: 1.125rem;
+    /* 18px */
+    --font-size-xl: 1.25rem;
+    /* 20px */
+    --font-size-2xl: 1.5rem;
+    /* 24px */
+    --font-size-3xl: 1.875rem;
+    /* 30px */
+    --font-size-4xl: 2.25rem;
+    /* 36px */
+    --font-size-5xl: 3rem;
+    /* 48px */
+
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    --line-height-loose: 2;
+
+    /* Letter Spacing */
+    --letter-spacing-tight: -0.025em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide: 0.025em;
+}
+
+/* Global Body Font */
+body {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    letter-spacing: var(--letter-spacing-normal);
+    color: #1f2937;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    font-family: var(--font-secondary);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-tight);
+    color: #111827;
+    margin-bottom: 0.75rem;
+}
+
+h1,
+.h1 {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-extrabold);
+}
+
+h2,
+.h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+}
+
+h3,
+.h3 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+}
+
+h4,
+.h4 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+}
+
+h5,
+.h5 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+}
+
+h6,
+.h6 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Paragraphs */
+p {
+    margin-bottom: 1rem;
+    line-height: var(--line-height-relaxed);
+}
+
+/* Links */
+a {
+    color: #059669;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #047857;
+    text-decoration: none;
+}
+
+/* Strong and Bold */
+strong,
+b {
+    font-weight: var(--font-weight-bold);
+}
+
+/* Emphasis and Italic */
+em,
+i {
+    font-style: italic;
+}
+
+/* Small Text */
+small,
+.small {
+    font-size: var(--font-size-sm);
+}
+
+/* Buttons - Font Styling */
+button,
+.btn,
+input[type="submit"],
+input[type="button"] {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+/* Form Elements */
+input,
+textarea,
+select {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
+}
+
+/* Tables */
+table {
+    font-family: var(--font-primary);
+}
+
+th {
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Code and Pre */
+code,
+pre {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+/* Labels */
+label {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* Card Titles */
+.card-title {
+    font-family: var(--font-secondary);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-lg);
+}
+
+/* Navigation */
+.nav-link,
+.navbar-nav .nav-link {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+}
+
+/* Badges */
+.badge {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+/* Alerts */
+.alert {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+    :root {
+        --font-size-4xl: 1.875rem;
+        /* 30px on mobile */
+        --font-size-3xl: 1.5rem;
+        /* 24px on mobile */
+        --font-size-2xl: 1.25rem;
+        /* 20px on mobile */
+    }
+
+    body {
+        font-size: 0.9375rem;
+        /* 15px on mobile */
+    }
+}
+
+/* Utility Classes */
+.font-primary {
+    font-family: var(--font-primary);
+}
+
+.font-secondary {
+    font-family: var(--font-secondary);
+}
+
+.font-light {
+    font-weight: var(--font-weight-light);
+}
+
+.font-normal {
+    font-weight: var(--font-weight-normal);
+}
+
+.font-medium {
+    font-weight: var(--font-weight-medium);
+}
+
+.font-semibold {
+    font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+    font-weight: var(--font-weight-bold);
+}
+
+.font-extrabold {
+    font-weight: var(--font-weight-extrabold);
+}
+
+.text-xs {
+    font-size: var(--font-size-xs);
+}
+
+.text-sm {
+    font-size: var(--font-size-sm);
+}
+
+.text-base {
+    font-size: var(--font-size-base);
+}
+
+.text-lg {
+    font-size: var(--font-size-lg);
+}
+
+.text-xl {
+    font-size: var(--font-size-xl);
+}
+
+.text-2xl {
+    font-size: var(--font-size-2xl);
+}
+
+.text-3xl {
+    font-size: var(--font-size-3xl);
+}
+
+.text-4xl {
+    font-size: var(--font-size-4xl);
+}
+
+.leading-tight {
+    line-height: var(--line-height-tight);
+}
+
+.leading-normal {
+    line-height: var(--line-height-normal);
+}
+
+.leading-relaxed {
+    line-height: var(--line-height-relaxed);
+}
+
+.leading-loose {
+    line-height: var(--line-height-loose);
+}

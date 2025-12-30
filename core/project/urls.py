@@ -14,6 +14,7 @@ urlpatterns = [
     path('data-portal/',include('DataPortal.urls')),
     path('dashboard/',include('DashBoard.urls')),
     path('api/mobile/', include('mobile.urls')),
+    path('user-management/',include('UserManagement.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

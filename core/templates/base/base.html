@@ -1,0 +1,17 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+      {% if indicator %}{{ indicator.title_eng }}
+      {% elif subcategory %}{{ subcategory.title_eng }}
+      {% else %}Dashboard{% endif %}
+    </title>
+    {% include 'base/common/head.html' %}
+</head>
+<body class="bg-theme-bodybg dark:bg-themedark-bodybg">
+    {% block content %}{% endblock %}
+</body>
+</html>

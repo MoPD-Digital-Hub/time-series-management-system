@@ -1,0 +1,148 @@
+/* Welcome Page Custom Styles */
+
+/* Container and Background */
+.welcome-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card Styles */
+.welcome-card {
+  max-width: 700px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Logo */
+.logo-container {
+  display: inline-block;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  margin-bottom: 2rem;
+}
+
+.logo-container img {
+  height: 80px;
+  width: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+/* Typography */
+.welcome-title {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin-bottom: 2.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.welcome-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.btn-primary-custom {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary-custom:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  color: white;
+}
+
+.btn-secondary-custom {
+  background: white;
+  color: #10b981;
+  border: 2px solid #10b981;
+}
+
+.btn-secondary-custom:hover {
+  background: #f0fdf4;
+  color: #059669;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glass-card {
+    padding: 2rem;
+  }
+
+  .welcome-title {
+    font-size: 2rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .welcome-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

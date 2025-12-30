@@ -1,0 +1,160 @@
+/* Modern Landing Page Styles */
+
+/* Stats Cards - Modern Gradient Design */
+.pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1>.card {
+    border: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1>.card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-4px);
+}
+
+/* First card - Blue gradient */
+.pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(1)>.card>.card-body {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    padding: 1.5rem;
+}
+
+.dark .pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(1)>.card>.card-body {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 197, 253, 0.2) 100%);
+}
+
+/* Second card - Amber gradient */
+.pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(2)>.card>.card-body {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    padding: 1.5rem;
+}
+
+.dark .pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(2)>.card>.card-body {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+}
+
+/* Third card - Green gradient */
+.pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(3)>.card>.card-body {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    padding: 1.5rem;
+}
+
+.dark .pc-content>.flex.flex-col.sm\\:flex-row.gap-4.sm\\:gap-6.mb-6>.flex-1:nth-child(3)>.card>.card-body {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(74, 222, 128, 0.2) 100%);
+}
+
+/* Icon containers */
+.pc-content .card-body .w-8.h-8 {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.pc-content .card:hover .w-8.h-8 {
+    transform: scale(1.1);
+}
+
+/* Topic Cards - Enhanced */
+.topic-card {
+    border-radius: 1rem !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topic-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-8px) scale(1.02);
+}
+
+/* Search/Filter Section */
+#search-filter-form .flex.items-center {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+}
+
+#search-filter-form select,
+#search-filter-form input {
+    border-radius: 0.5rem;
+    border-color: #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+#search-filter-form select:focus,
+#search-filter-form input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#search-filter-form .btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+#search-filter-form .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+}
+
+/* Chart Cards */
+.indicator-item.card {
+    border-radius: 1rem;
+    border: 1px solid #f3f4f6;
+    transition: all 0.3s ease;
+}
+
+.indicator-item.card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    border-color: #3b82f6;
+}
+
+/* Trending Section */
+.card.shadow-lg.rounded-2xl {
+    border-radius: 1rem !important;
+}
+
+#trending-list li {
+    transition: background-color 0.2s ease;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 0.25rem 0;
+}
+
+#trending-list li:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Modal */
+#indicatorModal>div {
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* General improvements */
+.card {
+    border-radius: 1rem;
+}
+
+.badge {
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-weight: 600;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Better focus states */
+*:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}

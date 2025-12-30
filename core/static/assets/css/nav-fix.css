@@ -1,0 +1,30 @@
+/* Navigation Scroll Fix */
+
+/* Allow scrolling but prevent overscroll bounce */
+.pc-sidebar .pc-navbar {
+    overscroll-behavior-y: none !important;
+}
+
+/* Ensure scrollbar is visible and styled */
+.pc-sidebar .pc-navbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pc-sidebar .pc-navbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pc-sidebar .pc-navbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.pc-sidebar .pc-navbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox scrollbar */
+.pc-sidebar .pc-navbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}

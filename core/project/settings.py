@@ -143,7 +143,8 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 
 
 AUTH_USER_MODEL = 'UserManagement.CustomUser'
-
+# settings.py
+LOGIN_URL = '/user-management/login/'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

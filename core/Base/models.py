@@ -121,6 +121,7 @@ class Indicator(models.Model):
     kpi_characteristics = models.CharField(max_length=20, choices=KPI_CHARACTERISTIC_CHOICES, default="inc")
     is_dashboard_visible = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
     main_parent = models.BooleanField(default=False)
     image = models.FileField(upload_to='indicator/images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

@@ -1,0 +1,179 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+        .pc-navbar .pc-link {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+                padding: .75rem 1rem;
+                transition: all 0.3s ease;
+                border-radius: 8px;
+                margin: 0 0.5rem;
+        }
+
+        .pc-navbar .pc-link:hover {
+                background: rgba(59, 130, 246, 0.1);
+                transform: translateX(4px);
+        }
+
+        .pc-navbar .pc-mtext {
+                display: block;
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: break-word;
+                font-weight: 500;
+        }
+
+        .pc-navbar .pc-micon {
+                flex: 0 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                background: rgba(59, 130, 246, 0.1);
+                border-radius: 8px;
+                transition: all 0.3s ease;
+        }
+
+        .pc-navbar .pc-link:hover .pc-micon {
+                background: rgba(59, 130, 246, 0.2);
+                transform: scale(1.1);
+        }
+
+        .pc-navbar .pc-badge {
+                margin-left: auto;
+                background: #3b82f6;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+        }
+
+        .pc-submenu {
+                padding-left: 0;
+                margin: 0;
+        }
+
+        .pc-submenu .pc-item {
+                list-style: none;
+        }
+
+        .pc-submenu .pc-link {
+                padding-left: 3.5rem;
+                font-size: 0.875rem;
+        }
+
+        .topic-card .topic-bg {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transform: scale(1.5);
+                transition: transform 0.5s ease-out;
+        }
+
+        .topic-card:hover .topic-bg {
+                transform: scale(1);
+        }
+
+        /* Modern user card */
+        .pc-user-card {
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .pc-user-card .card-body {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
+        }
+</style>
+
+<nav class="pc-sidebar">
+        <div class="navbar-wrapper">
+                <div class="m-header flex items-center py-4 px-6 h-header-height"><a href="{% url 'dashboard_index' %}"
+                                class="b-brand flex items-center gap-3">
+                                <img src="{% static 'assets/images/logo-light.png' %}" class="img-fluid logo-lg"
+                                        alt="logo" data-light="{% static 'assets/images/logo-light.png' %}"
+                                        data-dark="{% static 'assets/images/logo-dark.png' %}">
+                </div>
+                <div class="navbar-content h-[calc(100vh_-_74px)] py-2.5"
+                        style="display:flex; flex-direction:column; max-height:calc(100vh - 74px);">
+                        <div
+                                class="card pc-user-card mx-[15px] mb-[15px] bg-theme-sidebaruserbg dark:bg-themedark-sidebaruserbg">
+                                <div class="card-body !p-5">
+                                        <div class="flex items-center"><img
+                                                        class="shrink-0 w-[45px] h-[45px] rounded-full"
+                                                        src="{% static 'assets/images/profile-icon.png' %}"
+                                                        alt="user-image">
+                                                <div class="ml-4 mr-2 grow">
+                                                        <h7 class="mb-0"><b>Welcome:</b> {{ user.first_name }}
+                                                                {{user.last_name }}</h7>
+                                                        </small>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                        <ul class="pc-navbar"
+                                style="overflow:auto; flex:1; -webkit-overflow-scrolling:touch; overscroll-behavior: contain; padding-bottom:8px;">
+                                <li class="pc-item">
+                                        <a href="{% url 'dashboard_index' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <svg class="pc-icon">
+                                                                <use xlink:href="#custom-presentation-chart"></use>
+                                                        </svg>
+                                                </span>
+                                                <span class="pc-mtext">Dashboard</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'data_explorer' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <svg class="pc-icon">
+                                                                <use xlink:href="#custom-data"></use>
+                                                        </svg>
+                                                </span>
+                                                <span class="pc-mtext">Data-Explorer</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item pc-caption">
+                                        <label>List of Topics</label>
+                                </li>
+                                {% for topic in topics %}
+                                <li class="pc-item pc-hasmenu">
+                                        <a href="#" class="pc-link">
+                                                <span class="pc-micon">
+                                                        {% if category.icon %}
+                                                        <i class="fas fa-{{ category.icon|default:'' }}"></i>
+                                                        {% else %}
+                                                        <i class="fas fa-layer-group"></i>
+                                                        {% endif %}
+                                                </span>
+
+                                                <span class="pc-mtext">{{ topic.title_ENG }}</span>
+
+                                                {% if topic.categories.exists %}
+                                                <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
+                                                {% endif %}
+
+                                                <span class="pc-badge">{{ topic.categories.count }}</span>
+                                        </a>
+
+                                        {% if topic.categories.exists %}
+                                        <ul class="pc-submenu">
+                                                {% for cat in topic.categories.all %}
+                                                <li class="pc-item">
+                                                        <a href="{% url 'data_view' cat.name_ENG %}" class="pc-link">
+                                                                {{ cat.name_ENG }}
+                                                        </a>
+                                                </li>
+                                                {% endfor %}
+                                        </ul>
+                                        {% endif %}
+                                </li>
+                                {% endfor %}
+                        </ul>
+                </div>
+        </div>
+</nav><!-- [ Sidebar Menu ] end -->

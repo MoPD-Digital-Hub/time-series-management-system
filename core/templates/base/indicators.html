@@ -1,0 +1,88 @@
+{% extends 'base/base.html' %}
+<title>{{ indicator.title_ENG|default:'base' }}</title>
+{% load static %}
+{% block content %}
+    {% include 'base/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+      <div class="pc-container">
+  <div class="pc-content">
+    <div class="container mx-auto py-6">
+      <h2 class="text-2xl font-bold mb-4">All Indicators</h2>
+
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search by title..." 
+          class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" style="width:56px">#</th>
+              <th scope="col">Title (English)</th>
+              <th scope="col">Title (Amharic)</th>
+              <th scope="col">Code</th>
+            </tr>
+          </thead>
+          <tbody id="indicatorTable">
+            {% for ind in indicators %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td class="fw-semibold">{{ ind.title_ENG }}</td>
+              <td>{{ ind.title_AMH }}</td>
+              <td><span class="badge bg-light text-dark">{{ ind.code }}</span></td>
+            </tr>
+            {% endfor %}
+ 
+          </tbody>
+        </table>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("searchInput");
+    const tbody = document.getElementById("indicatorTable");
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+    searchInput.addEventListener("input", function () {
+        const query = this.value.trim().toLowerCase();
+        let found = false;
+
+        rows.forEach(row => {
+            const english = row.cells[1]?.textContent.toLowerCase() || "";
+            const amharic = row.cells[2]?.textContent.toLowerCase() || "";
+            if (english.includes(query) || amharic.includes(query)) {
+                row.style.display = "";
+                found = true;
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        let noRow = tbody.querySelector(".no-result");
+        if (!found) {
+            if (!noRow) {
+                noRow = document.createElement("tr");
+                noRow.classList.add("no-result");
+                noRow.innerHTML = `<td colspan="4" class="px-4 py-2 text-center text-gray-500">No indicators found.</td>`;
+                tbody.appendChild(noRow);
+            }
+        } else {
+            if (noRow) noRow.remove();
+        }
+    });
+});
+</script>
+
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block content %}
+    {% include 'base/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+        <div class="pc-container">
+        <div class="pc-content">
+    <div class="container mx-auto py-6">
+      <h2 class="text-2xl font-bold mb-4">All Subcategories</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200">
+          <thead>
+            <tr>
+              <th class="px-4 py-2 border-b">#</th>
+              <th class="px-4 py-2 border-b">Title (English)</th>
+              <th class="px-4 py-2 border-b">Title (Amharic)</th>
+              <th class="px-4 py-2 border-b">Indicators</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for subcat in subcategories %}
+            <tr>
+              <td class="px-4 py-2 border-b">{{ forloop.counter }}</td>
+              <td class="px-4 py-2 border-b">{{ subcat.title_eng }}</td>
+              <td class="px-4 py-2 border-b">{{ subcat.title_amh }}</td>
+              <td class="px-4 py-2 border-b">{{ subcat.indicators.count }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-2 text-center">No subcategories found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+            </div>
+    </div>
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+{% endblock %}

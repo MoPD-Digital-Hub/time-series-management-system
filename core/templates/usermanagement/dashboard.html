@@ -1,0 +1,212 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+
+<body>
+    {% include 'usermanagement/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+
+    </div><!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">User Management</h2>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-primary-500/10 text-primary-500">
+                                        <i class="fas fa-users fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Total Users">Total Users</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="total-users-count"
+                                        class="px-2 py-1 rounded-xl bg-primary-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                        {% if user.is_category_manager or user.is_staff %}
+                                        <a href="{% url 'users_list' %}"
+                                        class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
+                                        all</a>
+                                        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-warning-500/10 text-warning-500">
+                                        <i class="fas fa-user-shield fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Category Managers">Category Managers</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="category-managers-count"
+                                        class="px-2 py-1 rounded-xl bg-warning-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                        {% if user.is_staff %}
+                                       <a href="{% url 'users_list' %}?role=category_manager"
+                                        class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
+                                        managers</a>
+                                        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-info-500/10 text-info-500">
+                                        <i class="fas fa-upload fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Data Importers">Data Importers</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="importers-count"
+                                        class="px-2 py-1 rounded-xl bg-info-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                        {% if user.is_staff %}
+                                        <a href="{% url 'users_list' %}?role=importer"
+                                        class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
+                                        importers</a>
+                                        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Submissions Cards -->
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full border-l-4 border-l-orange-500">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-orange-500/10 text-orange-500">
+                                        <i class="fas fa-exclamation-triangle fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Pending Indicator Submissions">Pending
+                                        Indicator Submissions</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="pending-indicator-submissions-count"
+                                        class="px-2 py-1 rounded-xl bg-orange-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                        {% if user.is_category_manager %}
+                                    <a href="{% url 'submissions_list' %}?type=indicator&status=pending"
+                                        class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">Review</a>
+                                        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="card h-full border-l-4 border-l-red-500">
+                        <div class="card-body py-3">
+                            <div class="flex items-center min-w-0">
+                                <div class="shrink-0">
+                                    <div
+                                        class="w-8 h-8 rounded-xl inline-flex items-center justify-center bg-red-500/10 text-red-500">
+                                        <i class="fas fa-file-upload fa-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="grow ltr:ml-3 rtl:mr-3 min-w-0">
+                                    <h6 class="mb-0 truncate text-base" title="Pending Data Submissions">Pending Data
+                                        Submissions</h6>
+                                </div>
+                                <div class="shrink-0 text-center">
+                                    <span id="pending-data-submissions-count"
+                                        class="px-2 py-1 rounded-xl bg-red-500 text-white text-sm font-semibold block mx-auto">...</span>
+                                        {% if user.is_category_manager %}
+                                    <a href="{% url 'submissions_list' %}?type=data&status=pending"
+                                        class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">Review</a>
+                                        {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Section -->
+            <div class="flex flex-col md:flex-row gap-6 mb-7 w-full">
+                <div class="card flex-1 w-full">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <h5 class="mb-0 font-bold">Recent Indicator Submissions</h5>
+                            {% if user.is_category_manager %}
+                            <a href="{% url 'submissions_list' %}?type=indicator"
+                                class="text-primary-500 text-sm hover:text-primary-700">View all</a>
+                                {% endif %}
+                        </div>
+                        <div id="recent-indicator-submissions">
+                            <p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Data Submissions -->
+                <div class="card flex-1 w-full">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <h5 class="mb-0 font-bold">Recent Data Submissions</h5>
+                            {% if user.is_category_manager %}
+                            <a href="{% url 'submissions_list' %}?type=data"
+                                class="text-primary-500 text-sm hover:text-primary-700">View all</a>
+                                {% endif %}
+                        </div>
+                        <div id="recent-data-submissions">
+                            <p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+    </div><!-- [ Main Content ] end -->
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+
+<script>
+    const DASHBOARD_STATS_URL = "{% url 'user_management_stats_api' %}";
+    const RECENT_SUBMISSIONS_URL = "{% url 'recent_submissions_api' %}";
+</script>
+
+<script src="{% static 'assets/js/dashboard.js' %}"></script>
+
+
+</body>
+</html>   

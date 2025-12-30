@@ -1,0 +1,42 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+<!-- Welcome Page Styles -->
+<link rel="stylesheet" href="{% static 'assets/css/Welcome.css' %}" />
+
+<body>
+  <div class="welcome-container">
+    <div class="welcome-card">
+      <div class="glass-card text-center">
+        <div class="logo-container">
+          <img src="{% static 'assets/images/logo-light.png' %}" alt="MoPD Logo" id="logo-img" />
+        </div>
+
+        <h1 class="welcome-title">
+          Welcome to Time Series
+        </h1>
+
+        <p class="welcome-subtitle">
+          Explore indicators, submit data, and analyze trends with our comprehensive time series management system.
+        </p>
+
+        <div class="action-buttons">
+          <a href="{% url 'dashboard_index' %}" class="welcome-btn btn-primary-custom">
+            <i class="fas fa-chart-line"></i>
+            <span>Go to Dashboard</span>
+          </a>
+          <a href="{% url 'user_management_dashboard' %}" class="welcome-btn btn-secondary-custom">
+            <i class="fas fa-users"></i>
+            <span>User Management</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% include 'usermanagement/common/js.html' %}
+</body>
+
+</html>

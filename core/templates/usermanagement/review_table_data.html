@@ -1,0 +1,147 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+<body>
+    {% include 'usermanagement/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Review Table Data</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Review and approve pending data edits from the Data
+                        Explorer</p>
+                </div>
+            </div>
+
+            <!-- Pending Data Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="review-table">
+                            <thead>
+                                <tr>
+                                    <th>Indicator</th>
+                                    <th>Period Type</th>
+                                    <th>Time Period</th>
+                                    <th>Performance Value</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="review-tbody">
+                                <!-- Populated via JS -->
+                                <tr id="loading-row">
+                                    <td colspan="6" class="text-center text-gray-500 py-8">Loading pending data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+    <script>
+        $(document).ready(function () {
+            loadPendingData();
+        });
+
+        function loadPendingData() {
+            $.get('/user-management/api/review-pending-data/', function (response) {
+                const tbody = $('#review-tbody');
+                tbody.empty();
+
+                if (!response.results || response.results.length === 0) {
+                    tbody.html('<tr><td colspan="6" class="text-center text-gray-500 py-8">No pending data found.</td></tr>');
+                    return;
+                }
+
+                response.results.forEach(item => {
+                    let periodDisplay = item.period_display || '-';
+
+                    const row = `
+                        <tr data-id="${item.id}" data-type="${item.type}">
+                            <td>
+                                <div class="font-semibold">${escapeHtml(item.indicator_title)}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light-primary text-primary capitalize">${item.type}</span>
+                            </td>
+                            <td>${periodDisplay}</td>
+                            <td><span class="font-bold">${item.value}</span></td>
+                            <td>
+                                <span class="badge bg-warning text-dark"><i class="fas fa-clock mr-1"></i>Pending</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="approveData('${item.type}', ${item.id})">
+                                    <i class="fas fa-check mr-1"></i>Approve
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            }).fail(function () {
+                $('#review-tbody').html('<tr><td colspan="6" class="text-center text-danger py-8">Failed to load data.</td></tr>');
+            });
+        }
+
+        function approveData(type, id) {
+            if (!confirm('Are you sure you want to approve this data?')) return;
+
+            $.ajax({
+                url: '/user-management/api/approve-pending-data/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ type: type, id: id }),
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function (resp) {
+                    // Remove row
+                    $(`tr[data-id="${id}"][data-type="${type}"]`).fadeOut(300, function () { $(this).remove(); });
+                    // Provide feedback
+                    // alert('Approved successfully'); 
+                },
+                error: function (err) {
+                    alert('Error approving data: ' + (err.responseJSON?.error || 'Unknown error'));
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+
+</html>

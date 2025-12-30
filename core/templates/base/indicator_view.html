@@ -1,0 +1,70 @@
+{% extends 'base/base.html' %}
+<title>{{ indicator.title_ENG|default:'base' }}</title>
+{% load static %}
+{% block content %}
+{% include 'base/common/nav.html' %}
+{% include 'base/common/header.html' %}
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="card mb-6 ">
+            <div class="card-body ">
+                <h2 class="text-2xl font-bold mb-4 " id="indicator-detail" data-indicator-id="{{ indicator.id }}">{{indicator.title_ENG }}<strong>({{ indicator.measurement_units|default:'N/A' }})</strong><strong>({{indicator.code }})</strong></h2>
+                <p><strong>Description:</strong> {{ indicator.description|default:'No description' }}</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 mb-6 ">
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Last 10 Years Performance (Value)</h4>
+                    <canvas id="chart-10years" height="120"></canvas>
+                </div>
+            </div>
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Recent Year Month Performance (Value)</h4>
+                    <canvas id="chart-month" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 mb-6 ">
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Recent 10 Years Quarterly (Value)</h4>
+                    <canvas id="chart-10years-quarterly" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="latest-annual-card" class="mb-6"></div>
+        <div class="card mb-6">
+            <div class="card-body">
+                <div class="flex gap-4 mb-4">
+                    <button class="data-table-tab btn btn-outline-primary active" data-type="annual">Yearly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="quarterly">Quarterly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="monthly">Monthly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="weekly">Weekly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="daily">Daily</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="data-table" class="table-auto w-full border border-theme-border rounded">
+                        <thead id="data-table-head">
+                            <!-- Filled by JS -->
+                        </thead>
+                        <tbody id="data-table-body">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="{% static 'assets/js/indicator_detail.js' %}"></script>
+{% include 'base/common/footer.html' %}
+{% include 'base/common/js.html' %}
+{% endblock %}

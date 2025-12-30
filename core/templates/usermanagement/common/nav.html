@@ -1,0 +1,176 @@
+{% load static %}
+<style>
+    .navbar-content {
+        overflow-y: auto;
+        scrollbar-width: none;
+        max-height: calc(100vh - 74px);
+        height: auto !important;
+        overscroll-behavior: none; 
+        scroll-behavior: smooth;
+    }
+    .navbar-content:hover {
+        scrollbar-width: thin;
+    }
+    .navbar-content::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+    .navbar-content::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
+    .pc-navbar {
+        min-height: fit-content;
+    }
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<nav class="pc-sidebar">
+        <div class="navbar-wrapper">
+                <div class="m-header flex items-center py-4 px-6 h-header-height"><a href="{% url 'user_management_dashboard' %}"
+                                class="b-brand flex items-center gap-3">
+                                <img src="{% static 'assets/images/logo-light.png' %}" class="img-fluid logo-lg"
+                                        alt="logo" data-light="{% static 'assets/images/logo-light.png' %}"
+                                        data-dark="{% static 'assets/images/logo-dark.png' %}">
+                </div>
+                <div class="navbar-content h-[calc(100vh_-_74px)] py-2.5">
+                        <div
+                                class="card pc-user-card mx-[15px] mb-[15px] bg-theme-sidebaruserbg dark:bg-themedark-sidebaruserbg">
+                                <div class="card-body !p-5">
+                                        <div class="flex items-center"><img
+                                                        class="shrink-0 w-[45px] h-[45px] rounded-full"
+                                                        src="{% static 'assets/images/profile-icon.png' %}"
+                                                        alt="user-image">
+                                                <div class="ml-4 mr-2 grow">
+                                                        <h7 class="mb-0"><b>Welcome:</b> {{ user.first_name }} {{user.last_name }}</h7>
+                                                        <div class="text-sm text-gray-500">
+                                                                {% if user.is_staff %}Administrator{% endif %}
+                                                                {% if user.is_category_manager %}Category Manager{% endif %}
+                                                                {% if user.is_importer %}Data Importer{% endif %}
+                                                        </div>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                        <ul class="pc-navbar">
+                                <li class="pc-item">
+                                        <a href="{% url 'user_management_dashboard' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <svg class="pc-icon">
+                                                                <use xlink:href="#custom-presentation-chart"></use>
+                                                        </svg>
+                                                </span>
+                                                <span class="pc-mtext">User Dashboard</span>
+                                        </a>
+                                </li>
+                                
+                                {% if user.is_staff %}
+                                <li class="pc-item pc-caption">
+                                        <label>Administration</label>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'users_list' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-users"></i>
+                                                </span>
+                                                <span class="pc-mtext">Manage Users</span>
+                                        </a>
+                                </li>
+                                
+                                <li class="pc-item">
+                                        <a href="{% url 'category_assignments' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-link"></i>
+                                                </span>
+                                                <span class="pc-mtext">Category Assignments</span>
+                                        </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if user.is_importer %}
+                                <li class="pc-item pc-caption">
+                                        <label>Data Import</label>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'add_indicator' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-plus"></i>
+                                                </span>
+                                                <span class="pc-mtext">Add indicators</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'data_table_explorer' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                </span>
+                                                <span class="pc-mtext">Data Table</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'importer_dashboard' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-upload"></i>
+                                                </span>
+                                                <span class="pc-mtext">Add Data Submission</span>
+                                        </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if user.is_category_manager %}
+                                <li class="pc-item pc-caption">
+                                        <label>Category Management</label>
+                                </li>
+                                 <li class="pc-item">
+                                        <a href="{% url 'users_list' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-users"></i>
+                                                </span>
+                                                <span class="pc-mtext">Manage Users</span>
+                                        </a>
+                                </li>
+                                 <li class="pc-item">
+                                        <a href="{% url 'review_table_data' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-table"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Table</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'submissions_list' %}?type=indicator&status=pending" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clock"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Indicators</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'submissions_list' %}?type=data&status=pending" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Data</span>
+                                        </a>
+                                </li>
+                                {% endif %}
+                                
+                                <li class="pc-item pc-caption">
+                                        <label>Back To Home</label>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'dashboard_index' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-home"></i>
+                                                </span>
+                                                <span class="pc-mtext">Main Dashboard</span>
+                                        </a>
+                                </li>
+
+                        </ul>
+                </div>
+        </div>
+</nav><!-- [ Sidebar Menu ] end -->
+
+
