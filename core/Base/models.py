@@ -226,7 +226,7 @@ class MonthData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
-    is_verified = models.BooleanField(default=True, verbose_name="Verified")
+    is_verified = models.BooleanField(default=False, verbose_name="Verified")
 
     def __str__(self):
         if self.indicator:
@@ -378,7 +378,7 @@ class QuarterData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
-    is_verified = models.BooleanField(default=True, verbose_name="Verified")
+    is_verified = models.BooleanField(default=False, verbose_name="Verified")
 
     def __str__(self):
         if self.indicator:
@@ -528,7 +528,7 @@ class AnnualData(models.Model):
     performance = models.FloatField(blank=True ,null=True)
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
-    is_verified = models.BooleanField(default=True, verbose_name="Verified")
+    is_verified = models.BooleanField(default=False, verbose_name="Verified")
 
     def save(self, *args, **kwargs):
         # Round performance to two decimal places before saving
