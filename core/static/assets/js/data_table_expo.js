@@ -1580,25 +1580,15 @@
         );
         // retry once after a short delay to avoid transient failures immediately after save
         setTimeout(function () {
-          const retryIndicatorsReq = $.get("/api/indicators-bulk/");
-          const retryMonthsReq =
-            currentMode === "monthly"
-              ? $.get("/user-management/sidebar/monthly/", {
-                page: sidebarPage,
-              })
-              : $.Deferred().resolve(null);
-          $.when(retryIndicatorsReq, retryMonthsReq)
-            .done(function () {
-              // successful retry — re-render table (will perform fresh fetches)
-              renderTable();
-            })
-            .fail(function () {
-              $("#explorer-head").html("");
-              $("#explorer-body").html(
-                '<tr><td class="text-center py-3 text-danger">Failed to load data.</td></tr>'
-              );
-              $("#pagination-container").html("");
-            });
+          try {
+            renderTable();
+          } catch (e) {
+            $("#explorer-head").html("");
+            $("#explorer-body").html(
+              '<tr><td class="text-center py-3 text-danger">Failed to load data.</td></tr>'
+            );
+            $("#pagination-container").html("");
+          }
         }, 600);
             }).always(function () {
               try { applyBtn.prop('disabled', false); } catch(e) {}
