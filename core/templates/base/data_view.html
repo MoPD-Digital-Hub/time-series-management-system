@@ -92,11 +92,14 @@
                                 style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
                                 Code
                             </th>
-
-                            {% for indicator in indicators %}
-                            <th data-code="{{ indicator.code }}" class="value-cell"
+                            {% for dp in datapoints %}
+                            <th class="value-cell"
                                 style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">
-                                {{ indicator.title_ENG }} <br> - {{ indicator.title_AMH }}
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <div class="mt-1">
+                                        {{ dp.year_ec }} EC - {{ dp.year_gc }} GC
+                                    </div>
+                                </div>
                             </th>
                             {% endfor %}
 
@@ -124,20 +127,19 @@
                     </thead>
 
                     <tbody>
-                        {% for row in indicators %}
-                        <tr data-code="{{ row.code }}" data-frequency="{{ row.frequency|default:'' }}">
-                            <td>{{ row.code }}</td>
+                        {% for row in table_rows %}
+                        <tr data-code="{{ row.indicator.code }}" data-frequency="{{ row.indicator.frequency|default:'' }}">
+                            <td>
+                                <div class="font-bold">{{ row.indicator.code }}</div>
+                                <div class="text-sm text-gray-700 truncate">{{ row.indicator.title_ENG }} - {{ row.indicator.title_AMH }}</div>
+                            </td>
 
-                            {% for indicator in indicators %}
+                            {% for val in row.values %}
                             <td class="value-cell"
-                                data-annual-perf="{{ indicator.annual_data.last.performance|default:'-' }}"
-                                data-month-perf="{{ indicator.monthly_data.last.performance|default:'-' }}"
-                                data-quarter-perf="{{ indicator.quarterly_data.last.performance|default:'-' }}">
-                                {% if indicator.id == row.id %}
-                                {{ indicator.annual_data.last.performance|default_if_none:"-" }}
-                                {% else %}
-                                -
-                                {% endif %}
+                                data-annual-perf="{{ val|default:'-' }}"
+                                data-month-perf="-"
+                                data-quarter-perf="-">
+                                {{ val|default_if_none:"-" }}
                             </td>
                             {% endfor %}
 
@@ -149,7 +151,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="{{ indicators|length|add:'6' }}" class="text-center py-4">No indicators
+                            <td colspan="{{ datapoints|length|add:'6' }}" class="text-center py-4">No indicators
                                 available for this subcategory.</td>
                         </tr>
                         {% endfor %}

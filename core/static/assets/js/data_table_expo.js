@@ -2,6 +2,7 @@
   // --- State
   let selections = { indicators: [] };
   let currentMode = "annual";
+  let currentRequest = null;
   const EDIT_BUFFER = {};
   const LAST_SAVED_VALUES = {};
 
@@ -29,6 +30,37 @@
       .replace(/"/g, "&quot;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
+
+  // Insert large table HTML in chunks to avoid blocking the main thread
+  function insertRowsChunked(containerSelector, htmlString, chunkSize = 200, cb) {
+    if (!htmlString) {
+      $(containerSelector).html('');
+      if (typeof cb === 'function') cb();
+      return;
+    }
+    // split by row ending; keep the closing tag
+    const parts = htmlString.split('</tr>').map(p => p.trim()).filter(Boolean).map(p => p + '</tr>');
+    const $container = $(containerSelector);
+    $container.html('');
+    let i = 0;
+    function appendChunk() {
+      const end = Math.min(i + chunkSize, parts.length);
+      if (i >= end) {
+        if (typeof cb === 'function') cb();
+        return;
+      }
+      const chunk = parts.slice(i, end).join('');
+      $container.append(chunk);
+      i = end;
+      if (i < parts.length) {
+        // schedule next chunk to yield to the event loop
+        setTimeout(appendChunk, 8);
+      } else {
+        if (typeof cb === 'function') cb();
+      }
+    }
+    appendChunk();
   }
 
   function buildSavedKey(
@@ -611,9 +643,7 @@
 
     const ids = selections.indicators.map((i) => i.id).join(",");
 
-    // Some backend endpoints expect a slightly different mode string
-    // (e.g. 'quarter' instead of 'quarterly'). Map our UI mode to the
-    // API mode to ensure the correct dataset is returned for each view.
+    // xpect a slightly different mode string
     let apiMode = currentMode;
     if (currentMode === "quarterly") apiMode = "quarter";
     if (currentMode === "monthly") apiMode = "monthly";
@@ -621,7 +651,43 @@
     let params = { ids: ids, mode: apiMode };
 
     // Request indicators; also request month names from sidebar when in monthly mode
-    const indicatorsReq = $.get("/api/indicators-bulk/", params);
+    const payload = {
+      records: selections.indicators.map(i => i.id),
+      record_type: apiMode,
+      entry_filter: sidebarFilter
+
+    };
+
+    if (currentRequest && currentRequest.abort) currentRequest.abort();
+    const applyBtn = $('#apply-selection');
+    const indicatorsReq = $.ajax({
+      url: "/api/indicators-bulk/",
+      method: "POST",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      headers: { "X-CSRFToken": getCookie("csrftoken") },
+      data: JSON.stringify({
+        records: selections.indicators.map((i) => i.id),
+        record_type: apiMode,
+        entry_filter: sidebarFilter || null
+      }),
+      beforeSend: function () {
+        // show simple loading state in table while request is pending
+        $("#explorer-head").html("<tr><th>Loading...</th></tr>");
+        $("#explorer-body").html(
+          '<tr><td class="text-center py-3">Loading...</td></tr>'
+        );
+        try { applyBtn.prop('disabled', true); } catch(e){}
+      },
+      success: function (resp) {
+        // success 
+      },
+      complete: function () {
+        // noop
+      },
+    });
+    currentRequest = indicatorsReq;
+
     // request the monthly sidebar for the current sidebar page (so month names match the selected year)
     const monthsReq =
       currentMode === "monthly"
@@ -758,8 +824,6 @@
 
         if (allYearsEC.size === 0) {
           // If indicators returned no historical years, prefer to use the server's
-          // list of DataPoint years (if provided). This ensures the table shows
-          // actual years available in the DB instead of inventing a range.
           const dps = resp.datapoints || resp.datapoints || [];
           if (Array.isArray(dps) && dps.length) {
             dps.forEach((dp) => {
@@ -1433,8 +1497,9 @@
             rowsHtml += `</tr>`;
           });
 
-          $("#explorer-body").html(rowsHtml);
-          attachEditHandlers();
+          insertRowsChunked('#explorer-body', rowsHtml, 200, function(){
+            try { attachEditHandlers(); } catch(e){}
+          });
           return;
         }
 
@@ -1501,11 +1566,13 @@
           });
           rowsHtml += "</tr>";
         });
-        $("#explorer-body").html(rowsHtml);
-
-        attachEditHandlers();
+        insertRowsChunked('#explorer-body', rowsHtml, 200, function(){
+          try { attachEditHandlers(); } catch(e){}
+        });
       })
-      .fail(function (jqXHR, textStatus, errorThrown) {
+            .fail(function (jqXHR, textStatus, errorThrown) {
+        // ignore aborts triggered when a previous request is intentionally cancelled
+        if (textStatus === 'abort') return;
         console.warn(
           "indicators/months fetch failed:",
           textStatus,
@@ -1513,7 +1580,7 @@
         );
         // retry once after a short delay to avoid transient failures immediately after save
         setTimeout(function () {
-          const retryIndicatorsReq = $.get("/api/indicators-bulk/", params);
+          const retryIndicatorsReq = $.get("/api/indicators-bulk/");
           const retryMonthsReq =
             currentMode === "monthly"
               ? $.get("/user-management/sidebar/monthly/", {
@@ -1533,7 +1600,10 @@
               $("#pagination-container").html("");
             });
         }, 600);
-      });
+            }).always(function () {
+              try { applyBtn.prop('disabled', false); } catch(e) {}
+              currentRequest = null;
+            });
   }
 
   function attachEditHandlers() {

@@ -219,10 +219,50 @@ def data_view(request, cat_title):
     category = Category.objects.filter(name_ENG=cat_title).first()
     indicators = Indicator.objects.filter(for_category=category, is_verified=True) if category else []
     topics = Topic.objects.prefetch_related('categories').all()
+    # Build datapoints (unique years) from annual data for the selected indicators
+    datapoints = []
+    table_rows = []
+    if indicators:
+        # fetch annual data for these indicators
+        annual_qs = AnnualData.objects.filter(
+            indicator__in=indicators, for_datapoint__isnull=False, is_verified=True
+        ).select_related('for_datapoint')
+
+        # collect unique datapoint years in order (latest first by year_GC)
+        seen = {}
+        for a in annual_qs.order_by('-for_datapoint__year_GC'):
+            dp = a.for_datapoint
+            if not dp:
+                continue
+            key = (dp.year_EC, dp.year_GC)
+            if key not in seen:
+                seen[key] = {'year_ec': dp.year_EC, 'year_gc': dp.year_GC}
+        datapoints = list(seen.values())
+
+        # build a lookup of performance per indicator per datapoint
+        perf_map = {}
+        for a in annual_qs:
+            dp = a.for_datapoint
+            if not dp:
+                continue
+            key = (dp.year_EC, dp.year_GC)
+            perf_map.setdefault(a.indicator_id, {})[key] = a.performance
+
+        # build table rows aligned with datapoints order
+        for ind in indicators:
+            values = []
+            for dp in datapoints:
+                key = (dp['year_ec'], dp['year_gc'])
+                val = perf_map.get(ind.id, {}).get(key)
+                values.append(val)
+            table_rows.append({'indicator': ind, 'values': values})
+
     context = {
         'category': category,
         'indicators': indicators,
         'topics': topics,
+        'datapoints': datapoints,
+        'table_rows': table_rows,
     }
     return render(request, 'base/data_view.html', context)
 

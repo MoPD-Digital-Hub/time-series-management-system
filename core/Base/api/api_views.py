@@ -247,17 +247,51 @@ def indicator_data_by_id_api(request, indicator_id):
     })
 
 
-@api_view(['GET', 'PATCH'])
+@api_view(['POST', 'PATCH'])
 def indicators_bulk_api(request):
-    ids_param = request.GET.get('ids', '')
-    mode = request.GET.get('mode', 'annual')
+    # Handle data fetching (GET or POST)
+    # Normalize inputs so `id_list` and `mode` are always defined regardless of method.
+    id_list = []
+    mode = request.GET.get('mode') or request.GET.get('record_type') or 'annual'
 
-    try:
-        id_list = [int(x) for x in ids_param.split(',') if x.strip().isdigit()]
-    except Exception:
-        id_list = []
+    if request.method == 'POST':
+        # DRF parses JSON into request.data for us, but be defensive and fall back to body parsing.
+        try:
+            payload = request.data if isinstance(request.data, dict) else json.loads(request.body)
+        except Exception:
+            payload = request.data if isinstance(request.data, dict) else {}
 
-    if request.method == 'PATCH':
+        # Accept either `records` (array) or `ids` (csv or array) or `records_ids` for compatibility
+        raw_ids = payload.get('records') or payload.get('ids') or payload.get('records_ids') or []
+        # Mode key used by clients is `record_type` in some callers
+        mode = payload.get('record_type') or payload.get('mode') or mode or 'annual'
+
+        # Normalize id list to a Python list of ints/strings
+        if isinstance(raw_ids, str):
+            # comma-separated string
+            id_list = [s for s in [x.strip() for x in raw_ids.split(",")] if s]
+        elif isinstance(raw_ids, (list, tuple)):
+            id_list = list(raw_ids)
+        elif raw_ids is None:
+            id_list = []
+        else:
+            # unexpected shape
+            id_list = []
+
+    elif request.method == 'GET':
+        # GET may provide `ids` as a comma-separated query param or multiple `ids` params
+        ids_q = request.GET.get('ids')
+        if ids_q:
+            if isinstance(ids_q, str) and ',' in ids_q:
+                id_list = [s for s in [x.strip() for x in ids_q.split(',')] if s]
+            else:
+                # getlist will return multiple values if provided as ?ids=1&ids=2
+                id_list = request.GET.getlist('ids') or [ids_q]
+        else:
+            id_list = []
+    
+    # Handle PATCH requests (data updates)
+    elif request.method == 'PATCH':
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
@@ -413,8 +447,25 @@ def indicators_bulk_api(request):
 
     if not id_list:
         return JsonResponse({'results': [], 'datapoints': datapoints})
+    
+    # Safeguard: Warn if requesting too many indicators
+    MAX_INDICATORS = 2000
+    if len(id_list) > MAX_INDICATORS:
+        return JsonResponse({
+            'error': f'Too many indicators requested. Maximum is {MAX_INDICATORS}, but {len(id_list)} were requested.',
+            'message': 'Please select fewer indicators or contact support for bulk data export options.'
+        }, status=400)
+    
+    # Add warning for large requests (will be included in response)
+    warning_message = None
+    if len(id_list) > 500:
+        warning_message = f'Large request: {len(id_list)} indicators selected. This may take longer to load.'
 
-    indicators = list(Indicator.objects.filter(id__in=id_list, is_verified=True))
+    # Optimize query: only fetch needed fields to reduce memory usage
+    indicators = list(
+        Indicator.objects.filter(id__in=id_list, is_verified=True)
+        .only('id', 'title_ENG', 'title_AMH', 'code')
+    )
 
     # --- Preload Annual Data ---
     annual_all = AnnualData.objects.filter(
@@ -436,7 +487,10 @@ def indicators_bulk_api(request):
     # --- Annual Mode ---
     if mode in ('annual', 'all'):
         ser = IndicatorAnnualSerializer(indicators, many=True, context={'annual_map': annual_map})
-        return JsonResponse({'mode': 'annual', 'results': ser.data, 'datapoints': datapoints})
+        response_data = {'mode': 'annual', 'results': ser.data, 'datapoints': datapoints}
+        if warning_message:
+            response_data['warning'] = warning_message
+        return JsonResponse(response_data)
 
     # --- Monthly Mode ---
     if mode == 'monthly':
@@ -591,11 +645,11 @@ def indicators_bulk_api(request):
                 'code': ind.code,
                 'daily': daily_map.get(ind.id, [])
             })
-        
         return JsonResponse({'mode': 'daily', 'results': results_data, 'datapoints': datapoints})
     
     # Fallback to annual if mode doesn't match any known types
     ser = IndicatorAnnualSerializer(indicators, many=True, context={'annual_map': annual_map})
+    
     return JsonResponse({'mode': 'annual', 'results': ser.data, 'datapoints': datapoints})
 
 @api_view(['PATCH'])
