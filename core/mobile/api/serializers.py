@@ -69,6 +69,7 @@ class MonthDataPreviousSerializer(serializers.ModelSerializer):
 
 class TopicSerializer(serializers.ModelSerializer):
     count_category = serializers.SerializerMethodField()
+    count_kpis = serializers.SerializerMethodField()
 
     class Meta:
         model = Topic
@@ -76,6 +77,14 @@ class TopicSerializer(serializers.ModelSerializer):
 
     def get_count_category(self, obj):
         return obj.categories.all().count()
+    
+    def get_count_kpis(self, obj):
+        return (
+            Indicator.objects
+            .filter(for_category__topic=obj)
+            .distinct()
+            .count()
+        )
     
 class AnnualDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
