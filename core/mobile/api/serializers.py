@@ -608,3 +608,12 @@ class AIMonthDataSerializer(serializers.ModelSerializer):
 
     def get_indicator(self, obj):
             return str(obj.indicator.title_ENG)
+    
+
+
+### Updated category lists
+
+class UpdatedCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'

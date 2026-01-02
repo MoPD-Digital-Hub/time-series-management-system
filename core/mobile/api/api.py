@@ -106,7 +106,6 @@ def mobile_projects(request):
     serializer = ProjectSerializer(projects , many=True)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
 
-##Projects
 @api_view(['GET'])
 def mobile_initiatives(request):
     initiatives = ProjectInitiatives.objects.filter(is_initiative = True)
@@ -118,8 +117,6 @@ def mobile_project_detail(request ,id):
     project = ProjectInitiatives.objects.get(id = id)
     serializer = ProjectDetailSerializer(project)
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
-
-
 
 @api_view(['GET'])
 def general_search(request):
@@ -154,9 +151,6 @@ def general_search(request):
         "data": serializer.data
     }, status=status.HTTP_200_OK)
 
-
-
-
 @api_view(['GET'])
 def indicators_filter(request):
     category_id = request.GET.get("category_id")
@@ -190,8 +184,6 @@ def indicators_filter(request):
     }, status=status.HTTP_200_OK)
 
   
-
-
 ####### Export Data #########
 def get_resource_by_data_type(data_type):
     """Return the correct resource class and filename suffix based on data type."""
@@ -401,3 +393,31 @@ def get_annual_value(request):
                 "month" : month_full_series
             }
         })
+
+
+##### Updated API For Category
+
+@api_view(['GET'])
+def categories(request, topic_id):
+    try:
+        topic = Topic.objects.get(id = topic_id)
+    except Topic.DoesNotExist:
+        return Response({"result" : "FAILED", "message" : "Topic not found", "data" : None,}, status=status.HTTP_404_NOT_FOUND)
+    
+    category_lists = topic.categories.all()
+    serializer = UpdatedCategorySerializer(category_lists, many = True)
+
+    return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def kpis(request, category_id):
+    try:
+        category = Category.objects.get(id = category_id)
+    except Category.DoesNotExist:
+        return Response({"result" : "FAILED", "message" : "Category not found", "data" : None,}, status=status.HTTP_404_NOT_FOUND)
+    
+    kpi_lists = category.indicators.all()
+    serializer = IndicatorSerializer(kpi_lists, many = True)
+
+    return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)

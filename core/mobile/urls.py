@@ -26,4 +26,7 @@ urlpatterns = [
     path('export-all-data-json/<int:topic_id>/', api.export_json, name='export-all-data'),
     path("annual_value/", api.get_annual_value, name="get_annual_value"),
 
+    ### Updated API 
+    path('categories/<str:topic_id>', api.categories, name='category lists'),
+    path('kpis/<str:category_id>', api.kpis, name='kpi lists')
 ]
