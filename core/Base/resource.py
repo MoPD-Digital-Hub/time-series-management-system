@@ -5,9 +5,12 @@ from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 from import_export.results import RowResult, Result
 from .models import *
 from tablib import Dataset
+from django.db.utils import OperationalError, ProgrammingError
+from Base.models import Indicator
+from .models import AnnualData, DataPoint
+
 from datetime import datetime
 #############Import export Model Resources################
-
 
 class TopicResource(resources.ModelResource):
     class Meta:
@@ -51,7 +54,7 @@ class IndicatorResource(resources.ModelResource):
     parent = fields.Field(
         column_name='parent',
         attribute='parent',
-        widget=ForeignKeyWidget(Indicator, field='id'),
+        widget=ForeignKeyWidget(Indicator, 'id'),
         saves_null_values=True,
     )
     class Meta:
@@ -59,6 +62,21 @@ class IndicatorResource(resources.ModelResource):
         import_id_fields = ('id',)             
         skip_unchanged = False                 
         report_skipped = True          
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Before importing each row, check if the referenced parent exists.
+        If not, skip linking it for now — this avoids the 'Indicator matching query does not exist' error.
+        """
+        parent_id = row.get('parent')
+        if parent_id:
+            try:
+                parent_id = int(float(parent_id))  # handles Excel numeric formats (e.g. 144.0)
+            except (ValueError, TypeError):
+                row['parent'] = None
+                return
+            if not Indicator.objects.filter(id=parent_id).exists():
+                row['parent'] = None  # temporarily ignore missing parent    
     
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
         if dry_run:
@@ -73,6 +91,19 @@ class IndicatorResource(resources.ModelResource):
             except Exception as e:
                 print(f"Error generating code for {instance.id}: {e}")
 
+        for row in dataset.dict:
+            parent_id = row.get('parent')
+            if parent_id:
+                try:
+                    parent_id = int(float(parent_id))
+                    indicator_id = int(float(row.get('id')))
+                    child = Indicator.objects.filter(id=indicator_id).first()
+                    parent = Indicator.objects.filter(id=parent_id).first()
+                    if child and parent:
+                        child.parent = parent
+                        child.save(update_fields=['parent'])
+                except Exception:
+                    continue        
 
 class DataPointResource(resources.ModelResource):
 
@@ -112,12 +143,12 @@ class AnnualDataWideResource(resources.ModelResource):
     indicator = fields.Field(
         column_name='indicator',
         attribute='indicator',
-        widget=ForeignKeyWidget(Indicator, 'code')  
+        widget=ForeignKeyWidget(Indicator, 'code')  # or 'title_ENG' depending on Excel
     )
     for_datapoint = fields.Field(
         column_name='for_datapoint',
         attribute='for_datapoint',
-        widget=ForeignKeyWidget(DataPoint, 'year_EC') 
+        widget=ForeignKeyWidget(DataPoint, 'year_EC')
     )
     performance = fields.Field(
         column_name='performance',
@@ -126,90 +157,21 @@ class AnnualDataWideResource(resources.ModelResource):
 
     class Meta:
         model = AnnualData
+        fields = ('indicator', 'for_datapoint', 'performance')
+        import_id_fields = ('indicator', 'for_datapoint')
         skip_unchanged = True
         report_skipped = True
-        import_id_fields = ('indicator', 'for_datapoint',)
-        fields = ('indicator', 'for_datapoint', 'performance')
 
-    def get_instance(self, instance_loader, row):
-        indicator_code = row.get('indicator')
-        year_ec = row.get('for_datapoint')
-        if not indicator_code or not year_ec:
-            return None
-
-        try:
-            indicator = Indicator.objects.get(code=indicator_code)
-            datapoint = DataPoint.objects.get(year_EC=year_ec)
-            return AnnualData.objects.get(indicator=indicator, for_datapoint=datapoint)
-        except (Indicator.DoesNotExist, DataPoint.DoesNotExist, AnnualData.DoesNotExist):
-            return None
-        
     def before_import_row(self, row, **kwargs):
-        if row.get('for_datapoint') is None:
-               pass
-        year = row.get("for_datapoint")
-        if year:
-            datapoint, created = DataPoint.objects.get_or_create(year_EC=year)
-            row["for_datapoint"] = datapoint.year_EC
-
-    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, **kwargs):
-        result_dataset = Dataset(headers=['indicator', 'for_datapoint', 'performance'])
-
-        new_count = 0
-        updated_count = 0
-
-        for row_number, row in enumerate(dataset.dict, start=1):
-            indicator_key = row.get('indicator')
-            if not indicator_key:
-                continue
-
+        """Ensure DataPoint exists before linking."""
+        year_value = row.get('for_datapoint')
+        if year_value:
             try:
-                indicator = Indicator.objects.get(code=indicator_key)
-            except Indicator.DoesNotExist:
-                continue
-
-            for year, value in row.items():
-                if year == 'indicator' or value in [None, '']:
-                    continue
-
-                try:
-                    datapoint, created = DataPoint.objects.get_or_create(year_EC=year)
-                except DataPoint.DoesNotExist:
-                    continue
-
-                try:
-                    performance = float(value)
-                except ValueError:
-                    continue
-
-                result_dataset.append([indicator_key, year, performance])
-
-                if not dry_run:
-                    obj, created = AnnualData.objects.update_or_create(
-                        indicator=indicator,
-                        for_datapoint=datapoint,
-                        defaults={'performance': performance}
-                    )
-                    if created:
-                        new_count += 1
-                    else:
-                        updated_count += 1
-
-        if dry_run:
-            return super().import_data(result_dataset, dry_run=True, raise_errors=raise_errors, **kwargs)
-
-        result = Result()
-        result.rows = []
-        result.totals = {
-            'new': new_count,
-            'update': updated_count,
-            'skip': 0,
-            'failed': 0,
-            'delete': 0,
-        }
-        result.diff_headers = ['indicator', 'for_datapoint', 'performance']
-
-        return result
+                year_int = int(year_value)
+            except ValueError:
+                return
+            datapoint, _ = DataPoint.objects.get_or_create(year_EC=year_int)
+            row['for_datapoint'] = datapoint.year_EC
 
 class QuarterDataResource(resources.ModelResource):    
     indicator = fields.Field(
@@ -708,9 +670,6 @@ class DayKPIRecordResource(resources.ModelResource):
         result.diff_headers = ['indicator', 'record_type', 'target', 'performance', 'date']
         
         return result
-
-
-
 #############Handle uploaded excel files################
 
 def handle_uploaded_Topic_file(file):
@@ -866,8 +825,6 @@ def confirm_file(imported_data, type):
     
 
 
-
-
 def create_aggregate_data_resource():
     YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
 
@@ -927,7 +884,7 @@ def create_aggregate_data_resource():
     attrs['Meta'] = Meta
     return type('AnnualDataResource', (resources.ModelResource,), attrs)
 
-AnnualDataResource = create_aggregate_data_resource()
+# AnnualDataResource = create_aggregate_data_resource()
 
 def create_quarter_aggregate_resource():
     YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
@@ -1028,7 +985,7 @@ def create_month_aggregate_resource():
 
     for year in YEARS:
         for m_num in MONTHS:
-            m_name = Month.objects.get(number=m_num).month_AMH
+            m_name = Month.objects.filter(number=m_num).first().month_AMH
             attrs[f'M{m_num}_{year}'] = fields.Field(column_name=f'{m_name} {year}')
             attrs[f'dehydrate_M{m_num}_{year}'] = make_dehydrate_month(year, m_num)
 
