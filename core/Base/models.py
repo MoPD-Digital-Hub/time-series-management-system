@@ -228,6 +228,8 @@ class MonthData(models.Model):
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
     is_verified = models.BooleanField(default=False, verbose_name="Verified")
+    submitted_by = models.ForeignKey('UserManagement.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    is_seen = models.BooleanField(default=False)
 
     def __str__(self):
         if self.indicator:
@@ -380,6 +382,8 @@ class QuarterData(models.Model):
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
     is_verified = models.BooleanField(default=False, verbose_name="Verified")
+    submitted_by = models.ForeignKey('UserManagement.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    is_seen = models.BooleanField(default=False)
 
     def __str__(self):
         if self.indicator:
@@ -388,6 +392,7 @@ class QuarterData(models.Model):
     
     class Meta:
         ordering = ['for_datapoint__year_EC' , 'for_quarter__number']
+        unique_together = ("indicator", "for_datapoint", "for_quarter")
     
     def get_previous_year_performance(self):
         # Calculate and return the change in performance compared to the previous year
@@ -530,6 +535,9 @@ class AnnualData(models.Model):
     target = models.FloatField(blank=True ,null=True)
     created_at = models.DateTimeField(auto_now=True)
     is_verified = models.BooleanField(default=False, verbose_name="Verified")
+    submitted_by = models.ForeignKey('UserManagement.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    is_seen = models.BooleanField(default=False)
+
 
     def save(self, *args, **kwargs):
         # Round performance to two decimal places before saving
@@ -695,7 +703,11 @@ class KPIRecord(models.Model):
         Indicator, null=True ,on_delete=models.SET_NULL, related_name='records',
         help_text="Select the KPI this record belongs to"
     )
+
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
+    
     record_type = models.CharField(max_length=100, choices=RECORD_TYPE_CHOICES, default='quarterly')
+    
     target = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True,
         help_text="Target value for this KPI"
@@ -707,6 +719,9 @@ class KPIRecord(models.Model):
     date = models.DateField(
         help_text="The date this KPI record is associated with"
     )
+    submitted_by = models.ForeignKey('UserManagement.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    is_seen = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     class Meta:
         indexes = [

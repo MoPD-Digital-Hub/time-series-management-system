@@ -3,17 +3,45 @@
   let selections = { indicators: [] };
   let currentMode = "annual";
   let currentRequest = null;
-  const EDIT_BUFFER = {};
+  const EDIT_BUFFER = {}; // key -> payload
   const LAST_SAVED_VALUES = {};
+
+  // Inject CSS for pending and unseen cells
+  $('<style>')
+    .prop('type', 'text/css')
+    .html(`
+      .pending-cell {
+        background-color: #fff9db !important; /* Light yellow background */
+        border: 2px solid #ffec99 !important;
+        position: relative;
+      }
+      .unseen-cell::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        background-color: #228be6 !important; /* Brighter blue */
+        border-radius: 50%;
+        pointer-events: none;
+        box-shadow: 0 0 2px rgba(0,0,0,0.2);
+      }
+      .editable-cell:focus {
+        outline: none;
+        background-color: #e7f5ff !important;
+      }
+    `)
+    .appendTo('head');
 
   // Sidebar state
   let sidebarLoading = false;
   let sidebarSelectedItem = null;
-  let sidebarFilter = null;
+  let sidebarFilter = null; // { mode, year_ec?, year_gc?, quarter_number?, month_number? }
   let sidebarPage = 1;
   let sidebarHasNext = false;
   let sidebarHasPrev = false;
-  let sidebarItemsCurrent = [];
+  let currentSidebarResults = []; // Sync table rows with sidebar items
 
   // --- Helpers
   function getCookie(name) {
@@ -136,21 +164,14 @@
       $menu.toggleClass("hidden");
     });
   }
-  toggleMenu("#dd-topic-btn", "#dd-topic");
   toggleMenu("#dd-category-btn", "#dd-category");
   toggleMenu("#dd-ind-btn", "#dd-ind");
   $(document).on("click", () => $(".absolute.z-10").addClass("hidden"));
-  $("#dd-topic, #dd-category, #dd-ind").on("click", function (e) {
+  $("#dd-category, #dd-ind").on("click", function (e) {
     e.stopPropagation();
   });
 
   // --- Search filters
-  $("#search-topic").on("input", function () {
-    const term = $(this).val().toLowerCase();
-    $("#topic-list label").each(function () {
-      $(this).toggle($(this).text().toLowerCase().includes(term));
-    });
-  });
   $("#search-category").on("input", function () {
     const term = $(this).val().toLowerCase();
     $("#category-list label").each(function () {
@@ -165,11 +186,6 @@
   });
 
   // --- Select all checkboxes
-  $("#topic-select-all").on("change", function () {
-    $("#topic-list .topic-checkbox")
-      .prop("checked", this.checked)
-      .trigger("change");
-  });
   $("#category-select-all").on("change", function () {
     $("#category-list .cat-checkbox")
       .prop("checked", this.checked)
@@ -181,29 +197,13 @@
   });
 
   // --- Hierarchy filter functions
-  function updateCategoryList() {
-    const selectedTopics = $("#topic-list .topic-checkbox:checked")
-      .map((_, el) => $(el).data("id"))
-      .get();
-    $("#category-list label").each(function () {
-      const topicId = $(this).data("topic");
-      $(this).toggle(selectedTopics.includes(topicId));
-    });
-  }
-
   function updateIndicatorList() {
-    const selectedTopics = $("#topic-list .topic-checkbox:checked")
-      .map((_, el) => $(el).data("id"))
-      .get();
     const selectedCats = $("#category-list .cat-checkbox:checked")
       .map((_, el) => $(el).data("id"))
       .get();
     $("#ind-list label").each(function () {
-      const topicId = $(this).data("topic");
       const catId = $(this).data("cat");
-      const show =
-        (selectedTopics.includes(topicId) && selectedCats.includes(catId)) ||
-        (selectedTopics.length === 0 && selectedCats.length === 0); // show all if nothing selected
+      const show = selectedCats.length === 0 || selectedCats.includes(catId);
       $(this).toggle(show);
     });
     collectSelection();
@@ -221,10 +221,6 @@
   }
 
   // --- Trigger hierarchy updates on checkbox change
-  $("#topic-list .topic-checkbox").on("change", function () {
-    updateCategoryList();
-    updateIndicatorList();
-  });
   $("#category-list .cat-checkbox").on("change", function () {
     updateIndicatorList();
   });
@@ -251,7 +247,6 @@
     $("input[type=checkbox], input[type=radio]").prop("checked", false);
     selections.indicators = [];
     currentMode = "annual";
-    updateCategoryList();
     updateIndicatorList();
     sidebarSelectedItem = null;
     resetSidebar();
@@ -268,7 +263,6 @@
     sidebarFilter = null;
     sidebarHasNext = false;
     sidebarHasPrev = false;
-    sidebarItemsCurrent = [];
 
     if (!selections.indicators.length) {
       $("#sidebar-container").addClass("hidden");
@@ -304,219 +298,115 @@
       url = "/user-management/sidebar/daily/";
     }
 
+    if (!url) {
+      sidebarLoading = false;
+      return;
+    }
+
+    console.log(`[Sidebar] Loading ${currentMode} page ${sidebarPage} from ${url}`);
+
     $("#side-pagination").html(
       '<div class="text-center text-sm text-gray-500">Loading...</div>'
     );
     $("#sidebar-loading").removeClass("hidden");
 
-    $.get(url, { page: sidebarPage })
+    $.get(url, { page: sidebarPage, ids: selections.indicators.map(i => i.id).join(",") })
       .done(function (resp) {
-        const respObj = Array.isArray(resp) ? { results: resp } : resp || {};
+        console.log("[Sidebar] Received response:", resp);
+        const respObj = (resp && resp.results) ? resp : (Array.isArray(resp) ? { results: resp } : (resp || {}));
         const items = respObj.results || [];
-        sidebarItemsCurrent = items;
+        currentSidebarResults = items;
 
-        sidebarHasPrev =
-          respObj.has_prev !== undefined
-            ? !!respObj.has_prev
-            : respObj.previous !== undefined
-              ? !!respObj.previous
-              : respObj.page > 1;
-
+        // Pagination state
+        sidebarHasPrev = sidebarPage > 1;
         if (respObj.has_next !== undefined) {
           sidebarHasNext = !!respObj.has_next;
         } else if (respObj.next !== undefined) {
           sidebarHasNext = !!respObj.next;
-        } else if (
-          respObj.page !== undefined &&
-          respObj.total_pages !== undefined
-        ) {
-          sidebarHasNext = Number(respObj.page) < Number(respObj.total_pages);
+        } else if (respObj.total_pages !== undefined) {
+          sidebarHasNext = Number(sidebarPage) < Number(respObj.total_pages);
         } else {
-          // Unknown pagination format: assume page size 10 heuristic (if server returns full pages, next exists)
-          const HEURISTIC_PAGE_SIZE = 10;
-          sidebarHasNext = items.length >= HEURISTIC_PAGE_SIZE;
+          sidebarHasNext = items.length >= 10;
         }
 
+        console.log(`[Sidebar] Items: ${items.length}, Prev: ${sidebarHasPrev}, Next: ${sidebarHasNext}`);
+
         if (!items.length) {
-          // If we requested a page > 1 and got no items, try stepping back one page and reload
           if (sidebarPage > 1) {
-            sidebarPage = Math.max(1, sidebarPage - 1);
+            console.log("[Sidebar] No items on page, stepping back");
+            sidebarPage--;
+            sidebarLoading = false;
             loadSidebarItems();
             return;
           }
-          $("#side-pagination").html(
-            '<div class="text-center text-sm text-gray-500">No items</div>'
-          );
-          updateSidebarNav();
+          $("#side-pagination").html('<div class="text-center text-sm text-gray-500">No items</div>');
           return;
         }
 
-        // helpers to read different possible API field names
-        function readYearEC(it) {
-          return it.year_ec !== undefined
-            ? it.year_ec
-            : it.year_EC !== undefined
-              ? it.year_EC
-              : it.year || undefined;
-        }
-        function readYearGC(it) {
-          return it.year_gc !== undefined
-            ? it.year_gc
-            : it.year_GC !== undefined
-              ? it.year_GC
-              : it.year_gc || undefined;
-        }
-        function readQuarterNumber(it) {
-          return it.quarter_number !== undefined
-            ? it.quarter_number
-            : it.number !== undefined
-              ? it.number
-              : it.quarter || undefined;
-        }
-        function readMonthNumber(it) {
-          return it.month_number !== undefined
-            ? it.month_number
-            : it.number !== undefined
-              ? it.number
-              : undefined;
-        }
-        function readFieldAny(it, ...names) {
-          for (let n of names)
-            if (it[n] !== undefined && it[n] !== null) return it[n];
-          return undefined;
-        }
+        // Helpers
+        const readYearEC = (it) => it.year_ec || it.year_EC || it.year;
+        const readYearGC = (it) => it.year_gc || it.year_GC || "";
+        const readFieldAny = (it, ...names) => {
+          for (let n of names) if (it[n] !== undefined) return it[n];
+          return "";
+        };
 
         let html = "";
-        items.forEach((item, index) => {
-          // Normalize year values and compute a consistent year_GC fallback when missing.
-          const yecRaw = readYearEC(item);
-          const ygcRaw = readYearGC(item);
-          const yearEc =
-            yecRaw !== undefined && yecRaw !== null && String(yecRaw) !== ""
-              ? Number(yecRaw)
-              : null;
-          let yearGc =
-            ygcRaw !== undefined && ygcRaw !== null && String(ygcRaw) !== ""
-              ? String(ygcRaw)
-              : null;
-          if (!yearGc && yearEc !== null) {
-            // Do NOT compute GC from EC; show blank when backend didn't provide one
-            yearGc = "";
-          }
-          const fallbackId = `${yearEc !== null ? yearEc : ""}-${yearGc !== null ? yearGc : ""
-            }-${currentMode}`;
-          const itemId =
-            item.id !== undefined && item.id !== null
-              ? String(item.id)
-              : fallbackId;
+        items.forEach((item) => {
+          const yearEc = readYearEC(item);
+          const yearGc = readYearGC(item);
+          const itemId = item.id || `${yearEc}-${yearGc}-${currentMode}`;
+
           let primary = "";
           let secondary = "";
-          let extraAttrs = "";
-          if (currentMode === "weekly") {
-            const yearEcVal = readYearEC(item);
-            const yearGcVal = readYearGC(item);
-            const weekNum = item.week || item.week_number || 1;
-            primary = item.label || `Week ${weekNum}`;
-            extraAttrs = `data-week="${weekNum}" data-month-number="${item.month_number || ""
-              }" data-year-ec="${yearEcVal !== undefined ? yearEcVal : ""}" data-year-gc="${yearGcVal !== undefined && yearGcVal !== null ? escapeHtml(yearGcVal) : ""
-              }" data-date="${item.date || ""}"`;
-          } else if (currentMode === "daily") {
-            primary = item.date;
-            const yearEcVal = readYearEC(item);
-            const yearGcVal = readYearGC(item);
-            extraAttrs = `data-day="${item.date}" data-year-ec="${yearEcVal !== undefined ? yearEcVal : ""
-              }" data-year-gc="${yearGcVal !== undefined && yearGcVal !== null ? escapeHtml(yearGcVal) : ""
-              }" data-date="${item.date || ""}"`;
-          }
+          let extraAttrs = `data-year-ec="${yearEc || ""}" data-year-gc="${escapeHtml(yearGc || "")}"`;
 
           if (currentMode === "annual") {
-            const yearEcLabel = yearEc !== null ? yearEc : "-";
-            const yearGcLabel = yearGc !== null ? yearGc : "-";
-            primary = `${yearEcLabel} EC`;
-            secondary = `${yearGcLabel} GC`;
-            extraAttrs = `data-year-ec="${yearEc !== null ? yearEc : ""
-              }" data-year-gc="${yearGc !== null ? escapeHtml(yearGc) : ""}"`;
+            primary = `${yearEc || "-"} EC`;
+            secondary = `${yearGc || "-"} GC`;
           } else if (currentMode === "quarterly") {
-            const eng =
-              readFieldAny(item, "title_eng", "title_ENG", "title") || "";
-            const amh = readFieldAny(item, "title_amh", "title_AMH") || "";
-            const joinedTitle = (amh ? `${eng} / ${amh}` : eng) || "Quarter";
-            primary = joinedTitle.trim();
-            const yearGcLabel = yearGc !== null ? yearGc : "-";
-            secondary = `Year (GC): ${yearGcLabel}`;
-            const qnum = readQuarterNumber(item);
-            extraAttrs = `data-year-ec="${yearEc !== null ? yearEc : ""
-              }" data-year-gc="${yearGc !== null ? escapeHtml(yearGc) : ""
-              }" data-quarter-number="${qnum !== undefined ? qnum : ""}"`;
+            const eng = readFieldAny(item, "title_eng", "title_ENG", "title");
+            const amh = readFieldAny(item, "title_amh", "title_AMH");
+            primary = amh ? `${eng} / ${amh}` : eng || "Quarter";
+            secondary = `Year (GC): ${yearGc || "-"}`;
+            extraAttrs += ` data-quarter-number="${item.quarter_number || item.number || ""}"`;
           } else if (currentMode === "monthly") {
-            const eng = readFieldAny(item, "month_eng", "month_ENG") || "";
-            const amh = readFieldAny(item, "month_amh", "month_AMH") || "";
-            const joinedTitle = (amh ? `${eng} / ${amh}` : eng) || "Month";
-            primary = joinedTitle.trim();
-            const yearGcLabel = yearGc !== null ? yearGc : "-";
-            secondary = `Year (GC): ${yearGcLabel}`;
-            const mnum = readMonthNumber(item);
-            extraAttrs = `data-year-ec="${yearEc !== null ? yearEc : ""
-              }" data-year-gc="${yearGc !== null ? escapeHtml(yearGc) : ""
-              }" data-month-number="${mnum !== undefined ? mnum : ""}"`;
+            const eng = readFieldAny(item, "month_eng", "month_ENG");
+            const amh = readFieldAny(item, "month_amh", "month_AMH");
+            primary = amh ? `${eng} / ${amh}` : eng || "Month";
+            secondary = `Year (GC): ${yearGc || "-"}`;
+            extraAttrs += ` data-month-number="${item.month_number || item.number || ""}"`;
+          } else if (currentMode === "weekly") {
+            primary = item.label || "Week";
+            secondary = item.ethio_date || "";
+            extraAttrs += ` data-date="${item.date || ""}" data-week="${item.week || ""}"`;
+          } else if (currentMode === "daily") {
+            primary = item.label || "Day";
+            secondary = item.greg_date_formatted || "";
+            extraAttrs += ` data-date="${item.date || ""}"`;
           }
 
-          if (!primary) primary = "-";
-          if (!secondary) secondary = "";
-
-          const activeClass =
-            sidebarSelectedItem && String(sidebarSelectedItem) === itemId
-              ? "active"
-              : "";
+          const activeClass = (sidebarSelectedItem && String(sidebarSelectedItem) === String(itemId)) ? "active" : "";
           html += `
-                                 <button type="button"
-                                         class="sidebar-item sidebar-button ${activeClass}"
-                                         data-id="${itemId}" ${extraAttrs}>
-                                     <span class="sidebar-label">${escapeHtml(
-            primary
-          )}</span>
-                                     <span class="sidebar-sub">${escapeHtml(
-            secondary
-          )}</span>
-                                 </button>`;
+            <button type="button" class="sidebar-item sidebar-button ${activeClass}" data-id="${itemId}" ${extraAttrs}>
+              <span class="sidebar-label">${escapeHtml(primary)}</span>
+              <span class="sidebar-sub">${escapeHtml(secondary)}</span>
+            </button>`;
         });
 
         $("#side-pagination").html(html);
-
-        const $buttons = $("#side-pagination .sidebar-item");
-        if ($buttons.length) {
-          if (sidebarSelectedItem) {
-            const $target = $buttons
-              .filter(`[data-id="${sidebarSelectedItem}"]`)
-              .first();
-            if ($target && $target.length) {
-              selectSidebarItem($target, false);
-            } else {
-              $(".sidebar-item").removeClass("active");
-              sidebarSelectedItem = null;
-            }
-          } else {
-            $(".sidebar-item").removeClass("active");
-          }
-        } else {
-          sidebarSelectedItem = null;
-        }
-
-        updateSidebarNav();
-        renderTable();
       })
-      .fail(function () {
+      .fail(function (xhr) {
+        console.error("[Sidebar] Request failed:", xhr.status, xhr.statusText);
         sidebarHasNext = false;
         sidebarHasPrev = sidebarPage > 1;
-        $("#side-pagination").html(
-          '<div class="text-center text-sm text-danger">Failed to load items.</div>'
-        );
-        updateSidebarNav();
-        renderTable();
+        $("#side-pagination").html('<div class="text-center text-sm text-danger">Failed to load items.</div>');
       })
       .always(function () {
         sidebarLoading = false;
         $("#sidebar-loading").addClass("hidden");
+        updateSidebarNav();
+        try { renderTable(); } catch (e) { }
       });
   }
 
@@ -526,62 +416,60 @@
       return;
     }
     $("#sidebar-nav").removeClass("hidden");
-    $("#sidebar-prev-btn").prop("disabled", !sidebarHasPrev);
-    $("#sidebar-next-btn").prop("disabled", !sidebarHasNext);
-
-    if (sidebarHasPrev || sidebarHasNext) {
-      $("#sidebar-nav").removeClass("hidden");
-    } else {
-      $("#sidebar-nav").addClass("hidden");
-    }
+    $("#sidebar-prev-btn").prop("disabled", !sidebarHasPrev || sidebarLoading);
+    $("#sidebar-next-btn").prop("disabled", !sidebarHasNext || sidebarLoading);
   }
 
-  $(document).ready(function () {
-    $("#sidebar-next-btn").on("click", function () {
-      if (!sidebarHasNext) return;
-      sidebarPage += 1;
-      sidebarSelectedItem = null;
-      sidebarFilter = null;
-      loadSidebarItems();
-    });
+  // Sidebar pagination buttons (delegated for robustness)
+  $(document).on("click", "#sidebar-prev-btn", function () {
+    if (!sidebarHasPrev || sidebarLoading) return;
+    sidebarPage = Math.max(1, sidebarPage - 1);
+    sidebarFilter = null;
+    sidebarSelectedItem = null;
+    loadSidebarItems();
+  });
 
-    $("#sidebar-prev-btn").on("click", function () {
-      if (!sidebarHasPrev) return;
-      sidebarPage = Math.max(1, sidebarPage - 1);
-      sidebarSelectedItem = null;
-      sidebarFilter = null;
-      loadSidebarItems();
-    });
+  $(document).on("click", "#sidebar-next-btn", function () {
+    if (!sidebarHasNext || sidebarLoading) return;
+    sidebarPage += 1;
+    sidebarFilter = null;
+    sidebarSelectedItem = null;
+    loadSidebarItems();
   });
 
   // Sidebar item click: select year / quarter / month and refresh table
-  // Sidebar item click: select year / quarter / month / week / day and refresh table
-  function selectSidebarItem($el, fireRender = true) {
-    if (!$el || !$el.length) return;
-
-    // --- Highlight selected item
+  $(document).on("click", ".sidebar-item", function () {
+    const $el = $(this);
     $(".sidebar-item").removeClass("active");
     $el.addClass("active");
-    sidebarSelectedItem = String($el.attr("data-id") || "");
+    sidebarSelectedItem = String($el.attr("data-id"));
 
-    // --- Parse common attributes
+    // Read raw data attributes safely (attr returns string or undefined)
     const rawYearEc = $el.attr("data-year-ec");
     const rawYearGc = $el.attr("data-year-gc");
     const rawQuarter = $el.attr("data-quarter-number");
     const rawMonth = $el.attr("data-month-number");
-    const rawWeek = $el.attr("data-week");
-    const rawDay = $el.attr("data-day");
     const rawDate = $el.attr("data-date");
+    const rawWeek = $el.attr("data-week");
 
-    const parsedYearEc = rawYearEc ? Number(rawYearEc) : null;
-    const parsedYearGc = rawYearGc ? String(rawYearGc) : "";
-    const parsedQuarter = rawQuarter ? Number(rawQuarter) : null;
-    const parsedMonth = rawMonth ? Number(rawMonth) : null;
-    const parsedWeek = rawWeek ? Number(rawWeek) : null;
-    const parsedDay = rawDay ? rawDay : null; // keep as string "YYYY-MM-DD"
-    const parsedDate = rawDate ? rawDate : parsedDay;
+    const parsedYearEc =
+      rawYearEc !== undefined && rawYearEc !== null && rawYearEc !== ""
+        ? Number(rawYearEc)
+        : null;
+    const parsedYearGc =
+      rawYearGc !== undefined && rawYearGc !== null && rawYearGc !== ""
+        ? String(rawYearGc)
+        : "";
+    const parsedQuarter =
+      rawQuarter !== undefined && rawQuarter !== null && rawQuarter !== ""
+        ? Number(rawQuarter)
+        : null;
+    const parsedMonth =
+      rawMonth !== undefined && rawMonth !== null && rawMonth !== ""
+        ? Number(rawMonth)
+        : null;
 
-    // --- Build sidebarFilter based on currentMode
+    // Build sidebarFilter based on current mode and parsed attributes
     if (currentMode === "annual") {
       sidebarFilter = {
         mode: "annual",
@@ -605,30 +493,20 @@
     } else if (currentMode === "weekly") {
       sidebarFilter = {
         mode: "weekly",
+        date: rawDate,
+        week: rawWeek,
         year_ec: parsedYearEc,
-        month: parsedMonth,
-        week: parsedWeek,
-        date: parsedDate,
+        year_gc: parsedYearGc
       };
     } else if (currentMode === "daily") {
       sidebarFilter = {
         mode: "daily",
-        year_ec: parsedYearEc,
-        month: parsedMonth,
-        day: parsedDay,
-        date: parsedDate,
+        date: rawDate
       };
     }
 
-    // --- Reset pagination for new selection
     currentPage = 1;
-
-    // --- Render table
-    if (fireRender) renderTable();
-  }
-
-  $(document).on("click", ".sidebar-item", function () {
-    selectSidebarItem($(this), true);
+    renderTable();
   });
 
   // --- Table rendering -------------------------------------------------
@@ -645,7 +523,7 @@
 
     // xpect a slightly different mode string
     let apiMode = currentMode;
-    if (currentMode === "quarterly") apiMode = "quarter";
+    if (currentMode === "quarterly") apiMode = "quarterly";
     if (currentMode === "monthly") apiMode = "monthly";
 
     let params = { ids: ids, mode: apiMode };
@@ -677,10 +555,7 @@
         $("#explorer-body").html(
           '<tr><td class="text-center py-3">Loading...</td></tr>'
         );
-        try { applyBtn.prop('disabled', true); } catch(e){}
-      },
-      success: function (resp) {
-        // success 
+        try { applyBtn.prop('disabled', true); } catch (e) { }
       },
       complete: function () {
         // noop
@@ -688,7 +563,9 @@
     });
     currentRequest = indicatorsReq;
 
-    // request the monthly sidebar for the current sidebar page (so month names match the selected year)
+    // request the monthly sidebar ONLY if we don't have it or need fresh labels
+    // optimization: if loadSidebarItems just ran, it might have labels, but for now we keep it simple
+    // but we MUST ensure it uses the correct page.
     const monthsReq =
       currentMode === "monthly"
         ? $.get("/user-management/sidebar/monthly/", { page: sidebarPage })
@@ -768,12 +645,9 @@
             if (y !== undefined && y !== null && y !== "") {
               const nY = Number(y);
               allYearsEC.add(nY);
-              // Prefer backend-provided GC value exactly as returned by the model.
-              // Only compute a fallback when backend didn't provide any GC.
-              if (g !== undefined && g !== null && String(g) !== "") {
-                allYearsGC[nY] = String(g);
-              } else {
-                // Do not compute GC from EC; leave blank when not provided
+              if (g !== undefined && g !== null && String(g).trim() !== "") {
+                allYearsGC[nY] = String(g).trim();
+              } else if (!allYearsGC[nY]) {
                 allYearsGC[nY] = "";
               }
             }
@@ -784,9 +658,9 @@
             if (y !== undefined && y !== null && y !== "") {
               const nY = Number(y);
               allYearsEC.add(nY);
-              if (g !== undefined && g !== null && String(g) !== "") {
-                allYearsGC[nY] = String(g);
-              } else {
+              if (g !== undefined && g !== null && String(g).trim() !== "") {
+                allYearsGC[nY] = String(g).trim();
+              } else if (!allYearsGC[nY]) {
                 allYearsGC[nY] = "";
               }
             }
@@ -797,29 +671,30 @@
             if (y !== undefined && y !== null && y !== "") {
               const nY = Number(y);
               allYearsEC.add(nY);
-              if (g !== undefined && g !== null && String(g) !== "") {
-                allYearsGC[nY] = String(g);
-              } else {
+              if (g !== undefined && g !== null && String(g).trim() !== "") {
+                allYearsGC[nY] = String(g).trim();
+              } else if (!allYearsGC[nY]) {
                 allYearsGC[nY] = "";
               }
             }
           });
+          if (currentMode === "quarterly") console.log("[Debug] allYearsGC:", JSON.parse(JSON.stringify(allYearsGC)));
           (ind.weekly || []).forEach((w) => {
-            const y = w.year_ec || (w.date ? new Date(w.date).getFullYear() - 8 : null);
-            if (y !== undefined && y !== null && y !== "") {
-              const nY = Number(y);
-              allYearsEC.add(nY);
-              allYearsGC[nY] = allYearsGC[nY] || "";
-            }
+            if (w.year_ec) allYearsEC.add(Number(w.year_ec));
+            if (w.year_ec && w.year_gc) allYearsGC[Number(w.year_ec)] = String(w.year_gc);
           });
           (ind.daily || []).forEach((d) => {
-            const y = d.year_ec || (d.date ? new Date(d.date).getFullYear() - 8 : null);
-            if (y !== undefined && y !== null && y !== "") {
-              const nY = Number(y);
-              allYearsEC.add(nY);
-              allYearsGC[nY] = allYearsGC[nY] || "";
-            }
+            if (d.year_ec) allYearsEC.add(Number(d.year_ec));
+            if (d.year_ec && d.year_gc) allYearsGC[Number(d.year_ec)] = String(d.year_gc);
           });
+        });
+
+        const datapoints = resp.datapoints || [];
+        datapoints.forEach(dp => {
+          const y = Number(dp.year_ec);
+          if (dp.year_gc && (!allYearsGC[y] || allYearsGC[y] === "")) {
+            allYearsGC[y] = String(dp.year_gc);
+          }
         });
 
         if (allYearsEC.size === 0) {
@@ -827,14 +702,10 @@
           const dps = resp.datapoints || resp.datapoints || [];
           if (Array.isArray(dps) && dps.length) {
             dps.forEach((dp) => {
-              const y =
-                dp && (dp.year_ec !== undefined ? Number(dp.year_ec) : null);
+              const y = dp && (dp.year_ec !== undefined ? Number(dp.year_ec) : null);
               if (y !== null && !isNaN(y)) {
                 allYearsEC.add(y);
-                allYearsGC[y] =
-                  dp.year_gc !== undefined && dp.year_gc !== null
-                    ? String(dp.year_gc)
-                    : "";
+                allYearsGC[y] = dp.year_gc !== undefined && dp.year_gc !== null ? String(dp.year_gc) : "";
               }
             });
           } else {
@@ -899,6 +770,26 @@
           }
         }
 
+        // --- Handle weekly/daily modes by collecting unique dates from results
+        if (currentMode === "weekly" || currentMode === "daily") {
+          results.forEach(ind => {
+            const items = currentMode === "weekly" ? (ind.weekly || []) : (ind.daily || []);
+            items.forEach(it => {
+              if (!it.date) return;
+              if (!rowMap[it.date]) {
+                rowMap[it.date] = {
+                  date: it.date,
+                  label: it.week_label || it.day_label || it.date,
+                  year_ec: it.year_ec,
+                  year_gc: it.year_gc,
+                  week: it.week,
+                  values: {}
+                };
+              }
+            });
+          });
+        }
+
         // --- Fill API data
         results.forEach((ind) => {
           if (!ind) return;
@@ -906,44 +797,44 @@
 
           (ind.all_annual || []).forEach((a) => {
             const y = getYearEC(a);
-            if (y === undefined || y === null) return;
-            // Prefer backend-provided GC as-is when present; fallback compute only when missing
-            const rawG = getYearGC(a);
-            const gKey =
-              rawG !== undefined && rawG !== null && String(rawG) !== ""
-                ? String(rawG)
-                : "";
-            const key = `${Number(y)}|${gKey}`;
-            if (rowMap[key]) rowMap[key].values[indTitle] = a.value;
+            if (y === undefined || y === null || y === "") return;
+            const nY = Number(y);
+            const gKey = allYearsGC[nY] || "";
+            const key = `${nY}|${gKey}`;
+            if (rowMap[key]) rowMap[key].values[ind.id] = a;
           });
 
+          if (currentMode === "quarterly") {
+            console.log(`[Debug] ${indTitle} has ${(ind.quarterly || []).length} quarterly items`);
+          }
           (ind.quarterly || []).forEach((q) => {
             const y = getYearEC(q);
-            const rawG = getYearGC(q);
-            const gKey =
-              rawG !== undefined && rawG !== null && String(rawG) !== ""
-                ? String(rawG)
-                : "";
+            if (y === undefined || y === null || y === "") return;
+            const nY = Number(y);
+            const gKey = allYearsGC[nY] || "";
             const qnum =
               q.quarter_number !== undefined
                 ? q.quarter_number
-                : q.number || q.quarter || null;
-            if (y === undefined || y === null || qnum === null) return;
-            const key = `${Number(y)}|${gKey}|Q${qnum}`;
-            if (rowMap[key]) rowMap[key].values[indTitle] = q.value;
+                : (q.number || q.quarter || null);
+            if (qnum === null) return;
+            // Coerce qnum to number if it's a string like "1"
+            const nQ = isNaN(qnum) ? (String(qnum).match(/\d+/) ? Number(String(qnum).match(/\d+/)[0]) : null) : Number(qnum);
+            if (nQ === null) return;
+            const key = `${nY}|${gKey}|Q${nQ}`;
+            if (currentMode === "quarterly") console.log(`[Debug] Filling ${indTitle} rowMap key: ${key}`, q);
+            if (rowMap[key]) rowMap[key].values[ind.id] = q;
+            else if (currentMode === "quarterly") console.warn(`[Debug] No rowMap entry for key: ${key}`);
           });
 
           (ind.monthly || []).forEach((m) => {
             const y = getYearEC(m);
-            const rawG = getYearGC(m);
-            const gKey =
-              rawG !== undefined && rawG !== null && String(rawG) !== ""
-                ? String(rawG)
-                : "";
+            if (y === undefined || y === null || y === "") return;
+            const nY = Number(y);
+            const gKey = allYearsGC[nY] || "";
             const mnum =
               m.month_number !== undefined ? m.month_number : m.number || null;
-            if (y === undefined || y === null || mnum === null) return;
-            const key = `${Number(y)}|${gKey}|${mnum}`;
+            if (mnum === null) return;
+            const key = `${nY}|${gKey}|${mnum}`;
             if (rowMap[key]) {
               // Resolve label: prefer sidebar month names for the selected year, then API month_AMH/ENG, then fallback
               const resolvedLabel =
@@ -955,88 +846,15 @@
                 null;
               if (resolvedLabel)
                 rowMap[key].month_label = `${resolvedLabel} (${mnum})`;
-              rowMap[key].values[indTitle] = m.value;
+              rowMap[key].values[ind.id] = m;
             }
           });
 
-          // --- Fill Weekly data from KPIRecord ---
-          // Sort weekly data ascending by date (oldest first) before processing
-          const weeklySorted = (ind.weekly || []).sort((a, b) => {
-            const dA = a.date ? new Date(a.date) : new Date(0);
-            const dB = b.date ? new Date(b.date) : new Date(0);
-            return dA - dB;
+          (ind.weekly || []).forEach(w => {
+            if (w.date && rowMap[w.date]) rowMap[w.date].values[ind.id] = w;
           });
-
-          weeklySorted.forEach((w) => {
-            const weekNum = w.week || w.week_number || 1;
-
-            // Derive month name if not present
-            let monthName = w.month_name;
-            if (!monthName && w.date) {
-              const d = new Date(w.date);
-              const mNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              monthName = mNames[d.getMonth()];
-            }
-            // Derive Year GC
-            const yearVal = w.year_gc || (w.date ? new Date(w.date).getFullYear() : w.year_ec);
-
-            const labelSuffix = monthName ? ` (${monthName})` : "";
-            const yearSuffix = yearVal ? ` - ${yearVal}` : "";
-
-            const weekLabelBase =
-              w.week_label ||
-              (weekNum ? `Week ${weekNum}${labelSuffix}${yearSuffix}` : "");
-
-            // Parse Year EC from ethio_date if available (format: YYYY-MM-W)
-            let yearEC = w.year_ec;
-            let monthEC = w.month_number;
-            if (!yearEC && w.ethio_date) {
-              const parts = w.ethio_date.split('-');
-              if (parts.length >= 1) yearEC = parts[0];
-              if (parts.length >= 2) monthEC = parts[1];
-            }
-
-            // Fallback for key: if no year or month, use date, but ideally year-month-week
-            const key = (yearEC && monthEC) ? `${yearEC}-${monthEC}-W${weekNum}` : (w.date || `W${weekNum}`);
-
-            if (!key) return;
-            if (!rowMap[key]) {
-              rowMap[key] = {
-                year_ec: yearEC,
-                year_gc: w.year_gc || yearVal,
-                week: weekNum,
-                week_label: weekLabelBase,
-                date: w.date, // Store one representative date
-                month_name: monthName,
-                month_number: monthEC,
-                values: {},
-              };
-            }
-            // If the row already exists (from another indicator), ensure we don't overwrite the label if it's already set
-            if (!rowMap[key].week_label) rowMap[key].week_label = weekLabelBase;
-
-            rowMap[key].values[indTitle] =
-              w.value === undefined || w.value === null ? "" : w.value;
-          });
-
-          // --- Fill Daily data from KPIRecord ---
-          (ind.daily || []).forEach((d) => {
-            const key = d.date;
-            if (!key) return;
-            const gregDate = d.greg_date_formatted || d.day_label || d.date || "";
-            const ethioDate = d.ethio_date || "";
-            if (!rowMap[key]) {
-              rowMap[key] = {
-                year_ec: d.year_ec,
-                year_gc: d.year_gc || "",
-                greg_date_formatted: gregDate,
-                ethio_date: ethioDate,
-                date: d.date,
-                values: {},
-              };
-            }
-            rowMap[key].values[indTitle] =
-              d.value === undefined || d.value === null ? "" : d.value;
+          (ind.daily || []).forEach(d => {
+            if (d.date && rowMap[d.date]) rowMap[d.date].values[ind.id] = d;
           });
         });
 
@@ -1053,7 +871,7 @@
         if (currentMode === "quarterly") head += "<th>Quarter</th>";
         if (currentMode === "monthly") head += "<th>Month</th>";
         if (currentMode === "weekly") head += "<th>Week</th>";
-        if (currentMode === "daily") head += "<th>Gregorian Date</th><th>Ethiopian Date</th>";
+        if (currentMode === "daily") head += "<th>Date</th>";
         // show titles exactly as provided by the selection (they were built from checkbox data-title)
         selections.indicators.forEach(
           (i) => (head += `<th>${escapeHtml(i.title)}</th>`)
@@ -1070,7 +888,13 @@
                 ? 0
                 : currentMode === "quarterly"
                   ? 1
-                  : 1) +
+                  : currentMode === "monthly"
+                    ? 1
+                    : currentMode === "weekly"
+                      ? 1
+                      : currentMode === "daily"
+                        ? 1
+                        : 1) +
               selections.indicators.length) +
             '">No data</td></tr>'
           );
@@ -1115,162 +939,54 @@
               // otherwise show all months for the selected year
               return Number(r.year_ec) === Number(sidebarFilter.year_ec);
             }
-            if (currentMode === "weekly") {
-              const matchYear =
-                sidebarFilter.year_ec === null ||
-                sidebarFilter.year_ec === undefined ||
-                Number(r.year_ec) === Number(sidebarFilter.year_ec);
-              const matchWeek =
-                sidebarFilter.week === null ||
-                sidebarFilter.week === undefined ||
-                Number(r.week) === Number(sidebarFilter.week);
-              return matchYear && matchWeek;
-            }
-            if (currentMode === "daily") {
-              const matchYear =
-                sidebarFilter.year_ec === null ||
-                sidebarFilter.year_ec === undefined ||
-                Number(r.year_ec) === Number(sidebarFilter.year_ec);
-              const matchDay =
-                !sidebarFilter.day ||
-                (r.date && String(r.date) === String(sidebarFilter.day));
-              const matchDate =
-                !sidebarFilter.date ||
-                (r.date && String(r.date) === String(sidebarFilter.date));
-              return matchYear && matchDay && matchDate;
-            }
             return true;
           });
-        } else if (sidebarItemsCurrent && sidebarItemsCurrent.length) {
-          if (currentMode === "annual") {
-            const allowedYears = new Set(
-              sidebarItemsCurrent
-                .map((it) => {
-                  const val =
-                    it.year_ec !== undefined
-                      ? it.year_ec
-                      : it.year_EC !== undefined
-                        ? it.year_EC
-                        : it.year || null;
-                  return val !== null && val !== undefined && val !== ""
-                    ? Number(val)
-                    : null;
-                })
-                .filter((v) => v !== null && !Number.isNaN(v))
-            );
-            allRows = allRows.filter((r) =>
-              allowedYears.has(Number(r.year_ec))
-            );
-          } else if (currentMode === "quarterly") {
-            const allowedCombos = new Set();
-            sidebarItemsCurrent.forEach((it) => {
-              const yval =
-                it.year_ec !== undefined
-                  ? it.year_ec
-                  : it.year_EC !== undefined
-                    ? it.year_EC
-                    : it.year || null;
-              const qval =
-                it.quarter_number !== undefined
-                  ? it.quarter_number
-                  : it.number || it.quarter || null;
-              if (
-                yval !== null &&
-                yval !== undefined &&
-                qval !== null &&
-                qval !== undefined
-              ) {
-                allowedCombos.add(`${Number(yval)}|${Number(qval)}`);
-              }
-            });
-            if (allowedCombos.size) {
-              allRows = allRows.filter((r) =>
-                allowedCombos.has(
-                  `${Number(r.year_ec)}|${Number(r.quarter_number)}`
-                )
-              );
-            }
-          } else if (currentMode === "monthly") {
-            const allowedCombos = new Set();
-            sidebarItemsCurrent.forEach((it) => {
-              const yval =
-                it.year_ec !== undefined
-                  ? it.year_ec
-                  : it.year_EC !== undefined
-                    ? it.year_EC
-                    : it.year || null;
-              const mval =
-                it.month_number !== undefined
-                  ? it.month_number
-                  : it.number || null;
-              if (
-                yval !== null &&
-                yval !== undefined &&
-                mval !== null &&
-                mval !== undefined
-              ) {
-                allowedCombos.add(`${Number(yval)}|${Number(mval)}`);
-              }
-            });
-            if (allowedCombos.size) {
-              allRows = allRows.filter((r) =>
-                allowedCombos.has(
-                  `${Number(r.year_ec)}|${Number(r.month_number)}`
-                )
-              );
-            }
-          } else if (currentMode === "weekly") {
-            const allowedDates = new Set(
-              sidebarItemsCurrent
-                .map((it) => it.date || it.day)
-                .filter((d) => !!d)
-            );
-            if (allowedDates.size) {
-              allRows = allRows.filter((r) => allowedDates.has(r.date));
-            }
-          } else if (currentMode === "daily") {
-            const allowedDates = new Set(
-              sidebarItemsCurrent
-                .map((it) => it.date || it.day)
-                .filter((d) => !!d)
-            );
-            if (allowedDates.size) {
-              allRows = allRows.filter((r) => allowedDates.has(r.date));
-            }
-          }
         } else {
-          if (currentMode === "annual") {
+          // No sidebar filter selected -> use current sidebar items as the rows
+          let syncedRows = [];
+          if (currentSidebarResults && currentSidebarResults.length > 0) {
+            currentSidebarResults.forEach(item => {
+              const y = Number(item.year_ec || item.year_EC || item.year || 0);
+              const g = allYearsGC[y] || "";
+              let key = "";
+              if (currentMode === "annual") key = `${y}|${g}`;
+              else if (currentMode === "quarterly") key = `${y}|${g}|Q${item.quarter_number || item.number || ""}`;
+              else if (currentMode === "monthly") key = `${y}|${g}|${item.month_number || item.number || ""}`;
+              else if (currentMode === "weekly" || currentMode === "daily") key = item.date;
+
+              if (rowMap[key]) {
+                syncedRows.push(rowMap[key]);
+              } else {
+                // Create skeleton if not in map
+                const skeleton = { year_ec: y, year_gc: g, values: {} };
+                if (currentMode === "quarterly") {
+                  skeleton.quarter_number = item.quarter_number || item.number;
+                  skeleton.quarter = "Q" + skeleton.quarter_number;
+                }
+                if (currentMode === "monthly") {
+                  skeleton.month_number = item.month_number || item.number;
+                  const lbl = (monthNamesFromSidebar && monthNamesFromSidebar[skeleton.month_number]) || monthLabels[(skeleton.month_number || 1) - 1] || "";
+                  skeleton.month_label = `${lbl} (${skeleton.month_number})`;
+                }
+                if (currentMode === "weekly" || currentMode === "daily") {
+                  skeleton.date = item.date;
+                  skeleton.label = item.label || item.date;
+                }
+                syncedRows.push(skeleton);
+              }
+            });
+            allRows = syncedRows;
+          } else {
+            // Fallback if sidebar items not yet available: take latest 10 years
             allRows.sort((a, b) => Number(b.year_ec) - Number(a.year_ec));
             allRows = allRows.slice(0, 10);
-          } else if (currentMode === "quarterly") {
-            const latestYear = Math.max(...yearsArray);
-            allRows = allRows.filter(
-              (r) => Number(r.year_ec) === Number(latestYear)
-            );
-            allRows.sort(
-              (a, b) =>
-                (Number(a.quarter_number) || 0) -
-                (Number(b.quarter_number) || 0)
-            );
-          } else if (currentMode === "monthly") {
-            const latestYear = Math.max(...yearsArray);
-            allRows = allRows.filter(
-              (r) => Number(r.year_ec) === Number(latestYear)
-            );
-            allRows.sort(
-              (a, b) =>
-                (Number(a.month_number) || 0) - (Number(b.month_number) || 0)
-            );
-          } else if (currentMode === "weekly") {
-            allRows.sort(
-              (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-            );
-            allRows = allRows.slice(0, 5);
-          } else if (currentMode === "daily") {
-            allRows.sort(
-              (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-            );
-            allRows = allRows.slice(0, 10);
+          }
+        }
+
+        // Special handling for weekly/daily filtering by date
+        if (sidebarFilter && (currentMode === "weekly" || currentMode === "daily")) {
+          if (sidebarFilter.date) {
+            allRows = allRows.filter(r => r.date === sidebarFilter.date);
           }
         }
 
@@ -1348,20 +1064,24 @@
                   });
                 }
               }
+            } else if (currentMode === "weekly" || currentMode === "daily") {
+              if (sidebarFilter.date) {
+                generated.push({
+                  date: sidebarFilter.date,
+                  label: sidebarFilter.label || sidebarFilter.date,
+                  year_ec: sidebarFilter.year_ec,
+                  year_gc: sidebarFilter.year_gc,
+                  week: sidebarFilter.week,
+                  values: {}
+                });
+              }
             }
           } else {
             // No sidebar filter: use sensible defaults (latest years/months/quarters)
-            const latestYear =
-              yearsArray && yearsArray.length
-                ? Math.max(...yearsArray)
-                : new Date().getFullYear() - 8;
+            const latestYear = yearsArray && yearsArray.length ? Math.max(...yearsArray) : new Date().getFullYear() - 8;
             if (currentMode === "annual") {
               for (let y = latestYear; y > latestYear - 10; y--) {
-                generated.push({
-                  year_ec: y,
-                  year_gc: computeGc(y),
-                  values: {},
-                });
+                generated.push({ year_ec: y, year_gc: computeGc(y), values: {} });
               }
             } else if (currentMode === "quarterly") {
               for (let q = 1; q <= 4; q++) {
@@ -1375,10 +1095,7 @@
               }
             } else if (currentMode === "monthly") {
               for (let m = 1; m <= 12; m++) {
-                const lbl =
-                  (monthNamesFromSidebar && monthNamesFromSidebar[m]) ||
-                  monthLabels[m - 1] ||
-                  "";
+                const lbl = (monthNamesFromSidebar && monthNamesFromSidebar[m]) || monthLabels[m - 1] || "";
                 generated.push({
                   year_ec: latestYear,
                   year_gc: computeGc(latestYear),
@@ -1387,40 +1104,6 @@
                   values: {},
                 });
               }
-            } else if (currentMode === "weekly") {
-              const source =
-                sidebarItemsCurrent && sidebarItemsCurrent.length
-                  ? sidebarItemsCurrent
-                  : Array.from({ length: 4 }, (_, idx) => ({
-                    week: idx + 1,
-                    date: null,
-                    label: `Week ${idx + 1}`,
-                  }));
-              source.forEach((it) => {
-                generated.push({
-                  year_ec: it.year_ec || "",
-                  year_gc: it.year_gc || "",
-                  week: it.week || "",
-                  week_label: it.label || `Week${it.week || ""}`,
-                  date: it.date || "",
-                  values: {},
-                });
-              });
-            } else if (currentMode === "daily") {
-              const source =
-                sidebarItemsCurrent && sidebarItemsCurrent.length
-                  ? sidebarItemsCurrent
-                  : Array.from({ length: 10 }, () => ({}));
-              source.forEach((it) => {
-                generated.push({
-                  year_ec: it.year_ec || "",
-                  year_gc: it.year_gc || "",
-                  greg_date_formatted: it.greg_date_formatted || "",
-                  ethio_date: it.ethio_date || "",
-                  date: it.date || "",
-                  values: {},
-                });
-              });
             }
           }
 
@@ -1428,77 +1111,37 @@
           let rowsHtml = "";
           generated.forEach((r) => {
             if (currentMode === "annual")
-              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
-                r.year_gc
-              )}</td>`;
+              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td>`;
             if (currentMode === "quarterly")
-              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
-                r.year_gc
-              )}</td><td>${fmt(r.quarter)}</td>`;
+              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.quarter)}</td>`;
             if (currentMode === "monthly")
-              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
-                r.year_gc
-              )}</td><td>${fmt(r.month_label)}</td>`;
-
-            if (currentMode === "weekly") {
-              const weekLabel =
-                r.week_label || (r.week ? `Week ${r.week}` : "Week");
-              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
-                r.year_gc
-              )}</td><td>${fmt(weekLabel)}</td>`;
-            }
-
-            if (currentMode === "daily") {
-              // Display Gregorian and Ethiopian dates in separate columns
-              const gregDate = r.greg_date_formatted || r.day_label || r.date || '';
-              const ethioDate = r.ethio_date || '';
-              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
-                r.year_gc
-              )}</td><td>${fmt(gregDate)}</td><td>${fmt(ethioDate)}</td>`;
-            }
+              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.month_label)}</td>`;
+            if (currentMode === "weekly")
+              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.label)}</td>`;
+            if (currentMode === "daily")
+              rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.label)}</td>`;
 
             selections.indicators.forEach((ind) => {
-              const dataAttrs =
-                `data-ind="${ind.id}" data-title="${escapeHtml(
-                  ind.title
-                )}" data-year-ec="${r.year_ec}" data-year-gc="${r.year_gc
-                }" data-mode="${currentMode}"` +
+              const dataAttrs = `data-ind="${ind.id}" data-title="${escapeHtml(ind.title)}" data-year-ec="${r.year_ec}" data-year-gc="${r.year_gc}" data-mode="${currentMode}"` +
                 (currentMode === "quarterly"
-                  ? ` data-quarter="${r.quarter || ""}" data-quarter-number="${r.quarter_number || ""
-                  }"`
+                  ? ` data-quarter="${r.quarter || ""}" data-quarter-number="${r.quarter_number || ""}"`
                   : "") +
                 (currentMode === "monthly"
-                  ? ` data-month-number="${r.month_number || ""
-                  }" data-month-label="${escapeHtml(r.month_label || "")}"`
+                  ? ` data-month-number="${r.month_number || ""}" data-month-label="${escapeHtml(r.month_label || "")}"`
                   : "") +
-                (currentMode === "weekly"
-                  ? ` data-week="${r.week || ""}" data-date="${r.date || ""}" data-month-number="${r.month_number || ""}"`
-                  : "") +
-                (currentMode === "daily"
+                (currentMode === "weekly" || currentMode === "daily"
                   ? ` data-date="${r.date || ""}"`
                   : "");
 
-              const savedVal =
-                getSavedValue(
-                  ind.id,
-                  r.year_ec,
-                  r.year_gc,
-                  r.quarter_number,
-                  r.month_number,
-                  currentMode,
-                  r.week || r.date
-                ) || "";
-
-              rowsHtml += `<td contenteditable="true" class="editable-cell" ${dataAttrs}>${fmt(
-                savedVal
-              )}</td>`;
+              rowsHtml += `<td contenteditable="true" class="editable-cell" ${dataAttrs}>${fmt("")}</td>`;
             });
 
             rowsHtml += `</tr>`;
           });
 
-          insertRowsChunked('#explorer-body', rowsHtml, 200, function(){
-            try { attachEditHandlers(); } catch(e){}
+          insertRowsChunked('#explorer-body', rowsHtml, 200, function () {
+            try { attachEditHandlers(); } catch (e) { }
+            renderPagination(generated.length);
           });
           return;
         }
@@ -1517,60 +1160,59 @@
             rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
               r.year_gc
             )}</td><td>${fmt(r.month_label)}</td>`;
-          if (currentMode === "weekly") {
+          if (currentMode === "weekly")
             rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
               r.year_gc
-            )}</td><td>${fmt(
-              r.week_label || (r.week ? `Week ${r.week}` : "")
-            )}</td>`;
-          }
-          if (currentMode === "daily") {
+            )}</td><td>${fmt(r.label)}</td>`;
+          if (currentMode === "daily")
             rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(
               r.year_gc
-            )}</td><td>${fmt(
-              r.greg_date_formatted || r.date || ""
-            )}</td><td>${fmt(r.ethio_date || "")}</td>`;
-          }
-
+            )}</td><td>${fmt(r.label)}</td>`;
           selections.indicators.forEach((ind) => {
-            let value = r.values[ind.title];
-            if (value === undefined || value === null || value === "") {
-              const cached = getSavedValue(
-                ind.id,
-                r.year_ec,
-                r.year_gc,
-                r.quarter_number,
-                r.month_number,
-                currentMode,
-                r.week || r.date
-              );
-              if (cached !== undefined) value = cached;
+            const dataObj = r.values[ind.id];
+            if (currentMode === "quarterly") console.log(`[Debug Table] Rendering cell for ind ${ind.id} title "${ind.title}":`, dataObj);
+            const value = dataObj && typeof dataObj === 'object' ? dataObj.value : dataObj;
+            let extraClasses = "";
+            let dataRecordId = "";
+            let cellTitle = "";
+
+            if (dataObj && typeof dataObj === 'object') {
+              // Explicit Boolean check to handle potential stringified values or integer 0/1
+              if (Boolean(dataObj.is_verified) === false) {
+                extraClasses += " pending-cell";
+                cellTitle = "Pending Approval";
+              }
+              if (Boolean(dataObj.is_seen) === false) {
+                extraClasses += " unseen-cell";
+                cellTitle += (cellTitle ? " & " : "") + "Unseen Change";
+              }
+              if (dataObj.id) dataRecordId = `data-record-id="${dataObj.id}"`;
             }
+
             let dataAttrs = `data-ind="${ind.id}" data-title="${escapeHtml(
               ind.title
             )}" data-year-ec="${r.year_ec}" data-year-gc="${r.year_gc
-              }" data-mode="${currentMode}"`;
+              }" data-mode="${currentMode}" ${dataRecordId}`;
             if (currentMode === "quarterly")
               dataAttrs += ` data-quarter="${r.quarter || ""
                 }" data-quarter-number="${r.quarter_number || ""}"`;
             if (currentMode === "monthly")
               dataAttrs += ` data-month-number="${r.month_number || ""
                 }" data-month-label="${escapeHtml(r.month_label || "")}"`;
-            if (currentMode === "weekly")
-              dataAttrs += ` data-week="${r.week || ""}" data-date="${r.date || ""}"`;
-            if (currentMode === "daily")
+            if (currentMode === "weekly" || currentMode === "daily")
               dataAttrs += ` data-date="${r.date || ""}"`;
-            rowsHtml += `<td contenteditable="true" class="editable-cell" ${dataAttrs}>${fmt(
+            rowsHtml += `<td contenteditable="true" class="editable-cell ${extraClasses}" title="${cellTitle}" ${dataAttrs}>${fmt(
               value
             )}</td>`;
           });
           rowsHtml += "</tr>";
         });
-        insertRowsChunked('#explorer-body', rowsHtml, 200, function(){
-          try { attachEditHandlers(); } catch(e){}
+        insertRowsChunked('#explorer-body', rowsHtml, 200, function () {
+          try { attachEditHandlers(); } catch (e) { }
+          renderPagination(allRows.length);
         });
       })
-            .fail(function (jqXHR, textStatus, errorThrown) {
+      .fail(function (jqXHR, textStatus, errorThrown) {
         // ignore aborts triggered when a previous request is intentionally cancelled
         if (textStatus === 'abort') return;
         console.warn(
@@ -1580,7 +1222,7 @@
         );
         // retry once after a short delay to avoid transient failures immediately after save
         setTimeout(function () {
-            const retryIndicatorsReq = $.ajax({
+          const retryIndicatorsReq = $.ajax({
             url: "/api/indicators-bulk/",
             method: "POST",
             contentType: "application/json; charset=utf-8",
@@ -1591,7 +1233,7 @@
               record_type: apiMode,
               entry_filter: sidebarFilter || null,
             }),
-            });
+          });
           const retryMonthsReq =
             currentMode === "monthly"
               ? $.get("/user-management/sidebar/monthly/", {
@@ -1611,10 +1253,10 @@
               $("#pagination-container").html("");
             });
         }, 600);
-            }).always(function () {
-              try { applyBtn.prop('disabled', false); } catch(e) {}
-              currentRequest = null;
-            });
+      }).always(function () {
+        try { applyBtn.prop('disabled', false); } catch (e) { }
+        currentRequest = null;
+      });
   }
 
   function attachEditHandlers() {
@@ -1625,7 +1267,6 @@
         const ind_id = Number($td.data("ind"));
         const title = $td.data("title");
         const year_ec = Number($td.data("year-ec"));
-        // year_gc is stored in DataPoint as a string like '2013/2014' — do not coerce to Number
         const year_gc =
           $td.data("year-gc") !== undefined && $td.data("year-gc") !== null
             ? String($td.data("year-gc"))
@@ -1636,7 +1277,7 @@
         let key = `${ind_id}|${year_ec}|${year_gc}`;
         const payload = {
           indicator_id: ind_id,
-          value: rawVal === "-" ? null : rawVal,
+          value: (rawVal === "-" || rawVal === "") ? null : rawVal,
           year_ec,
           year_gc,
         };
@@ -1653,24 +1294,15 @@
           key += `|M${payload.month_number || ""}`;
         }
 
-        if (mode === "weekly") {
-          payload.week = Number($td.data("week")) || null;
+        if (mode === "weekly" || mode === "daily") {
           payload.date = $td.data("date") || null;
-          key += `|${payload.date || ""}`;
-        }
-
-        if (mode === "daily") {
-          payload.date = $td.data("date") || null;
-          key += `|${payload.date || ""}`;
+          key += `|D${payload.date || ""}`;
         }
 
         payload._title = title;
         EDIT_BUFFER[key] = payload;
 
-        // Mark cell as edited
         $td.addClass("edited-cell");
-
-        // Enable save button if disabled
         $("#save-edits-btn").prop("disabled", false);
       });
   }
@@ -1685,6 +1317,36 @@
   }
   ensureSaveButton();
 
+  function renderPagination(totalRows) {
+    const $container = $("#pagination-container");
+    if (!selections.indicators.length || (!sidebarHasNext && !sidebarHasPrev)) {
+      $container.html("");
+      return;
+    }
+
+    let html = `
+      <div class="d-flex align-items-center justify-content-between w-100 mt-3 p-2 bg-light border rounded">
+        <div class="text-muted small">Showing results for Page ${sidebarPage}</div>
+        <div class="btn-group">
+          <button class="btn btn-outline-primary btn-sm" id="table-prev-btn" ${!sidebarHasPrev ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left mr-1"></i> Previous
+          </button>
+          <button class="btn btn-outline-primary btn-sm" id="table-next-btn" ${!sidebarHasNext ? 'disabled' : ''}>
+            Next <i class="fas fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    $container.html(html);
+
+    $("#table-prev-btn").on("click", function () {
+      $("#sidebar-prev-btn").trigger("click");
+    });
+    $("#table-next-btn").on("click", function () {
+      $("#sidebar-next-btn").trigger("click");
+    });
+  }
+
   function saveEdits() {
     const updates = Object.values(EDIT_BUFFER);
     if (!updates.length) {
@@ -1692,24 +1354,14 @@
       return;
     }
 
-    let url = "/api/indicators-bulk/";
-    let payload = { mode: currentMode, updates };
-    if (currentMode === "weekly") {
-      url = "/api/kpi-records/weekly/";
-      payload = { updates };
-    } else if (currentMode === "daily") {
-      url = "/api/kpi-records/daily/";
-      payload = { updates };
-    }
-
     $.ajax({
-      url: url,
+      url: "/api/indicators-bulk/",
       type: "PATCH",
       contentType: "application/json",
-      data: JSON.stringify(payload),
+      data: JSON.stringify({ mode: currentMode, updates }),
       headers: { "X-CSRFToken": getCookie("csrftoken") },
       success: function (resp) {
-        const saved = resp.saved || (resp.results ? resp.results.length : 0);
+        const saved = resp.saved || 0;
         const errors = resp.errors || [];
 
         if (errors.length) {
@@ -1720,21 +1372,18 @@
           );
         } else {
           console.log(`Saved ${saved} updates successfully.`);
-          if (resp.verification_status === 'pending') {
-            alert(`Saved ${saved} updates. Data has been sent for approval.`);
-          } else {
-            alert(`Saved ${saved} updates successfully.`);
-          }
+          alert(`Saved ${saved} updates successfully.`);
         }
-
-        rememberSavedValues(updates);
 
         // Clear buffer and reset cells
         $(".editable-cell.edited-cell").removeClass("edited-cell");
         for (const k in EDIT_BUFFER) delete EDIT_BUFFER[k];
 
-        // Reload sidebar page (which re-renders the table) to reflect saved data
-        loadSidebarItems();
+        // Refresh table to show saved data. 
+        // IMPORTANT: Call loadSidebarItems() to re-fetch data from server, ensuring status marks update.
+        setTimeout(function () {
+          loadSidebarItems();
+        }, 400);
       },
       error: function (xhr) {
         const txt = xhr.responseJSON
@@ -1744,6 +1393,35 @@
       },
     });
   }
+
+  // Mark as seen on focus/click
+  $(document).on("focus click", ".editable-cell.unseen-cell", function () {
+    const $td = $(this);
+    const recordId = $td.attr("data-record-id");
+    if (!recordId) return;
+
+    const mode = $td.data("mode") || currentMode;
+    const payload = {};
+    if (mode === "annual") payload.annual_ids = [recordId];
+    else if (mode === "monthly") payload.month_ids = [recordId];
+    else if (mode === "quarterly") payload.quarter_ids = [recordId];
+    else if (mode === "weekly" || mode === "daily") payload.kpi_ids = [recordId];
+
+    $.ajax({
+      url: "/api/acknowledge-seen/",
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(payload),
+      headers: { "X-CSRFToken": getCookie("csrftoken") },
+      success: function () {
+        $td.removeClass("unseen-cell");
+        // Update title: remove " & Unseen Change" or "Unseen Change"
+        let currentTitle = $td.attr("title") || "";
+        currentTitle = currentTitle.replace(" & Unseen Change", "").replace("Unseen Change", "");
+        $td.attr("title", currentTitle.trim());
+      },
+    });
+  });
 
   // --- Initial render
   updateCategoryList();

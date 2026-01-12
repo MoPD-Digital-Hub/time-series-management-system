@@ -28,34 +28,88 @@ $(document).ready(function () {
   console.log("Importer dashboard ready");
 
   loadCategories();
-  loadIndicators();
   loadMySubmissions();
 
-  // Sample link updates
-  $("#data-kind").on("change", function () {
-    const kind = $(this).val();
-    const multiple = $('input[name="entry-mode"]:checked').val() === "multiple";
-    const url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + (multiple ? "&multiple=1" : "");
-    $("#download-sample-link").attr("href", url);
-  });
-
+  // Mode switching
   $('input[name="entry-mode"]').on("change", function () {
     const mode = $('input[name="entry-mode"]:checked').val();
-    const kind = $("#data-kind").val();
-    const multiple = mode === "multiple";
+    const isMultiple = mode === "multiple";
 
-    // Toggle indicator select required/visibility
-    if (multiple) {
-      $("#data-indicator").closest(".mb-3").hide();
-      $("#data-indicator").prop("required", false).val("");
+    if (isMultiple) {
+      $("#indicator-select-container").show(); // Show it in multiple mode too
+      $("#data-indicator").prop("multiple", true);
+      if ($(".multi-select-hint").length === 0) {
+        $("#data-indicator").after('<div class="form-text mt-1 multi-select-hint">Hold Ctrl (Cmd on Mac) to select multiple indicators.</div>');
+      }
+      $("#multiple-download-container").show();
+      $("#single-download-container").hide();
     } else {
-      $("#data-indicator").closest(".mb-3").show();
-      $("#data-indicator").prop("required", true);
+      $("#indicator-select-container").show();
+      $("#data-indicator").prop("multiple", false);
+      $(".multi-select-hint").remove();
+      $("#multiple-download-container").hide();
+      $("#single-download-container").show();
     }
 
-    const url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + (multiple ? "&multiple=1" : "");
-    $("#download-sample-link").attr("href", url);
+    // Clear form fields when mode changes
+    $("#data-category").val("").trigger("change");
+    $("#data-indicator").empty().append('<option value="">Select a category first</option>');
+    $("#data-file").val(""); // Clear file input
+
+    updateDownloadLink();
   }).trigger("change");
+
+  // Type or Mode change triggers link update
+  $("#data-kind").on("change", updateDownloadLink);
+
+  // Category change triggers indicator loading and link update
+  $("#data-category").on("change", function () {
+    const categoryId = $(this).val();
+    if (categoryId) {
+      loadIndicators(categoryId);
+    } else {
+      $("#data-indicator").empty().append('<option value="">Select a category first</option>');
+    }
+    updateDownloadLink();
+  });
+
+  // Indicator change triggers link update
+  $("#data-indicator").on("change", updateDownloadLink);
+
+  function updateDownloadLink() {
+    const kind = $("#data-kind").val();
+    const mode = $('input[name="entry-mode"]:checked').val();
+    const isMultiple = mode === "multiple";
+    const categoryId = $("#data-category").val();
+    const indicators = $("#data-indicator").val(); // Array if multiple
+
+    const linkMultiple = $("#download-sample-link-multiple");
+    const linkSingle = $("#download-sample-link-single");
+
+    if (isMultiple) {
+      if (!categoryId) {
+        linkMultiple.addClass("disabled").attr("href", "#").attr("title", "Please select a category first");
+      } else {
+        linkMultiple.removeClass("disabled").removeAttr("title");
+        let url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + "&multiple=1&category_id=" + encodeURIComponent(categoryId);
+        if (indicators && Array.isArray(indicators)) {
+          indicators.forEach(id => {
+            url += "&indicator_ids[]=" + encodeURIComponent(id);
+          });
+        }
+        linkMultiple.attr("href", url);
+      }
+    } else {
+      const indicatorId = Array.isArray(indicators) ? indicators[0] : indicators;
+      if (!indicatorId) {
+        linkSingle.addClass("disabled").attr("href", "#").attr("title", "Please select an indicator first");
+      } else {
+        linkSingle.removeClass("disabled").removeAttr("title");
+        const url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + "&indicator_id=" + encodeURIComponent(indicatorId);
+        linkSingle.attr("href", url);
+      }
+    }
+  }
 });
 
 // -------------------- Load Functions --------------------
@@ -73,19 +127,29 @@ function loadCategories() {
     });
 }
 
-function loadIndicators() {
-  $.get(INDICATOR_SUBMISSIONS_API_URL)
+function loadIndicators(categoryId = null) {
+  const url = categoryId ? INDICATOR_SUBMISSIONS_API_URL + "?category_id=" + categoryId : INDICATOR_SUBMISSIONS_API_URL;
+  $.get(url)
     .done(function (data) {
       const select = $("#data-indicator");
       select.empty();
 
+      if (!categoryId) {
+        select.append('<option value="">Select a category first</option>');
+        return;
+      }
+
       const verified = Array.isArray(data) ? data.filter((i) => i.is_verified) : [];
       if (verified.length === 0) {
-        select.append(`<option value="">No verified indicators available</option>`);
+        select.append(`<option value="">No verified indicators in this category</option>`);
         $("#data-form button[type=submit]").prop("disabled", true);
       } else {
+        const isMultiple = $('input[name="entry-mode"]:checked').val() === "multiple";
+        if (!isMultiple) {
+          select.append('<option value="">Select an indicator...</option>');
+        }
         verified.forEach(function (indicator) {
-          select.append(`<option value="${indicator.id}">${indicator.title_eng} (${indicator.title_amh || "No Category"})</option>`);
+          select.append(`<option value="${indicator.id}">${indicator.title_eng} (${indicator.code || "No Code"})</option>`);
         });
         $("#data-form button[type=submit]").prop("disabled", false);
       }
@@ -157,8 +221,14 @@ function renderMyDataSubmissions(submissions) {
     const verifiedBy = submission.verified_by_details ? submission.verified_by_details.email : "-";
     const fileLink = submission.data_file_url ? `<a href="${submission.data_file_url}" target="_blank">Download</a>` : "No file";
 
+    let indicatorTitle = submission.indicator_details.title_eng;
+    if (submission.indicator === null && submission.data_file) {
+      const filename = submission.data_file.split('/').pop();
+      indicatorTitle = `Bulk: ${filename}`;
+    }
+
     html += `<tr>
-      <td>${submission.indicator_details.title_eng}</td>
+      <td>${indicatorTitle}</td>
       <td>${fileLink}</td>
       <td><span class="badge ${statusClass}">${submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}</span></td>
       <td>${date}</td>
@@ -218,12 +288,13 @@ $("#indicator-form").on("submit", function (e) {
 });
 
 // Data
+// Data
 $("#data-form").on("submit", function (e) {
   e.preventDefault();
 
   const mode = $('input[name="entry-mode"]:checked').val();
   const isMultiple = mode === "multiple";
-  const indicatorId = $("#data-indicator").val();
+  const indicatorId = $("#data-indicator").val(); // Might be array if multiple
   if (!isMultiple && !indicatorId) {
     showAlert("Please select an indicator before submitting.", "danger");
     return;
@@ -232,9 +303,86 @@ $("#data-form").on("submit", function (e) {
   const fileInput = $("#data-file")[0];
   const file = fileInput?.files?.[0] || null;
 
+  if (!file) {
+    showAlert("Please select a data file to upload.", "danger");
+    return;
+  }
+
+  // Show Preview First
+  const formData = new FormData();
+  formData.append("data_file", file);
+  if (!isMultiple) formData.append("indicator_id", Array.isArray(indicatorId) ? indicatorId[0] : indicatorId);
+
+  $.ajax({
+    url: PREVIEW_DATA_URL,
+    type: "POST",
+    data: formData,
+    processData: false,
+    contentType: false,
+    success: function (response) {
+      showPreviewModal(response, isMultiple);
+    },
+    error: function (xhr) {
+      const error = xhr.responseJSON?.error || "Failed to generate preview";
+      showAlert(error, "danger");
+    }
+  });
+
+  function showPreviewModal(data, isMultiple) {
+    try {
+      const modalEl = document.getElementById('previewModal');
+      if (!modalEl) return;
+
+      $("#preview-row-count").text(`${data.row_count || 0} rows found`);
+      $("#preview-mode-text").text(isMultiple ? "Multiple Entry Mode" : "Single Entry Mode");
+
+      const thead = $("#preview-thead");
+      const tbody = $("#preview-tbody");
+      thead.empty();
+      tbody.empty();
+
+      if (data.preview) {
+        if (Array.isArray(data.preview.headers)) {
+          data.preview.headers.forEach(h => thead.append(`<th>${h}</th>`));
+        }
+        if (Array.isArray(data.preview.rows)) {
+          data.preview.rows.forEach(row => {
+            let tr = "<tr>";
+            row.forEach(cell => tr += `<td>${cell || ''}</td>`);
+            tr += "</tr>";
+            tbody.append(tr);
+          });
+        }
+      }
+
+      $("#preview-warnings").empty();
+      if (Array.isArray(data.warnings)) {
+        data.warnings.forEach(w => $("#preview-warnings").append(`<p class="text-amber-600 text-xs flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> ${w}</p>`));
+      }
+
+      // One-time click handler for confirmation
+      $("#confirm-submit-btn").off("click").on("click", function () {
+        modalEl.classList.add('hidden');
+        doUpload();
+      });
+
+      // Show the custom modal
+      modalEl.classList.remove('hidden');
+
+    } catch (err) {
+      console.error("Preview Modal Error:", err);
+      showAlert("Preview error: " + err.message, "warning");
+    }
+  }
+
   function doUpload() {
     const formData = new FormData();
-    if (!isMultiple) formData.append("indicator_id", indicatorId);
+    if (!isMultiple) {
+      formData.append("indicator_id", Array.isArray(indicatorId) ? indicatorId[0] : indicatorId);
+    } else if (Array.isArray(indicatorId) && indicatorId.length > 0) {
+      indicatorId.forEach(id => formData.append("indicator_ids[]", id));
+    }
+
     formData.append("notes", $("#data-notes").val());
     if (file) formData.append("data_file", file);
 
@@ -246,12 +394,11 @@ $("#data-form").on("submit", function (e) {
       contentType: false,
       success: function (response) {
         if (isMultiple) {
-          const created = response.created || 0;
-          const updated = response.updated || 0;
-          const skipped = response.skipped || 0;
-          showAlert(`Bulk import complete. Created: ${created}, Updated: ${updated}, Skipped: ${skipped}`);
+          const count = response.indicators_processed || 0;
+          const rows = response.rows_validated || 0;
+          showAlert(`Bulk submission successful! ${count} pending submissions created for manager approval (${rows} rows validated).`, "success");
         } else {
-          showAlert("Data submitted successfully! It will be reviewed by category managers.");
+          showAlert("Data submitted successfully! It will be reviewed by category managers.", "success");
         }
         $("#data-form")[0].reset();
         loadMySubmissions();
@@ -262,29 +409,5 @@ $("#data-form").on("submit", function (e) {
         showAlert(error, "danger");
       },
     });
-  }
-
-  if (file && file.name.toLowerCase().endsWith(".csv")) {
-    const reader = new FileReader();
-    reader.onload = function (evt) {
-      const text = evt.target.result || "";
-      const lines = text.split(/\r\n|\n/);
-      const headerLine = lines.find(line => line?.trim());
-      if (!headerLine) return showAlert("CSV appears empty or malformed (no header found).", "danger");
-
-      const delimiter = headerLine.includes(",") ? "," : headerLine.includes(";") ? ";" : ",";
-      const cols = headerLine.split(delimiter).map(c => c.trim().toLowerCase());
-      const hasYear = cols.includes("year_ec") || cols.includes("year_gc");
-      const hasPerf = cols.includes("performance") || cols.includes("value") || cols.includes("amount");
-      const hasIndicator = cols.includes("indicator");
-      if (!hasYear || !hasPerf || (isMultiple && !hasIndicator)) {
-        return showAlert("CSV missing required columns. Required: year_EC/year_GC, performance/value/amount, and indicator for multiple mode.", "danger");
-      }
-      doUpload();
-    };
-    reader.onerror = () => showAlert("Failed to read CSV file for validation.", "danger");
-    reader.readAsText(file.slice(0, 64 * 1024), "utf-8");
-  } else {
-    doUpload();
   }
 });

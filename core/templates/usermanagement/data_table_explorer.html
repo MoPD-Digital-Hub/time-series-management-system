@@ -126,7 +126,8 @@
     }
 
     #table-wrapper {
-        display: block; /* don't force equal-height flex layout */
+        display: block;
+        /* don't force equal-height flex layout */
         /* allow table to size to content; limit max height so it doesn't grow indefinitely */
         max-height: 600px;
         overflow: auto;
@@ -159,34 +160,6 @@
 
                     <div class="filter-grid mb-2">
                         <div class="relative">
-                            <button type="button" id="dd-topic-btn"
-                                class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
-                                <i class="fas fa-layer-group text-primary-500"></i><span>Topics</span>
-                                <i class="fas fa-chevron-down text-xs"></i>
-                            </button>
-                            <div id="dd-topic"
-                                class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg">
-                                <div class="p-2 border-b">
-                                    <input id="search-topic" type="text" placeholder="Search topics..."
-                                        class="w-full px-2 py-2 text-sm border rounded" />
-                                </div>
-                                <div class="p-2 flex items-center justify-between">
-                                    <span class="text-xs text-gray-500">Select All</span>
-                                    <input type="checkbox" id="topic-select-all" class="form-check-input" />
-                                </div>
-                                <div id="topic-list" class="p-2 space-y-1">
-                                    {% for topic in topics %}
-                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50">
-                                        <input type="checkbox" class="topic-checkbox" data-id="{{ topic.id }}"
-                                            data-title="{{ topic.title_eng }}">
-                                        <span class="whitespace-normal break-words">{{ topic.title_ENG }}</span>
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="relative">
                             <button type="button" id="dd-category-btn"
                                 class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
                                 <i class="fas fa-folder text-warning-500"></i><span>Categories</span>
@@ -203,15 +176,12 @@
                                     <input type="checkbox" id="category-select-all" class="form-check-input" />
                                 </div>
                                 <div id="category-list" class="p-2 space-y-1">
-                                    {% for topic in topics %}
-                                    {% for cat in topic.categories.all %}
-                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50"
-                                        data-topic="{{ topic.id }}">
+                                    {% for cat in categories %}
+                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50">
                                         <input type="checkbox" class="cat-checkbox" data-id="{{ cat.id }}"
-                                            data-topic="{{ topic.id }}" data-title="{{ cat.title_eng }}">
+                                            data-title="{{ cat.name_ENG }}">
                                         <span class="whitespace-normal break-words">{{ cat.name_ENG }}</span>
                                     </label>
-                                    {% endfor %}
                                     {% endfor %}
                                 </div>
                             </div>
@@ -234,17 +204,14 @@
                                     <input type="checkbox" id="ind-select-all" class="form-check-input" />
                                 </div>
                                 <div id="ind-list" class="p-2 space-y-1">
-                                    {% for topic in topics %}
-                                    {% for cat in topic.categories.all %}
+                                    {% for cat in categories %}
                                     {% for ind in cat.indicators.all %}
                                     <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50"
-                                        data-topic="{{ topic.id }}" data-cat="{{ cat.id }}">
+                                        data-cat="{{ cat.id }}">
                                         <input type="checkbox" class="ind-checkbox" data-id="{{ ind.id }}"
-                                            data-cat="{{ cat.id }}" data-topic="{{ topic.id }}"
-                                            data-title="{{ ind.title_ENG }}">
+                                            data-cat="{{ cat.id }}" data-title="{{ ind.title_ENG }}">
                                         <span class="whitespace-normal break-words">{{ ind.title_ENG }}</span>
                                     </label>
-                                    {% endfor %}
                                     {% endfor %}
                                     {% endfor %}
                                 </div>
@@ -260,7 +227,8 @@
                 <div class="card-body">
                     <div class="flex items-center gap-3 mb-3">
                         <button class="btn btn-outline-primary btn-sm data-mode" data-mode="annual">Yearly</button>
-                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="quarterly">Quarterly</button>
+                        <button class="btn btn-outline-primary btn-sm data-mode"
+                            data-mode="quarterly">Quarterly</button>
                         <button class="btn btn-outline-primary btn-sm data-mode" data-mode="monthly">Monthly</button>
                         <button class="btn btn-outline-primary btn-sm data-mode" data-mode="weekly">Weekly</button>
                         <button class="btn btn-outline-primary btn-sm data-mode" data-mode="daily">Daily</button>
@@ -296,10 +264,10 @@
 
     {% include 'base/common/footer.html' %}
     {% include 'base/common/js.html' %}
-    
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="{% static 'assets/js/data_table_expo.js' %}"></script>
-    
+
 </body>
 
 </html>

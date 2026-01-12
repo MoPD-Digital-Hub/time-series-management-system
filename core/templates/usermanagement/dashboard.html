@@ -36,11 +36,11 @@
                                 <div class="shrink-0 text-center">
                                     <span id="total-users-count"
                                         class="px-2 py-1 rounded-xl bg-primary-500 text-white text-sm font-semibold block mx-auto">...</span>
-                                        {% if user.is_category_manager or user.is_staff %}
-                                        <a href="{% url 'users_list' %}"
+                                    {% if user.is_category_manager or user.is_staff %}
+                                    <a href="{% url 'users_list' %}"
                                         class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
                                         all</a>
-                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -62,11 +62,11 @@
                                 <div class="shrink-0 text-center">
                                     <span id="category-managers-count"
                                         class="px-2 py-1 rounded-xl bg-warning-500 text-white text-sm font-semibold block mx-auto">...</span>
-                                        {% if user.is_staff %}
-                                       <a href="{% url 'users_list' %}?role=category_manager"
+                                    {% if user.is_staff %}
+                                    <a href="{% url 'users_list' %}?role=category_manager"
                                         class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
                                         managers</a>
-                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -88,11 +88,11 @@
                                 <div class="shrink-0 text-center">
                                     <span id="importers-count"
                                         class="px-2 py-1 rounded-xl bg-info-500 text-white text-sm font-semibold block mx-auto">...</span>
-                                        {% if user.is_staff %}
-                                        <a href="{% url 'users_list' %}?role=importer"
+                                    {% if user.is_staff %}
+                                    <a href="{% url 'users_list' %}?role=importer"
                                         class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">View
                                         importers</a>
-                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -119,10 +119,10 @@
                                 <div class="shrink-0 text-center">
                                     <span id="pending-indicator-submissions-count"
                                         class="px-2 py-1 rounded-xl bg-orange-500 text-white text-sm font-semibold block mx-auto">...</span>
-                                        {% if user.is_category_manager %}
+                                    {% if user.is_category_manager %}
                                     <a href="{% url 'submissions_list' %}?type=indicator&status=pending"
                                         class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">Review</a>
-                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -145,10 +145,10 @@
                                 <div class="shrink-0 text-center">
                                     <span id="pending-data-submissions-count"
                                         class="px-2 py-1 rounded-xl bg-red-500 text-white text-sm font-semibold block mx-auto">...</span>
-                                        {% if user.is_category_manager %}
+                                    {% if user.is_category_manager %}
                                     <a href="{% url 'submissions_list' %}?type=data&status=pending"
                                         class="text-primary-500 text-xs underline hover:text-primary-700 mt-1 block whitespace-nowrap">Review</a>
-                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -165,7 +165,7 @@
                             {% if user.is_category_manager %}
                             <a href="{% url 'submissions_list' %}?type=indicator"
                                 class="text-primary-500 text-sm hover:text-primary-700">View all</a>
-                                {% endif %}
+                            {% endif %}
                         </div>
                         <div id="recent-indicator-submissions">
                             <p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>
@@ -181,9 +181,27 @@
                             {% if user.is_category_manager %}
                             <a href="{% url 'submissions_list' %}?type=data"
                                 class="text-primary-500 text-sm hover:text-primary-700">View all</a>
-                                {% endif %}
+                            {% endif %}
                         </div>
                         <div id="recent-data-submissions">
+                            <p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 mb-7 w-full">
+                <!-- Recent Table Data Submissions Section -->
+                <div class="card flex-1 w-full">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <h5 class="mb-0 font-bold">Recent Table Data Submissions</h5>
+                            {% if user.is_category_manager %}
+                            <a href="{% url 'review_table_data' %}"
+                                class="text-primary-500 text-sm hover:text-primary-700">View all</a>
+                            {% endif %}
+                        </div>
+                        <div id="recent-table-data-submissions">
                             <p class="text-gray-500 dark:text-gray-400 text-center py-4">Loading...</p>
                         </div>
                     </div>
@@ -200,13 +218,15 @@
     {% include 'usermanagement/common/js.html' %}
 
 
-<script>
-    const DASHBOARD_STATS_URL = "{% url 'user_management_stats_api' %}";
-    const RECENT_SUBMISSIONS_URL = "{% url 'recent_submissions_api' %}";
-</script>
+    <script>
+        const DASHBOARD_STATS_URL = "{% url 'user_management_stats_api' %}";
+        const RECENT_SUBMISSIONS_URL = "{% url 'recent_submissions_api' %}";
+        const RECENT_TABLE_DATA_SUBMISSIONS_URL = "{% url 'recent_table_data_submissions_api' %}";
+    </script>
 
-<script src="{% static 'assets/js/dashboard.js' %}"></script>
+    <script src="{% static 'assets/js/dashboard.js' %}"></script>
 
 
 </body>
-</html>   
+
+</html>

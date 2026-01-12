@@ -1,5 +1,5 @@
 $(function () {
-    
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -24,6 +24,7 @@ $(function () {
 
     loadDashboardStats();
     loadRecentSubmissions();
+    loadRecentTableDataSubmissions();
 
     function loadDashboardStats() {
         $.get(DASHBOARD_STATS_URL, function (data) {
@@ -40,6 +41,12 @@ $(function () {
         $.get(`${RECENT_SUBMISSIONS_URL}?limit=5`, function (data) {
             renderRecentIndicatorSubmissions(data.indicator_submissions);
             renderRecentDataSubmissions(data.data_submissions);
+        });
+    }
+
+    function loadRecentTableDataSubmissions() {
+        $.get(`${RECENT_TABLE_DATA_SUBMISSIONS_URL}?limit=5`, function (data) {
+            renderRecentTableDataSubmissions(data);
         });
     }
 
@@ -129,6 +136,36 @@ $(function () {
             case 'declined': return 'bg-red-100 text-red-800';
             default: return 'bg-gray-100 text-gray-800';
         }
+    }
+
+    // ------------------------
+    // Recent Table Data Submissions
+    // ------------------------
+    function renderRecentTableDataSubmissions(submissions) {
+        const $container = $('#recent-table-data-submissions');
+        if (!submissions.length) {
+            $container.html('<p class="text-gray-500 text-center py-4">No recent table data submissions</p>');
+            return;
+        }
+
+        let html = '<div class="space-y-3">';
+        $.each(submissions, function (_, sub) {
+            html += `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">
+                            ${sub.indicator_name}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            ${sub.type} • ${sub.period} • <span class="font-semibold text-blue-600">${sub.value}</span>
+                        </p>
+                        <p class="text-xs text-gray-400">by ${sub.submitted_by}</p>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        $container.html(html);
     }
 
 });

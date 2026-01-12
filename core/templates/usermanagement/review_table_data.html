@@ -17,6 +17,11 @@
                     <p class="text-gray-600 dark:text-gray-400 mt-1">Review and approve pending data edits from the Data
                         Explorer</p>
                 </div>
+                <div class="flex-shrink-0">
+                    <button class="btn btn-primary" onclick="approveAllData()">
+                        <i class="fas fa-check-double mr-1"></i>Approve All
+                    </button>
+                </div>
             </div>
 
             <!-- Pending Data Table -->
@@ -83,9 +88,14 @@
                                 <span class="badge bg-warning text-dark"><i class="fas fa-clock mr-1"></i>Pending</span>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-success" onclick="approveData('${item.type}', ${item.id})">
-                                    <i class="fas fa-check mr-1"></i>Approve
-                                </button>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-sm btn-success" onclick="approveData('${item.type}', ${item.id})">
+                                        <i class="fas fa-check mr-1"></i>Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="declineData('${item.type}', ${item.id})">
+                                        <i class="fas fa-times mr-1"></i>Decline
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -106,13 +116,46 @@
                 data: JSON.stringify({ type: type, id: id }),
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
                 success: function (resp) {
-                    // Remove row
                     $(`tr[data-id="${id}"][data-type="${type}"]`).fadeOut(300, function () { $(this).remove(); });
-                    // Provide feedback
-                    // alert('Approved successfully'); 
                 },
                 error: function (err) {
                     alert('Error approving data: ' + (err.responseJSON?.error || 'Unknown error'));
+                }
+            });
+        }
+
+        function declineData(type, id) {
+            if (!confirm('Are you sure you want to decline (delete) this data?')) return;
+
+            $.ajax({
+                url: '/user-management/api/decline-pending-data/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ type: type, id: id }),
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function (resp) {
+                    $(`tr[data-id="${id}"][data-type="${type}"]`).fadeOut(300, function () { $(this).remove(); });
+                },
+                error: function (err) {
+                    alert('Error declining data: ' + (err.responseJSON?.error || 'Unknown error'));
+                }
+            });
+        }
+
+        function approveAllData() {
+            if (!confirm('Are you sure you want to approve ALL pending table data?')) return;
+
+            $.ajax({
+                url: '/user-management/api/approve-all-table-data/',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                success: function (resp) {
+                    $('#review-tbody').empty().html('<tr><td colspan="6" class="text-center text-gray-500 py-8">No pending data found.</td></tr>');
+                    alert('All data approved successfully');
+                },
+                error: function (err) {
+                    alert('Error approving all data: ' + (err.responseJSON?.error || 'Unknown error'));
                 }
             });
         }

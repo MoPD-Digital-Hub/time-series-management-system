@@ -90,10 +90,10 @@ class CategoryAssignment(models.Model):
         on_delete=models.CASCADE,
         related_name="managed_categories"
     )
-    category = models.OneToOneField(
-        'Base.Category', 
+    category = models.ForeignKey(
+        'Base.Category',
         on_delete=models.CASCADE,
-        related_name="manager"
+        related_name="category_managers"
     )
 
     class Meta:

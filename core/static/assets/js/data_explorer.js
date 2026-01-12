@@ -36,7 +36,6 @@
         appendChunk();
     }
 
-
     // Dropdown toggle
     function toggleMenu(btnId, menuId) {
         $(btnId).on('click', function (e) {
@@ -82,7 +81,6 @@
         currentMode = $(this).data('mode');
         renderTable();
     });
-
 
     $('#apply-selection').on('click', function () {
         collectSelection();

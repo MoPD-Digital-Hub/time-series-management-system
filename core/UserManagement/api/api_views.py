@@ -13,8 +13,7 @@ from ..serializers import (
     IndicatorSubmissionSerializer, DataSubmissionSerializer,
     UserManagementStatsSerializer, UnassignedCategorySerializer
 )
-from datetime import timedelta, date
-from ethiopian_date_converter.ethiopian_date_convertor import to_ethiopian, EthDate
+from ethiopian_date_converter.ethiopian_date_convertor import to_ethiopian, to_gregorian, EthDate
 import secrets
 from ..models import CustomUser as UM_CustomUser
 import csv
@@ -35,14 +34,36 @@ from rest_framework.views import APIView
 def user_management_stats_api(request):
     """Get user management dashboard statistics"""
     try:
-        stats = {
-            'total_users': CustomUser.objects.count(),
-            'active_users': CustomUser.objects.filter(is_active=True).count(),
-            'category_managers': CustomUser.objects.filter(is_category_manager=True).count(),
-            'importers': CustomUser.objects.filter(is_importer=True).count(),
-            'pending_indicator_submissions': IndicatorSubmission.objects.filter(status='pending').count(),
-            'pending_data_submissions': DataSubmission.objects.filter(status='pending').count(),
-        }
+        user = request.user
+        if user.is_staff or user.is_superuser:
+            stats = {
+                'total_users': CustomUser.objects.count(),
+                'active_users': CustomUser.objects.filter(is_active=True).count(),
+                'category_managers': CustomUser.objects.filter(is_category_manager=True).count(),
+                'importers': CustomUser.objects.filter(is_importer=True).count(),
+                'pending_indicator_submissions': IndicatorSubmission.objects.filter(status='pending').count(),
+                'pending_data_submissions': DataSubmission.objects.filter(status='pending').count(),
+            }
+        else:
+            # For category managers
+            managed_importers = CustomUser.objects.filter(manager=user)
+            assigned_categories = CategoryAssignment.objects.filter(manager=user).values_list('category_id', flat=True)
+            
+            stats = {
+                'total_users': managed_importers.count() + 1, # Importers + self
+                'active_users': managed_importers.filter(is_active=True).count() + 1,
+                'category_managers': 1, # Just self
+                'importers': managed_importers.count(),
+                'pending_indicator_submissions': IndicatorSubmission.objects.filter(
+                    Q(status='pending') & 
+                    (Q(submitted_by__in=managed_importers) | Q(indicator__for_category__in=assigned_categories))
+                ).distinct().count(),
+                'pending_data_submissions': DataSubmission.objects.filter(
+                    Q(status='pending') & 
+                    (Q(submitted_by__in=managed_importers) | Q(indicator__for_category__in=assigned_categories))
+                ).distinct().count(),
+            }
+        
         serializer = UserManagementStatsSerializer(stats)
         return Response(serializer.data)
     except Exception as e:
@@ -106,6 +127,14 @@ def indicator_submissions_api(request):
         'indicator', 'submitted_by', 'verified_by'
     ).order_by('-submitted_at')
     
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        submissions = submissions.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+
     if status_filter:
         submissions = submissions.filter(status=status_filter)
     
@@ -140,6 +169,14 @@ def data_submissions_api(request):
         'indicator', 'submitted_by', 'verified_by'
     ).order_by('-submitted_at')
     
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        submissions = submissions.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+
     if status_filter:
         submissions = submissions.filter(status=status_filter)
     
@@ -215,7 +252,8 @@ def create_importer_api(request):
     last_name = (request.data.get('last_name') or '').strip()
     password = request.data.get('password') or None
     photo = request.FILES.get('photo')
-    assigned_category = request.data.get('assigned_category') or None
+    # support multiple category IDs (e.g. from select multiple)
+    assigned_categories = request.data.getlist('assigned_categories[]') or request.data.getlist('assigned_categories') or []
 
     if not email or '@' not in email:
         return Response({'error': 'A valid email is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -242,29 +280,91 @@ def create_importer_api(request):
         if photo:
             user.photo = photo
         user.save()
-        # Validate assigned_category (do not persist a new model here; return info to client)
-        assigned_category_info = None
-        if assigned_category:
+
+        # Create Category Assignments
+        created_assignments = []
+        for cat_id in assigned_categories:
             try:
-                ac_id = int(assigned_category)
-                # only allow categories the current manager actually manages
-                if CategoryAssignment.objects.filter(manager=request.user, category_id=ac_id).exists():
-                    cat = Category.objects.get(id=ac_id)
-                    assigned_category_info = {'id': cat.id, 'name': cat.name_ENG}
-                else:
-                    # ignore silently (client may have tampered)
-                    assigned_category_info = None
-            except Exception:
-                assigned_category_info = None
+                cat_id = int(cat_id)
+                if CategoryAssignment.objects.filter(manager=request.user, category_id=cat_id).exists():
+                    CategoryAssignment.objects.get_or_create(manager=user, category_id=cat_id)
+                    created_assignments.append(cat_id)
+            except (ValueError, TypeError, Category.DoesNotExist):
+                continue
+
         resp = {'message': 'Importer created', 'id': user.id, 'email': user.email}
-        # include password in response only if we generated one or one was provided
         if password:
             resp['password'] = password
-        if assigned_category_info:
-            resp['assigned_category'] = assigned_category_info
+        resp['assigned_categories'] = created_assignments
         return Response(resp, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def update_user_api(request, pk):
+    """Update user information and category assignments."""
+    user = get_object_or_404(CustomUser, pk=pk)
+    
+    # Permission check: superuser can edit anyone, manager can edit their importers
+    if not request.user.is_superuser:
+        if not (request.user.is_category_manager and user.manager == request.user):
+            return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+    email = (request.data.get('email') or '').strip().lower()
+    first_name = (request.data.get('first_name') or '').strip()
+    last_name = (request.data.get('last_name') or '').strip()
+    password = request.data.get('password')
+    is_active = request.data.get('is_active')
+    photo = request.FILES.get('photo')
+    assigned_categories = request.data.getlist('assigned_categories[]') or request.data.getlist('assigned_categories') or []
+
+    if email and email != user.email:
+        if CustomUser.objects.filter(email=email).exclude(pk=pk).exists():
+            return Response({'error': 'A user with that email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.email = email
+        user.username = email.split('@')[0] # sync username roughly or keep it same
+    
+    if first_name: user.first_name = first_name
+    if last_name: user.last_name = last_name
+    if password: user.set_password(password)
+    if is_active is not None:
+        user.is_active = str(is_active).lower() in ('true', '1', 'yes')
+    if photo: user.photo = photo
+    
+    user.save()
+
+    # Sync Category Assignments
+    # For simplicity, we clear and recreate or just sync.
+    # We only allow syncing categories that the CURRENT manager (request.user) has access to.
+    manager_accessible_cats = []
+    if request.user.is_superuser:
+        manager_accessible_cats = list(Category.objects.values_list('id', flat=True))
+    else:
+        manager_accessible_cats = list(CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True))
+
+    valid_new_cat_ids = []
+    for cid in assigned_categories:
+        try:
+            cid = int(cid)
+            if cid in manager_accessible_cats:
+                valid_new_cat_ids.append(cid)
+        except: continue
+
+    # Remove assignments that are no longer in the list (but only those the manager had power over)
+    CategoryAssignment.objects.filter(manager=user, category_id__in=manager_accessible_cats).exclude(category_id__in=valid_new_cat_ids).delete()
+    
+    # Add new assignments
+    for cid in valid_new_cat_ids:
+        CategoryAssignment.objects.get_or_create(manager=user, category_id=cid)
+
+    return Response({
+        'message': 'User updated successfully',
+        'id': user.id,
+        'email': user.email,
+        'assigned_categories': valid_new_cat_ids
+    })
 
 
 @api_view(['GET'])
@@ -274,11 +374,28 @@ def recent_submissions_api(request):
     
     recent_indicator_submissions = IndicatorSubmission.objects.select_related(
         'indicator', 'submitted_by', 'verified_by'
-    ).order_by('-submitted_at')[:limit]
+    ).order_by('-submitted_at')
     
     recent_data_submissions = DataSubmission.objects.select_related(
         'indicator', 'submitted_by', 'verified_by'
-    ).order_by('-submitted_at')[:limit]
+    ).order_by('-submitted_at')
+
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        
+        recent_indicator_submissions = recent_indicator_submissions.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+        
+        recent_data_submissions = recent_data_submissions.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+
+    recent_indicator_submissions = recent_indicator_submissions[:limit]
+    recent_data_submissions = recent_data_submissions[:limit]
     
     indicator_serializer = IndicatorSubmissionSerializer(recent_indicator_submissions, many=True)
     data_serializer = DataSubmissionSerializer(recent_data_submissions, many=True)
@@ -287,6 +404,139 @@ def recent_submissions_api(request):
         'indicator_submissions': indicator_serializer.data,
         'data_submissions': data_serializer.data,
     })
+
+
+@api_view(['GET'])
+def recent_table_data_submissions_api(request):
+    """
+    Get recent cell-level edits (unverified data points) for the dashboard.
+    """
+    limit = int(request.GET.get('limit', 10))
+    
+    # We fetch unverified data from all data models
+    # and combine them into a single list, sorted by created_at/date.
+    
+    q_filter = Q(is_verified=False)
+    if not (request.user.is_staff or request.user.is_superuser):
+        if request.user.is_importer:
+            # Importers see their own pending data
+            q_filter &= Q(submitted_by=request.user)
+        elif request.user.is_category_manager:
+            # Managers see managed importers or assigned categories
+            managed_importers = CustomUser.objects.filter(manager=request.user)
+            assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            q_filter &= (Q(submitted_by__in=managed_importers) | Q(indicator__for_category__in=assigned_categories))
+        else:
+            # Other roles (if any) see nothing by default
+            return Response([])
+
+    # Fetch from models
+    annual = AnnualData.objects.filter(q_filter).select_related('indicator', 'submitted_by', 'for_datapoint').order_by('-created_at')[:limit]
+    monthly = MonthData.objects.filter(q_filter).select_related('indicator', 'submitted_by', 'for_month', 'for_datapoint').order_by('-created_at')[:limit]
+    quarterly = QuarterData.objects.filter(q_filter).select_related('indicator', 'submitted_by', 'for_quarter', 'for_datapoint').order_by('-created_at')[:limit]
+    kpi = KPIRecord.objects.filter(q_filter).select_related('indicator', 'submitted_by').order_by('-created_at')[:limit]
+
+    results = []
+    
+    for item in annual:
+        results.append({
+            'id': item.id,
+            'type': 'Annual',
+            'indicator_name': item.indicator.title_ENG if item.indicator else "N/A",
+            'submitted_by': item.submitted_by.email if item.submitted_by else "N/A",
+            'value': item.performance,
+            'period': item.for_datapoint.year_EC if item.for_datapoint else "N/A",
+            'created_at': item.created_at
+        })
+    
+    for item in monthly:
+        results.append({
+            'id': item.id,
+            'type': 'Monthly',
+            'indicator_name': item.indicator.title_ENG if item.indicator else "N/A",
+            'submitted_by': item.submitted_by.email if item.submitted_by else "N/A",
+            'value': item.performance,
+            'period': f"{item.for_month.month_ENG} {item.for_datapoint.year_EC}" if item.for_month and item.for_datapoint else "N/A",
+            'created_at': item.created_at
+        })
+        
+    for item in quarterly:
+        results.append({
+            'id': item.id,
+            'type': 'Quarterly',
+            'indicator_name': item.indicator.title_ENG if item.indicator else "N/A",
+            'submitted_by': item.submitted_by.email if item.submitted_by else "N/A",
+            'value': item.performance,
+            'period': f"{item.for_quarter.title_ENG} {item.for_datapoint.year_EC}" if item.for_quarter and item.for_datapoint else "N/A",
+            'created_at': item.created_at
+        })
+        
+    for item in kpi:
+        results.append({
+            'id': item.id,
+            'type': item.record_type.title(),
+            'indicator_name': item.indicator.title_ENG if item.indicator else "N/A",
+            'submitted_by': item.submitted_by.email if item.submitted_by else "N/A",
+            'value': str(item.performance) if item.performance is not None else "N/A",
+            'period': item.date.strftime('%Y-%m-%d') if item.date else "N/A",
+            'created_at': item.created_at
+        })
+
+    # Sort results by created_at (if available) or period/id
+    # Ensure created_at is handled safely
+    results.sort(key=lambda x: (x['created_at'].timestamp() if x['created_at'] else 0), reverse=True)
+    
+    return Response(results[:limit])
+
+
+@api_view(['POST'])
+def approve_all_submissions_api(request):
+    """Approve all pending submissions of a specific type (indicator or data)"""
+    submission_type = request.data.get('type')
+    
+    if submission_type not in ['indicator', 'data']:
+        return Response({'error': 'Invalid submission type'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    submissions = None
+    if submission_type == 'indicator':
+        submissions = IndicatorSubmission.objects.filter(status='pending')
+    else:
+        submissions = DataSubmission.objects.filter(status='pending')
+        
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        
+        if submission_type == 'indicator':
+            submissions = submissions.filter(
+                Q(submitted_by__in=managed_importers) | 
+                Q(indicator__for_category__in=assigned_categories)
+            ).distinct()
+        else:
+            submissions = submissions.filter(
+                Q(submitted_by__in=managed_importers) | 
+                Q(indicator__for_category__in=assigned_categories)
+            ).distinct()
+
+    count = submissions.count()
+    for submission in submissions:
+        submission.status = 'approved'
+        submission.verified_by = request.user
+        submission.verified_at = timezone.now()
+        submission.save()
+        
+        if submission_type == 'indicator' and submission.indicator:
+            try:
+                ind = submission.indicator
+                ind.is_verified = True
+                ind.save(update_fields=['is_verified'])
+            except: pass
+        elif submission_type == 'data':
+            try:
+                _import_data_submission_to_db(submission)
+            except: pass
+            
+    return Response({'message': f'Successfully approved {count} {submission_type} submissions.'})
 
 
 @api_view(['POST'])
@@ -379,11 +629,36 @@ def _import_data_submission_to_db(submission: DataSubmission):
         else:
             raise RuntimeError('Unsupported file type')
 
+    # indicator identification
+    submission_indicator = submission.indicator
+    indicator_code = (submission_indicator.code or '').strip().lower() if submission_indicator else None
+
     # parse and import
     for i, raw in enumerate(iter_rows_from_file(file_path), start=1):
         try:
             # normalize keys to lowercase
             row = { (k or '').strip().lower(): (v if v is not None else '') for k,v in raw.items() }
+
+            # Determine which indicator this row belongs to
+            row_indicator_code = (row.get('indicator') or '').strip().lower()
+            
+            target_indicator = None
+            if submission_indicator:
+                # Single mode: only import rows matching the submission's indicator
+                if row_indicator_code and indicator_code and row_indicator_code != indicator_code:
+                    continue
+                target_indicator = submission_indicator
+            else:
+                # Bulk mode (Multiple mode): look up indicator from row
+                if not row_indicator_code:
+                    # Skip rows with no indicator in bulk mode
+                    continue
+                try:
+                    target_indicator = Indicator.objects.get(code__iexact=row_indicator_code)
+                except Indicator.DoesNotExist:
+                    result['skipped'] += 1
+                    result['errors'].append({'row': i, 'error': f'Unknown indicator code: {row_indicator_code}'})
+                    continue
 
             # determine year
             year = row.get('year_ec') or row.get('year_gc')
@@ -408,7 +683,6 @@ def _import_data_submission_to_db(submission: DataSubmission):
             # find or create datapoint by year_EC (prefer)
             year_ec = row.get('year_ec') or None
             if not year_ec and row.get('year_gc'):
-                # best-effort: try to derive year_ec from GC by subtracting 7 (approx)
                 try:
                     year_ec = str(int(row.get('year_gc')) - 7)
                 except Exception:
@@ -421,17 +695,14 @@ def _import_data_submission_to_db(submission: DataSubmission):
 
             # frequency
             if 'month' in row and row.get('month') != '':
-                # month can be number or name
                 mraw = str(row.get('month')).strip()
                 month_obj = None
                 try:
                     mnum = int(mraw)
                     month_obj = Month.objects.filter(number=mnum).first()
                 except Exception:
-                    # try to match by english name
                     month_obj = Month.objects.filter(month_ENG__iexact=mraw).first()
                 if not month_obj:
-                    # create a Month if numeric given
                     try:
                         if mraw.isdigit():
                             month_obj = Month.objects.create(number=int(mraw), month_ENG=str(mraw), month_AMH=str(mraw))
@@ -443,15 +714,65 @@ def _import_data_submission_to_db(submission: DataSubmission):
                         continue
 
                 obj, created = MonthData.objects.update_or_create(
+                    indicator=target_indicator,
                     for_datapoint=datapoint,
                     for_month=month_obj,
-                    defaults={'indicator': submission.indicator, 'performance': performance, 'is_verified': True}
+                    defaults={'performance': performance, 'is_verified': True}
                 )
-                if created:
-                    result['created'] += 1
-                else:
-                    result['updated'] += 1
+                if created: result['created'] += 1
+                else: result['updated'] += 1
                 continue
+
+            # daily
+            if 'day' in row and row.get('day') != '':
+                mraw = str(row.get('month')).strip()
+                draw = str(row.get('day')).strip()
+                try:
+                    month = int(mraw)
+                    day = int(draw)
+                    # Convert to Gregorian
+                    eth_date = EthDate(day, month, int(year_ec))
+                    greg_date = to_gregorian(eth_date)
+                    
+                    obj, created = KPIRecord.objects.update_or_create(
+                        indicator=target_indicator,
+                        date=greg_date,
+                        record_type='daily',
+                        defaults={'performance': performance, 'is_verified': True}
+                    )
+                    if created: result['created'] += 1
+                    else: result['updated'] += 1
+                    continue
+                except Exception as e:
+                    result['skipped'] += 1
+                    result['errors'].append({'row': i, 'error': f'Invalid daily date: {e}'})
+                    continue
+
+            # weekly
+            if 'week' in row and row.get('week') != '':
+                mraw = str(row.get('month')).strip()
+                wraw = str(row.get('week')).strip()
+                try:
+                    month = int(mraw)
+                    week = int(wraw)
+                    # Following resource.py logic: day = (week-1)*7 + 1
+                    day = ((week - 1) * 7) + 1
+                    eth_date = EthDate(day, month, int(year_ec))
+                    greg_date = to_gregorian(eth_date)
+                    
+                    obj, created = KPIRecord.objects.update_or_create(
+                        indicator=target_indicator,
+                        date=greg_date,
+                        record_type='weekly',
+                        defaults={'performance': performance, 'is_verified': True}
+                    )
+                    if created: result['created'] += 1
+                    else: result['updated'] += 1
+                    continue
+                except Exception as e:
+                    result['skipped'] += 1
+                    result['errors'].append({'row': i, 'error': f'Invalid weekly date: {e}'})
+                    continue
 
             if 'quarter' in row and row.get('quarter') != '':
                 qraw = row.get('quarter')
@@ -463,26 +784,23 @@ def _import_data_submission_to_db(submission: DataSubmission):
                     continue
                 quarter_obj, _ = Quarter.objects.get_or_create(number=qnum, defaults={'title_ENG': f'Q{qnum}', 'title_AMH': f'Q{qnum}'})
                 obj, created = QuarterData.objects.update_or_create(
+                    indicator=target_indicator,
                     for_datapoint=datapoint,
                     for_quarter=quarter_obj,
-                    defaults={'indicator': submission.indicator, 'performance': performance, 'is_verified': True}
+                    defaults={'performance': performance, 'is_verified': True}
                 )
-                if created:
-                    result['created'] += 1
-                else:
-                    result['updated'] += 1
+                if created: result['created'] += 1
+                else: result['updated'] += 1
                 continue
 
             # else assume annual
             obj, created = AnnualData.objects.update_or_create(
-                indicator=submission.indicator,
+                indicator=target_indicator,
                 for_datapoint=datapoint,
                 defaults={'performance': performance, 'is_verified': True}
             )
-            if created:
-                result['created'] += 1
-            else:
-                result['updated'] += 1
+            if created: result['created'] += 1
+            else: result['updated'] += 1
 
         except Exception as e:
             result['skipped'] += 1
@@ -537,7 +855,12 @@ def submit_bulk_data_api(request):
                 raise RuntimeError('Unsupported file type. Accepts .csv, .xls, .xlsx')
 
         result = {'created': 0, 'updated': 0, 'skipped': 0, 'errors': []}
+        selected_indicator_ids = request.data.getlist('indicator_ids[]') or request.data.getlist('indicator_ids')
+        allowed_indicator_codes = []
+        if selected_indicator_ids:
+            allowed_indicator_codes = list(Indicator.objects.filter(id__in=selected_indicator_ids).values_list('code', flat=True))
 
+        processed_indicators = set()
         for i, raw in enumerate(iter_rows_from_upload(data_file, ext), start=1):
             try:
                 row = { (k or '').strip().lower(): (v if v is not None else '') for k,v in raw.items() }
@@ -548,6 +871,10 @@ def submit_bulk_data_api(request):
                     result['errors'].append({'row': i, 'error': 'Missing indicator code'})
                     continue
 
+                if allowed_indicator_codes and code not in allowed_indicator_codes:
+                    result['skipped'] += 1
+                    continue
+
                 try:
                     indicator = Indicator.objects.get(code=code)
                 except Indicator.DoesNotExist:
@@ -555,101 +882,47 @@ def submit_bulk_data_api(request):
                     result['errors'].append({'row': i, 'error': f'Unknown indicator code: {code}'})
                     continue
 
-                # year
+                # Basic validation: check year and performance presence
                 year = row.get('year_ec') or row.get('year_gc')
-                if not year:
-                    result['skipped'] += 1
-                    result['errors'].append({'row': i, 'error': 'Missing year_EC/year_GC'})
-                    continue
-
                 perf_raw = row.get('performance') or row.get('value') or row.get('amount')
-                if perf_raw in (None, ''):
+                
+                if not year or perf_raw in (None, ''):
                     result['skipped'] += 1
-                    result['errors'].append({'row': i, 'error': 'Missing performance/value'})
+                    result['errors'].append({'row': i, 'error': 'Missing required fields (year or performance)'})
                     continue
+                
                 try:
-                    performance = float(perf_raw)
+                    float(perf_raw)
                 except Exception:
                     result['skipped'] += 1
                     result['errors'].append({'row': i, 'error': f'Invalid performance value: {perf_raw}'})
                     continue
 
-                year_ec = row.get('year_ec') or None
-                if not year_ec and row.get('year_gc'):
-                    try:
-                        year_ec = str(int(row.get('year_gc')) - 7)
-                    except Exception:
-                        year_ec = None
-
-                if year_ec:
-                    datapoint, _ = DataPoint.objects.get_or_create(year_EC=str(year_ec))
-                else:
-                    datapoint, _ = DataPoint.objects.get_or_create(year_EC=str(year))
-
-                # monthly
-                if 'month' in row and row.get('month') != '':
-                    mraw = str(row.get('month')).strip()
-                    month_obj = None
-                    try:
-                        mnum = int(mraw)
-                        month_obj = Month.objects.filter(number=mnum).first()
-                    except Exception:
-                        month_obj = Month.objects.filter(month_ENG__iexact=mraw).first()
-                    if not month_obj:
-                        try:
-                            if mraw.isdigit():
-                                month_obj = Month.objects.create(number=int(mraw), month_ENG=str(mraw), month_AMH=str(mraw))
-                            else:
-                                raise ValueError('Unknown month')
-                        except Exception:
-                            result['skipped'] += 1
-                            result['errors'].append({'row': i, 'error': f'Invalid month: {mraw}'})
-                            continue
-
-                    obj, created = MonthData.objects.update_or_create(
-                        indicator=indicator,
-                        for_datapoint=datapoint,
-                        for_month=month_obj,
-                        defaults={'performance': performance, 'is_verified': True}
-                    )
-                    if created: result['created'] += 1
-                    else: result['updated'] += 1
-                    continue
-
-                # quarterly
-                if 'quarter' in row and row.get('quarter') != '':
-                    qraw = row.get('quarter')
-                    try:
-                        qnum = int(qraw)
-                    except Exception:
-                        result['skipped'] += 1
-                        result['errors'].append({'row': i, 'error': f'Invalid quarter: {qraw}'})
-                        continue
-                    quarter_obj, _ = Quarter.objects.get_or_create(number=qnum, defaults={'title_ENG': f'Q{qnum}', 'title_AMH': f'Q{qnum}'})
-                    obj, created = QuarterData.objects.update_or_create(
-                        indicator=indicator,
-                        for_datapoint=datapoint,
-                        for_quarter=quarter_obj,
-                        defaults={'performance': performance, 'is_verified': True}
-                    )
-                    if created: result['created'] += 1
-                    else: result['updated'] += 1
-                    continue
-
-                # annual
-                obj, created = AnnualData.objects.update_or_create(
-                    indicator=indicator,
-                    for_datapoint=datapoint,
-                    defaults={'performance': performance, 'is_verified': True}
-                )
-                if created: result['created'] += 1
-                else: result['updated'] += 1
+                # If we got here, the row is valid enough for a submission record
+                processed_indicators.add(indicator)
+                result['created'] += 1 # In this context, 'created' means 'successfully parsed row'
 
             except Exception as e:
                 result['skipped'] += 1
                 result['errors'].append({'row': i, 'error': str(e)})
 
-        return Response(result)
+        # Create a single DataSubmission record for the entire multiple-mode upload
+        notes = request.data.get('notes', 'Bulk import (Multiple Mode)')
+        DataSubmission.objects.create(
+            indicator=None, # Multiple indicators in this file
+            submitted_by=request.user,
+            data_file=data_file,
+            status='pending',
+            notes=notes
+        )
+
+        return Response({
+            'message': 'Bulk submission successful! A single pending submission record has been created for manager approval.',
+            'total_indicators': len(processed_indicators),
+            'rows_validated': result['created'],
+            'rows_skipped': result['skipped'],
+            'errors': result['errors']
+        })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -691,7 +964,12 @@ def decline_submission_api(request):
 @api_view(['GET'])
 def indicators_list_api(request):
     """Get list of indicators for importer to submit data for"""
+    category_id = request.GET.get('category_id')
     indicators = Indicator.objects.all().order_by('title_ENG')
+    
+    if category_id:
+        indicators = indicators.filter(for_category__id=category_id)
+        
     out = []
     for ind in indicators:
         cats = [c.name_ENG for c in ind.for_category.all()]
@@ -701,6 +979,7 @@ def indicators_list_api(request):
             'title_amh': ind.title_AMH,
             'is_verified': getattr(ind, 'is_verified', False),
             'categories': cats,
+            'code': ind.code,
         })
     return Response(out)
 
@@ -716,34 +995,86 @@ def sample_template_api(request):
     """
     kind = (request.GET.get('type') or request.GET.get('kind') or '').strip().lower()
     multiple = (request.GET.get('multiple') or '').strip().lower() in ('1', 'true', 'yes')
-    if kind not in ('annual', 'quarter', 'monthly'):
-        return Response({'error': 'Invalid type. Use one of: annual, quarter, monthly'}, status=status.HTTP_400_BAD_REQUEST)
+    category_id = request.GET.get('category_id')
+    indicator_id = request.GET.get('indicator_id')
+    
+    if kind not in ('annual', 'quarter', 'monthly', 'weekly', 'daily'):
+        return Response({'error': 'Invalid type. Use one of: annual, quarter, monthly, weekly, daily'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Prepare pre-fill data
+    prefill_indicators = []
+    indicator_ids = request.GET.getlist('indicator_ids[]') or request.GET.getlist('indicator_ids') or ([request.GET.get('indicator_id')] if request.GET.get('indicator_id') else [])
+    
+    if multiple and indicator_ids:
+        # User selected specific indicators for bulk template
+        prefill_indicators = list(Indicator.objects.filter(id__in=indicator_ids).values('code', 'title_ENG', 'title_AMH'))
+    elif multiple and category_id:
+        # Fallback to all indicators in category if no specific ones selected
+        prefill_indicators = list(Indicator.objects.filter(for_category__id=category_id).values('code', 'title_ENG', 'title_AMH'))
+    elif not multiple and indicator_ids:
+        # Single mode with one selection
+        try:
+            indicator = Indicator.objects.filter(id=indicator_ids[0]).values('code', 'title_ENG', 'title_AMH').first()
+            if indicator:
+                prefill_indicators = [indicator]
+        except (Indicator.DoesNotExist, IndexError, ValueError):
+            pass
 
     # Build sample dataset
     if kind == 'annual':
-        headers = ('indicator', 'year_EC', 'performance') if multiple else ('year_EC', 'performance')
-        rows = [
-            (('IND001', '2014', 123.45) if multiple else ('2014', 123.45)),
-            (('IND001', '2015', 150.00) if multiple else ('2015', 150.00)),
-        ]
-        filename = 'sample_annual_data.xlsx'
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'performance')
+        if prefill_indicators:
+            rows = [(ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', '') for ind in prefill_indicators]
+        else:
+            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 123.45)]
+        filename = f"sample_{kind}_data.xlsx"
     elif kind == 'quarter':
-        headers = ('indicator', 'year_EC', 'quarter', 'performance') if multiple else ('year_EC', 'quarter', 'performance')
-        rows = [
-            (('IND001', '2015', 1, 25.5) if multiple else ('2015', 1, 25.5)),
-            (('IND001', '2015', 2, 30.0) if multiple else ('2015', 2, 30.0)),
-            (('IND001', '2015', 3, 28.2) if multiple else ('2015', 3, 28.2)),
-            (('IND001', '2015', 4, 31.7) if multiple else ('2015', 4, 31.7)),
-        ]
-        filename = 'sample_quarter_data.xlsx'
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'quarter', 'performance')
+        if prefill_indicators:
+            rows = []
+            for ind in prefill_indicators:
+                for q in range(1, 5):
+                    rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', q, ''))
+        else:
+            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 25.5)]
+        filename = f"sample_{kind}_data.xlsx"
+    elif kind == 'monthly':
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'month', 'performance')
+        if prefill_indicators:
+            rows = []
+            for ind in prefill_indicators:
+                for m in range(1, 13):
+                    rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', m, ''))
+        else:
+            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 10.0)]
+        filename = f"sample_{kind}_data.xlsx"
+    elif kind == 'weekly':
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'month', 'week', 'performance')
+        if prefill_indicators:
+            rows = []
+            for ind in prefill_indicators:
+                for m in range(1, 13):
+                    for w in range(1, 6): # Up to 5 weeks
+                        rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', m, w, ''))
+        else:
+            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 1, 10.0)]
+        filename = f"sample_{kind}_data.xlsx"
+    elif kind == 'daily':
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'month', 'day', 'performance')
+        if prefill_indicators:
+            rows = []
+            for ind in prefill_indicators:
+                # 1st day of each month for sample
+                for m in range(1, 13):
+                    rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', m, 1, ''))
+        else:
+            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 1, 10.0)]
+        filename = f"sample_{kind}_data.xlsx"
     else:
-        headers = ('indicator', 'year_EC', 'month', 'performance') if multiple else ('year_EC', 'month', 'performance')
-        rows = [
-            (('IND001', '2016', 1, 10.0) if multiple else ('2016', 1, 10.0)),
-            (('IND001', '2016', 2, 11.5) if multiple else ('2016', 2, 11.5)),
-            (('IND001', '2016', 3, 12.2) if multiple else ('2016', 3, 12.2)),
-        ]
-        filename = 'sample_month_data.xlsx'
+        # Fallback
+        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'performance')
+        rows = [('IND001', 'Sample Title', '', '2016', 0)]
+        filename = f"sample_data.xlsx"
 
     dataset = tablib.Dataset(*rows, headers=headers)
 
@@ -775,6 +1106,14 @@ def submit_indicator_api(request):
     frequency = request.data.get('frequency')
     source = request.data.get('source')
     methodology = request.data.get('methodology')
+    
+    # New fields
+    data_type = request.data.get('data_type')
+    responsible_entity = request.data.get('responsible_entity')
+    tags = request.data.get('tags')
+    sdg_link = request.data.get('sdg_link')
+    kpi_characteristics = request.data.get('kpi_characteristics')
+
     # Accept either a list or comma-separated string
     category_ids = request.data.get('category_ids') or request.data.get('category_id')
 
@@ -798,19 +1137,35 @@ def submit_indicator_api(request):
         if len(categories) != len(category_ids):
             return Response({'error': 'One or more categories are invalid.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate code uniqueness if provided
+        if code:
+            if Indicator.objects.filter(code=code).exists():
+                return Response({'error': f'Indicator with code "{code}" already exists.'}, 
+                               status=status.HTTP_400_BAD_REQUEST)
+        
         # create indicator without assigning m2m directly
         indicator = Indicator.objects.create(
             title_ENG=title_eng,
             title_AMH=title_amh,
-            code=code or '',
+            code=code if code else None,  # Use None instead of '' to avoid UNIQUE constraint with multiple empty strings
             description=description,
             measurement_units=measurement_units,
             frequency=frequency,
             source=source,
             methodology=methodology,
+            data_type=data_type,
+            responsible_entity=responsible_entity,
+            tags=tags,
+            sdg_link=sdg_link,
+            kpi_characteristics=kpi_characteristics,
         )
         # assign categories (many-to-many)
         indicator.for_category.set(category_ids)
+
+        # If code was not provided, generate it now that categories are assigned
+        if not indicator.code:
+            indicator.generate_code()
+            indicator.save()
 
         # Create submission record
         IndicatorSubmission.objects.create(
@@ -1194,9 +1549,15 @@ class WeeklySidebarList(APIView):
 
     def get(self, request):
         page = max(int(request.GET.get("page", 1)), 1)
+        # Filter dates only for selected indicators if provided
+        indicator_ids = request.GET.get('ids', '').split(',')
+        indicator_ids = [i for i in indicator_ids if i.strip()]
 
-        unique_dates = KPIRecord.objects.filter(record_type='weekly')\
-            .order_by('date').values_list('date', flat=True).distinct()
+        unique_dates_qs = KPIRecord.objects.filter(record_type='weekly')
+        if indicator_ids:
+            unique_dates_qs = unique_dates_qs.filter(indicator_id__in=indicator_ids)
+        
+        unique_dates = unique_dates_qs.order_by('date').values_list('date', flat=True).distinct()
 
         seen_weeks = set()
         unique_week_items = []
@@ -1227,7 +1588,10 @@ class WeeklySidebarList(APIView):
         # Format for payload
         payload = []
         for item in page_items:
-            rec = KPIRecord.objects.filter(record_type='weekly', date=item['date']).first()
+            rec_qs = KPIRecord.objects.filter(record_type='weekly', date=item['date'])
+            if indicator_ids:
+                rec_qs = rec_qs.filter(indicator_id__in=indicator_ids)
+            rec = rec_qs.first()
             if not rec:
                 continue
 
@@ -1267,9 +1631,15 @@ class DailySidebarList(APIView):
 
     def get(self, request):
         page = max(int(request.GET.get("page", 1)), 1)
+        # Filter dates only for selected indicators if provided
+        indicator_ids = request.GET.get('ids', '').split(',')
+        indicator_ids = [i for i in indicator_ids if i.strip()]
 
         # Get all daily KPI records ordered by date (most recent first)
-        qs = KPIRecord.objects.filter(record_type='daily').order_by('-date')
+        qs = KPIRecord.objects.filter(record_type='daily')
+        if indicator_ids:
+            qs = qs.filter(indicator_id__in=indicator_ids)
+        
         unique_dates = list(qs.order_by('-date').values_list('date', flat=True).distinct())
         total = len(unique_dates)
 
@@ -1309,6 +1679,7 @@ class DailySidebarList(APIView):
             "total_pages": (total + self.PAGE_SIZE - 1) // self.PAGE_SIZE,
         })
 
+# Category Assignments
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1318,7 +1689,7 @@ def create_category_assignment_api(request):
 
     if not manager_id:
         return Response({'error': 'Manager ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     if not category_id:
         return Response({'error': 'Category ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1328,34 +1699,35 @@ def create_category_assignment_api(request):
     except (ValueError, TypeError):
         return Response({'error': 'Invalid manager or category ID.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate manager exists and is a category manager
+    # Validate manager
     try:
         manager = CustomUser.objects.get(id=manager_id)
         if not manager.is_category_manager:
-            return Response({'error': 'Selected user is not a category manager.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Selected user is not a category manager.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     except CustomUser.DoesNotExist:
         return Response({'error': 'Manager not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Validate category exists
+    # Validate category
     try:
         category = Category.objects.get(id=category_id)
     except Category.DoesNotExist:
         return Response({'error': 'Category not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Check if manager is already assigned to a category
-    if CategoryAssignment.objects.filter(manager_id=manager_id).exists():
-        return Response({'error': 'This manager is already assigned to a category.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Check if category is already assigned
+    # ✅ Category can have ONLY ONE manager
     if CategoryAssignment.objects.filter(category_id=category_id).exists():
-        return Response({'error': 'This category is already assigned to a manager.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {'error': 'This category is already assigned to a manager.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-    try:
-        assignment = CategoryAssignment.objects.create(manager_id=manager_id, category_id=category_id)
-    except Exception as e:
-        return Response({'error': f'Failed to create assignment: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    assignment = CategoryAssignment.objects.create(
+        manager_id=manager_id,
+        category_id=category_id
+    )
 
-    # Return full data needed for JS - use manager_details and category_details format
     data = {
         'id': assignment.id,
         'manager_details': {
@@ -1369,10 +1741,12 @@ def create_category_assignment_api(request):
             'id': assignment.category.id,
             'name_eng': assignment.category.name_ENG,
             'indicator_count': assignment.category.indicators.count(),
-            'subcategory_count': assignment.category.subcategories.count() if hasattr(assignment.category, 'subcategories') else 0,
+            'subcategory_count': assignment.category.subcategories.count()
+            if hasattr(assignment.category, 'subcategories') else 0,
             'topic_title': assignment.category.topic.title_ENG if assignment.category.topic else '',
         },
     }
+
     return Response(data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
@@ -1384,7 +1758,7 @@ def update_category_assignment_api(request, pk):
         return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
     manager_id = request.data.get('manager_id')
-    
+
     if not manager_id:
         return Response({'error': 'Manager ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1393,25 +1767,21 @@ def update_category_assignment_api(request, pk):
     except (ValueError, TypeError):
         return Response({'error': 'Invalid manager ID.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate manager exists and is a category manager
+    # Validate manager
     try:
         manager = CustomUser.objects.get(id=manager_id)
         if not manager.is_category_manager:
-            return Response({'error': 'Selected user is not a category manager.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Selected user is not a category manager.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     except CustomUser.DoesNotExist:
         return Response({'error': 'Manager not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Check if manager is already assigned to another category
-    if CategoryAssignment.objects.filter(manager_id=manager_id).exclude(pk=pk).exists():
-        return Response({'error': 'This manager is already assigned to another category.'}, status=status.HTTP_400_BAD_REQUEST)
+    # ✅ NO restriction on manager owning multiple categories
+    assignment.manager_id = manager_id
+    assignment.save(update_fields=['manager'])
 
-    try:
-        assignment.manager_id = manager_id
-        assignment.save()
-    except Exception as e:
-        return Response({'error': f'Failed to update assignment: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Return data in format expected by JavaScript frontend
     data = {
         'id': assignment.id,
         'manager_details': {
@@ -1425,11 +1795,14 @@ def update_category_assignment_api(request, pk):
             'id': assignment.category.id,
             'name_eng': assignment.category.name_ENG,
             'indicator_count': assignment.category.indicators.count(),
-            'subcategory_count': assignment.category.subcategories.count() if hasattr(assignment.category, 'subcategories') else 0,
+            'subcategory_count': assignment.category.subcategories.count()
+            if hasattr(assignment.category, 'subcategories') else 0,
             'topic_title': assignment.category.topic.title_ENG if assignment.category.topic else '',
         },
     }
+
     return Response(data, status=status.HTTP_200_OK)
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -1465,9 +1838,15 @@ def review_pending_data(request):
         return Response({'error': 'Unauthorized'}, status=403)
 
     results = []
+    assigned_categories = []
+    if not request.user.is_superuser:
+        assigned_categories = list(CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True))
 
     # 1. Annual Data
     annuals = AnnualData.objects.filter(is_verified=False).select_related('indicator', 'for_datapoint')
+    if not request.user.is_superuser:
+        annuals = annuals.filter(indicator__for_category__in=assigned_categories).distinct()
+    
     for a in annuals:
         results.append({
             'id': a.id,
@@ -1479,6 +1858,9 @@ def review_pending_data(request):
 
     # 2. Quarterly Data
     quarters = QuarterData.objects.filter(is_verified=False).select_related('indicator', 'for_quarter', 'for_datapoint')
+    if not request.user.is_superuser:
+        quarters = quarters.filter(indicator__for_category__in=assigned_categories).distinct()
+
     for q in quarters:
         q_title = q.for_quarter.title_ENG if q.for_quarter else f"Q{q.for_quarter_number or '?'}"
         year = q.for_datapoint.year_EC if q.for_datapoint else "?"
@@ -1492,6 +1874,9 @@ def review_pending_data(request):
 
     # 3. Monthly Data
     months = MonthData.objects.filter(is_verified=False).select_related('indicator', 'for_month', 'for_datapoint')
+    if not request.user.is_superuser:
+        months = months.filter(indicator__for_category__in=assigned_categories).distinct()
+
     for m in months:
         m_name = m.for_month.month_ENG if m.for_month else "?"
         year = m.for_datapoint.year_EC if m.for_datapoint else "?"
@@ -1505,6 +1890,9 @@ def review_pending_data(request):
 
     # 4. KPI Records (Weekly/Daily)
     kpis = KPIRecord.objects.filter(is_verified=False).select_related('indicator')
+    if not request.user.is_superuser:
+        kpis = kpis.filter(indicator__for_category__in=assigned_categories).distinct()
+
     for k in kpis:
         p_disp = str(k.date)
         if k.record_type == 'weekly':
@@ -1549,10 +1937,66 @@ def approve_pending_data(request):
             return Response({'error': 'Invalid type'}, status=400)
         
         obj.is_verified = True
+        obj.is_seen = True # Clear the blue dot after approval
         obj.save()
         return Response({'status': 'approved'})
 
     except (AnnualData.DoesNotExist, QuarterData.DoesNotExist, MonthData.DoesNotExist, KPIRecord.DoesNotExist):
         return Response({'error': 'Data record not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def decline_pending_data(request):
+    """Decline (delete) specific table data edits"""
+    if not (request.user.is_category_manager or request.user.is_superuser):
+        return Response({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        data_type = request.data.get('type')
+        data_id = request.data.get('id')
+        
+        if not data_type or not data_id:
+            return Response({'error': 'Missing type or id'}, status=400)
+        
+        if data_type == 'annual':
+            AnnualData.objects.filter(id=data_id).delete()
+        elif data_type == 'quarterly':
+            QuarterData.objects.filter(id=data_id).delete()
+        elif data_type == 'monthly':
+            MonthData.objects.filter(id=data_id).delete()
+        elif data_type in ('weekly', 'daily'):
+            KPIRecord.objects.filter(id=data_id).delete()
+        else:
+            return Response({'error': 'Invalid type'}, status=400)
+        
+        return Response({'status': 'declined'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def approve_all_table_data_api(request):
+    """Approve all pending table data submissions for assigned categories"""
+    if not (request.user.is_category_manager or request.user.is_superuser):
+        return Response({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        q_filter = Q(is_verified=False)
+        if not request.user.is_superuser:
+            assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            q_filter &= Q(indicator__for_category__in=assigned_categories)
+
+        AnnualData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        QuarterData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        MonthData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        # KPIRecord filter doesn't support indicator__for_category directly in the same way if indicator is null, 
+        # but we follow the same pattern
+        KPIRecord.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+
+        return Response({'status': 'success', 'message': 'All pending table data approved'})
     except Exception as e:
         return Response({'error': str(e)}, status=500)

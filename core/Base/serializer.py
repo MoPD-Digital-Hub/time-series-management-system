@@ -139,6 +139,12 @@ class TrendingIndicatorSerializer(serializers.ModelSerializer):
 
 
 class AnnualDataSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = AnnualData
+        fields = ['id', 'indicator', 'for_datapoint', 'performance', 'is_verified', 'is_seen', 'created_at']
+
+
+class AnnualDataSerializers(serializers.ModelSerializer):
   for_datapoint = serializers.SlugRelatedField(
       
         read_only=True,
@@ -146,7 +152,7 @@ class AnnualDataSerializers(serializers.ModelSerializer):
     )
   class Meta:
     model = AnnualData
-    fields = '__all__'
+    fields = ['id', 'indicator', 'for_datapoint', 'performance', 'is_verified', 'is_seen', 'created_at']
 
 class QuarterDataSerializers(serializers.ModelSerializer):
   for_datapoint = serializers.SlugRelatedField(
@@ -156,7 +162,7 @@ class QuarterDataSerializers(serializers.ModelSerializer):
     )
   class Meta:
     model = QuarterData
-    fields = '__all__'
+    fields = ['id', 'indicator', 'for_datapoint', 'quarter_number', 'performance', 'is_verified', 'is_seen', 'created_at']
 
 
 class CategoryIndicatorSerializers(serializers.ModelSerializer):
@@ -179,7 +185,7 @@ class IndicatorAnnualSerializer(serializers.ModelSerializer):
 
     def get_all_annual(self, obj):
         annual_map = self.context.get('annual_map', {})
-        return [a for a in annual_map.get(obj.id, []) if a.get('is_verified', True)]
+        return annual_map.get(str(obj.id), [])
 
 
 class IndicatorMonthlySerializer(serializers.ModelSerializer):
@@ -193,7 +199,7 @@ class IndicatorMonthlySerializer(serializers.ModelSerializer):
 
     def get_monthly(self, obj):
         monthly_map = self.context.get('monthly_map', {})
-        return monthly_map.get(obj.id, [])
+        return monthly_map.get(str(obj.id), [])
 
 
 class IndicatorQuarterlySerializer(serializers.ModelSerializer):
@@ -207,7 +213,13 @@ class IndicatorQuarterlySerializer(serializers.ModelSerializer):
 
     def get_quarterly(self, obj):
         quarterly_map = self.context.get('quarterly_map', {})
-        return quarterly_map.get(obj.id, [])
+        return quarterly_map.get(str(obj.id), [])
+
+
+class KPIRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KPIRecord
+        fields = ['id', 'indicator', 'record_type', 'date', 'performance', 'target', 'is_verified', 'is_seen']
 
 
 class WeeklyKPIRecordUpdateSerializer(serializers.Serializer):
@@ -224,3 +236,4 @@ class DailyKPIRecordUpdateSerializer(serializers.Serializer):
     performance = serializers.FloatField(required=False, allow_null=True)
     target = serializers.FloatField(required=False, allow_null=True)
     is_verified = serializers.BooleanField(required=False)
+

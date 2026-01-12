@@ -247,12 +247,17 @@ def indicator_data_by_id_api(request, indicator_id):
     })
 
 
-@api_view(['POST', 'PATCH'])
+@api_view(['GET', 'POST', 'PATCH'])
 def indicators_bulk_api(request):
     # Handle data fetching (GET or POST)
     # Normalize inputs so `id_list` and `mode` are always defined regardless of method.
     id_list = []
     mode = request.GET.get('mode') or request.GET.get('record_type') or 'annual'
+    
+    # Defensive normalization
+    if mode == 'quarter': mode = 'quarterly'
+    if mode == 'month': mode = 'monthly'
+    if mode == 'year': mode = 'annual'
 
     if request.method == 'POST':
         # DRF parses JSON into request.data for us, but be defensive and fall back to body parsing.
@@ -265,28 +270,25 @@ def indicators_bulk_api(request):
         raw_ids = payload.get('records') or payload.get('ids') or payload.get('records_ids') or []
         # Mode key used by clients is `record_type` in some callers
         mode = payload.get('record_type') or payload.get('mode') or mode or 'annual'
+        if mode == 'quarter': mode = 'quarterly'
+        if mode == 'month': mode = 'monthly'
+        if mode == 'year': mode = 'annual'
 
-        # Normalize id list to a Python list of ints/strings
+        # Normalize id list to a Python list of ints
         if isinstance(raw_ids, str):
-            # comma-separated string
-            id_list = [s for s in [x.strip() for x in raw_ids.split(",")] if s]
+            id_list = [int(s) for s in [x.strip() for x in raw_ids.split(",")] if s.isdigit()]
         elif isinstance(raw_ids, (list, tuple)):
-            id_list = list(raw_ids)
-        elif raw_ids is None:
-            id_list = []
+            id_list = [int(x) for x in raw_ids if str(x).isdigit()]
         else:
-            # unexpected shape
             id_list = []
 
     elif request.method == 'GET':
-        # GET may provide `ids` as a comma-separated query param or multiple `ids` params
         ids_q = request.GET.get('ids')
         if ids_q:
-            if isinstance(ids_q, str) and ',' in ids_q:
-                id_list = [s for s in [x.strip() for x in ids_q.split(',')] if s]
+            if isinstance(ids_q, str):
+                id_list = [int(s) for s in [x.strip() for x in ids_q.split(',')] if s.isdigit()]
             else:
-                # getlist will return multiple values if provided as ?ids=1&ids=2
-                id_list = request.GET.getlist('ids') or [ids_q]
+                id_list = [int(x) for x in request.GET.getlist('ids') if str(x).isdigit()]
         else:
             id_list = []
     
@@ -336,10 +338,22 @@ def indicators_bulk_api(request):
                     ad, created = AnnualData.objects.update_or_create(
                         indicator=indicator,
                         for_datapoint=datapoint,
-                        defaults={'performance': value, 'is_verified': is_verified_status}
+                        defaults={
+                            'performance': value, 
+                            'is_verified': is_verified_status,
+                            'submitted_by': request.user,
+                            'is_seen': False if not is_verified_status else True
+                        }
 
                     )
-                    results.append({'indicator_id': indicator_id, 'year_ec': year_ec, 'value': value, 'created': created})
+                    results.append({
+                        'indicator_id': indicator_id, 
+                        'year_ec': year_ec, 
+                        'value': value, 
+                        'created': created,
+                        'is_verified': ad.is_verified,
+                        'is_seen': ad.is_seen
+                    })
 
                 elif mode_patch == 'monthly':
                     month_number = item.get('month_number')
@@ -354,10 +368,23 @@ def indicators_bulk_api(request):
                         indicator=indicator,
                         for_datapoint=datapoint,
                         for_month=month,
-                        defaults={'performance': value, 'is_verified': is_verified_status}
+                        defaults={
+                            'performance': value, 
+                            'is_verified': is_verified_status,
+                            'submitted_by': request.user,
+                            'is_seen': False if not is_verified_status else True
+                        }
 
                     )
-                    results.append({'indicator_id': indicator_id, 'year_ec': year_ec, 'month_number': month_number, 'value': value, 'created': created})
+                    results.append({
+                        'indicator_id': indicator_id, 
+                        'year_ec': year_ec, 
+                        'month_number': month_number, 
+                        'value': value, 
+                        'created': created,
+                        'is_verified': md.is_verified,
+                        'is_seen': md.is_seen
+                    })
 
                 elif mode_patch == 'quarterly':
                     quarter_number = item.get('quarter_number')
@@ -372,10 +399,23 @@ def indicators_bulk_api(request):
                         indicator=indicator,
                         for_datapoint=datapoint,
                         for_quarter=quarter,
-                        defaults={'performance': value, 'is_verified': is_verified_status}
+                        defaults={
+                            'performance': value, 
+                            'is_verified': is_verified_status,
+                            'submitted_by': request.user,
+                            'is_seen': False if not is_verified_status else True
+                        }
 
                     )
-                    results.append({'indicator_id': indicator_id, 'year_ec': year_ec, 'quarter_number': quarter_number, 'value': value, 'created': created})
+                    results.append({
+                        'indicator_id': indicator_id, 
+                        'year_ec': year_ec, 
+                        'quarter_number': quarter_number, 
+                        'value': value, 
+                        'created': created,
+                        'is_verified': qd.is_verified,
+                        'is_seen': qd.is_seen
+                    })
                 
                 elif mode_patch == 'weekly':
                     week = item.get('week')
@@ -395,10 +435,23 @@ def indicators_bulk_api(request):
                         indicator=indicator,
                         record_type='weekly',
                         date=record_date,
-                        defaults={'performance': value, 'is_verified': is_verified_status}
+                        defaults={
+                            'performance': value, 
+                            'is_verified': is_verified_status,
+                            'submitted_by': request.user,
+                            'is_seen': False if not is_verified_status else True
+                        }
 
                     )
-                    results.append({'indicator_id': indicator_id, 'date': date_str, 'week': week, 'value': value, 'created': created})
+                    results.append({
+                        'indicator_id': indicator_id, 
+                        'date': date_str, 
+                        'week': week, 
+                        'value': value, 
+                        'created': created,
+                        'is_verified': kr.is_verified,
+                        'is_seen': kr.is_seen
+                    })
                 
                 elif mode_patch == 'daily':
                     date_str = item.get('date')
@@ -417,10 +470,22 @@ def indicators_bulk_api(request):
                         indicator=indicator,
                         record_type='daily',
                         date=record_date,
-                        defaults={'performance': value, 'is_verified': is_verified_status}
+                        defaults={
+                            'performance': value, 
+                            'is_verified': is_verified_status,
+                            'submitted_by': request.user,
+                            'is_seen': False if not is_verified_status else True
+                        }
 
                     )
-                    results.append({'indicator_id': indicator_id, 'date': date_str, 'value': value, 'created': created})
+                    results.append({
+                        'indicator_id': indicator_id, 
+                        'date': date_str, 
+                        'value': value, 
+                        'created': created,
+                        'is_verified': kr.is_verified,
+                        'is_seen': kr.is_seen
+                    })
                 
                 else:
                     errors.append({'item': item, 'error': 'Invalid mode.'})
@@ -463,22 +528,25 @@ def indicators_bulk_api(request):
 
     # Optimize query: only fetch needed fields to reduce memory usage
     indicators = list(
-        Indicator.objects.filter(id__in=id_list, is_verified=True)
+        Indicator.objects.filter(id__in=id_list)
         .only('id', 'title_ENG', 'title_AMH', 'code')
     )
 
     # --- Preload Annual Data ---
     annual_all = AnnualData.objects.filter(
-        indicator_id__in=id_list, for_datapoint__isnull=False, is_verified=True
+        indicator_id__in=id_list, for_datapoint__isnull=False
     ).select_related('for_datapoint')
 
     annual_map = {}
-    for row in annual_all.values('indicator_id', 'for_datapoint__year_EC', 'for_datapoint__year_GC', 'performance'):
-        lst = annual_map.setdefault(row['indicator_id'], [])
+    for row in annual_all.values('id', 'indicator_id', 'for_datapoint__year_EC', 'for_datapoint__year_GC', 'performance', 'is_verified', 'is_seen'):
+        lst = annual_map.setdefault(str(row['indicator_id']), [])
         lst.append({
+            'id': row['id'],
             'year_ec': row['for_datapoint__year_EC'],
             'year_gc': row['for_datapoint__year_GC'],
-            'value': float(row['performance']) if row['performance'] is not None else None
+            'value': float(row['performance']) if row['performance'] is not None else None,
+            'is_verified': row['is_verified'],
+            'is_seen': row['is_seen']
         })
 
     for arr in annual_map.values():
@@ -494,26 +562,29 @@ def indicators_bulk_api(request):
 
     # --- Monthly Mode ---
     if mode == 'monthly':
-        month_rows = MonthData.objects.filter(indicator_id__in=id_list, is_verified=True)\
+        month_rows = MonthData.objects.filter(indicator_id__in=id_list)\
             .select_related('for_month', 'for_datapoint')\
             .values(
-                'indicator_id', 'performance',
+                'id', 'indicator_id', 'performance', 'is_verified', 'is_seen',
                 'for_month__month_ENG', 'for_month__month_AMH', 'for_month__number',
                 'for_datapoint__year_EC', 'for_datapoint__year_GC'
             )
 
-        monthly_map = {ind.id: [] for ind in indicators}
+        monthly_map = {str(ind.id): [] for ind in indicators}
         for r in month_rows:
             ind_id = r.get('indicator_id')
             if not ind_id:
                 continue
-            monthly_map.setdefault(ind_id, []).append({
+            monthly_map.setdefault(str(ind_id), []).append({
+                'id': r.get('id'),
                 'month': r.get('for_month__month_ENG'),
                 'month_amh': r.get('for_month__month_AMH'),
                 'month_number': r.get('for_month__number'),
                 'year_ec': r.get('for_datapoint__year_EC'),
                 'year_gc': r.get('for_datapoint__year_GC'),
                 'value': float(r['performance']) if r.get('performance') is not None else None,
+                'is_verified': r.get('is_verified'),
+                'is_seen': r.get('is_seen'),
             })
 
         # sort latest -> oldest, months newest first
@@ -525,34 +596,44 @@ def indicators_bulk_api(request):
 
     # --- Quarterly Mode ---
     if mode == 'quarterly':
-        qrows = QuarterData.objects.filter(indicator_id__in=id_list, is_verified=True)\
+        qrows = QuarterData.objects.filter(indicator_id__in=id_list)\
             .select_related('for_quarter', 'for_datapoint')\
             .values(
-                'indicator_id',
+                'id', 'indicator_id',
                 'for_quarter__title_ENG', 'for_quarter__number',
                 'for_datapoint__year_EC', 'for_datapoint__year_GC',
-                'performance'
+                'performance', 'is_verified', 'is_seen'
             )
     
-        quarterly_map = {ind.id: [] for ind in indicators}
+        quarterly_map = {str(ind.id): [] for ind in indicators}
         for r in qrows:
-            # Skip incomplete data
-            if not r.get('for_quarter__number') or not r.get('for_datapoint__year_EC'):
+            # Skip incomplete data (strict None check)
+            if r.get('for_quarter__number') is None or r.get('for_datapoint__year_EC') is None:
                 continue
             ind_id = r.get('indicator_id')
             if not ind_id:
                 continue
-            quarterly_map.setdefault(ind_id, []).append({
+            data_item = {
+                'id': r.get('id'),
                 'quarter': r.get('for_quarter__title_ENG') or f'Q{r.get("for_quarter__number")}',
                 'quarter_number': int(r.get('for_quarter__number')),
                 'year_ec': r.get('for_datapoint__year_EC'),
                 'year_gc': r.get('for_datapoint__year_GC'),
                 'value': float(r.get('performance')) if r.get('performance') is not None else None,
-            })
+                'is_verified': r.get('is_verified'),
+                'is_seen': r.get('is_seen'),
+            }
+            quarterly_map.setdefault(str(ind_id), []).append(data_item)
     
         # Sort latest -> oldest by EC year and quarter number
+        def safe_int(v, default=0):
+            try:
+                return int(v) if v is not None else default
+            except (ValueError, TypeError):
+                return default
+
         for arr in quarterly_map.values():
-            arr.sort(key=lambda x: (int(x.get('year_ec') or 0), int(x.get('quarter_number') or 0)), reverse=True)
+            arr.sort(key=lambda x: (safe_int(x.get('year_ec')), safe_int(x.get('quarter_number'))), reverse=True)
     
         ser = IndicatorQuarterlySerializer(indicators, many=True, context={'quarterly_map': quarterly_map})
         return JsonResponse({'mode': 'quarterly', 'results': ser.data, 'datapoints': datapoints})
@@ -565,8 +646,7 @@ def indicators_bulk_api(request):
         for ind in indicators:
             weekly_rows = KPIRecord.objects.filter(
                 indicator=ind, 
-                record_type='weekly', 
-                is_verified=True
+                record_type='weekly'
             ).order_by('-date')[:5]  # 5 per indicator
             
             for r in weekly_rows:
@@ -582,6 +662,7 @@ def indicators_bulk_api(request):
                 month_name = month_names[r.date.month - 1] if r.date.month <= 12 else str(r.date.month)
                 
                 weekly_map[ind.id].append({
+                    'id': r.id,
                     'date': r.date.isoformat(),
                     'week': week_num,
                     'week_label': f"Week{week_num} ({month_name})",
@@ -591,6 +672,8 @@ def indicators_bulk_api(request):
                     'year_gc': str(r.date.year),
                     'value': float(r.performance) if r.performance is not None else None,
                     'target': float(r.target) if r.target is not None else None,
+                    'is_verified': r.is_verified,
+                    'is_seen': r.is_seen,
                 })
 
         # Build results
@@ -613,8 +696,7 @@ def indicators_bulk_api(request):
         for ind in indicators:
             daily_rows = KPIRecord.objects.filter(
                 indicator=ind,
-                record_type='daily',
-                is_verified=True
+                record_type='daily'
             ).order_by('-date')[:10]  # 10 per indicator
             
             for r in daily_rows:
@@ -626,6 +708,7 @@ def indicators_bulk_api(request):
                 greg_date_str = r.date.strftime("%b %d, %Y")
                 
                 daily_map[ind.id].append({
+                    'id': r.id,
                     'date': r.date.isoformat(),
                     'greg_date_formatted': greg_date_str,
                     'ethio_date': r.ethio_date,
@@ -634,6 +717,8 @@ def indicators_bulk_api(request):
                     'year_gc': str(r.date.year),
                     'value': float(r.performance) if r.performance is not None else None,
                     'target': float(r.target) if r.target is not None else None,
+                    'is_verified': r.is_verified,
+                    'is_seen': r.is_seen,
                 })
 
         # Build results
@@ -676,7 +761,6 @@ def kpi_weekly_bulk_api(request):
         date_val = serializer.validated_data.get('date')
         perf = serializer.validated_data.get('performance', item.get('value'))
         target = serializer.validated_data.get('target')
-        # Enforce verification logic: Only managers can verify directly
         is_manager = request.user.is_category_manager or request.user.is_superuser
         req_verified = serializer.validated_data.get('is_verified', True)
         is_verified = is_manager and req_verified
@@ -878,3 +962,25 @@ def indicators_per_category_api(request):
             ]
         })
     return Response(data)
+
+
+@api_view(['POST'])
+def acknowledge_seen_api(request):
+    """
+    Mark specific data points as 'seen' for the current user.
+    """
+    annual_ids = request.data.get('annual_ids', [])
+    month_ids = request.data.get('month_ids', [])
+    quarter_ids = request.data.get('quarter_ids', [])
+    kpi_ids = request.data.get('kpi_ids', [])
+
+    if annual_ids:
+        AnnualData.objects.filter(id__in=annual_ids).update(is_seen=True)
+    if month_ids:
+        MonthData.objects.filter(id__in=month_ids).update(is_seen=True)
+    if quarter_ids:
+        QuarterData.objects.filter(id__in=quarter_ids).update(is_seen=True)
+    if kpi_ids:
+        KPIRecord.objects.filter(id__in=kpi_ids).update(is_seen=True)
+
+    return Response({'status': 'success'})

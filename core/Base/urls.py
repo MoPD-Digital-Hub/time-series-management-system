@@ -45,7 +45,7 @@ urlpatterns = [
 
     path('api/search-indicator' , search_category_indicator),
 
-
+# my Urls
     path('', views.index, name='dashboard_index'),
     path('Welcome/', views.Welcome, name='Welcome'),
     path('data_view/<str:cat_title>/', views.data_view, name='data_view'),
@@ -57,6 +57,7 @@ urlpatterns = [
     path('api/indicators-bulk/', api_views.indicators_bulk_api, name='indicators_bulk_api'),
     path('api/kpi-records/weekly/', api_views.kpi_weekly_bulk_api, name='kpi_weekly_bulk_api'),
     path('api/kpi-records/daily/', api_views.kpi_daily_bulk_api, name='kpi_daily_bulk_api'),
+    path('api/acknowledge-seen/', api_views.acknowledge_seen_api, name='acknowledge_seen_api'),
     path('api/dashboard-counts/', api_views.dashboard_counts_api, name='dashboard_counts_api'),
     path('topics/', views.topics_list, name='topics_list'),
     path('categories/', views.categories_list, name='categories_list'),

@@ -9,7 +9,7 @@
     {% include 'base/common/header.html' %}
 
     </div><!-- [ Header ] end -->
-      <!-- [ Main Content ] start -->
+    <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
             <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
@@ -26,6 +26,11 @@
                         <i class="fas fa-plus mr-2"></i>Add Data Submission
                     </a>
                     {% endif %}
+                    {% if submissions_page and status_filter == 'pending' %}
+                    <button class="btn btn-success" onclick="approveAllSubmissions('data')">
+                        <i class="fas fa-check-double mr-2"></i>Approve All
+                    </button>
+                    {% endif %}
                 </div>
             </div>
 
@@ -33,20 +38,20 @@
             <div class="card mb-6">
                 <div class="card-body">
                     <div class="flex flex-wrap gap-2">
-                                <a href="{% url 'submissions_list' %}?type=data" data-status="" 
-                                    class="px-4 py-2 rounded-lg font-medium {% if not status_filter %}bg-primary-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                        <a href="{% url 'submissions_list' %}?type=data" data-status=""
+                            class="px-4 py-2 rounded-lg font-medium {% if not status_filter %}bg-primary-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             All Submissions
                         </a>
-                                <a href="{% url 'submissions_list' %}?type=data&status=pending" data-status="pending" 
-                                    class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'pending' %}bg-yellow-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                        <a href="{% url 'submissions_list' %}?type=data&status=pending" data-status="pending"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'pending' %}bg-yellow-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-clock mr-1"></i>Pending ({{ pending_count|default:0 }})
                         </a>
-                                <a href="{% url 'submissions_list' %}?type=data&status=approved" data-status="approved" 
-                                    class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'approved' %}bg-green-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                        <a href="{% url 'submissions_list' %}?type=data&status=approved" data-status="approved"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'approved' %}bg-green-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-check mr-1"></i>Approved
                         </a>
-                                <a href="{% url 'submissions_list' %}?type=data&status=declined" data-status="declined" 
-                                    class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'declined' %}bg-red-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                        <a href="{% url 'submissions_list' %}?type=data&status=declined" data-status="declined"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'declined' %}bg-red-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-times mr-1"></i>Declined
                         </a>
                     </div>
@@ -77,57 +82,65 @@
                                         <div>
                                             <div class="font-semibold">{{ submission.indicator.title_ENG }}</div>
                                             {% if submission.indicator.title_amh %}
-                                                <div class="text-sm text-gray-500">{{ submission.indicator.title_amh }}</div>
+                                            <div class="text-sm text-gray-500">{{ submission.indicator.title_amh }}
+                                            </div>
                                             {% endif %}
                                         </div>
                                     </td>
                                     <td>
                                         <div>
-                                            <div class="font-medium">{{ submission.submitted_by.get_full_name|default:submission.submitted_by.username }}</div>
+                                            <div class="font-medium">{{
+                                                submission.submitted_by.get_full_name|default:submission.submitted_by.username
+                                                }}</div>
                                             <div class="text-sm text-gray-500">{{ submission.submitted_by.email }}</div>
                                         </div>
                                     </td>
                                     <td>
-                                        <a href="{% url 'data_submission_preview' submission.id %}"
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-primary">
+                                        <a href="{% url 'data_submission_preview' submission.id %}" target="_blank"
+                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye mr-1"></i>View
                                         </a>
-</td>
+                                    </td>
 
                                     <td>
-                                        <span class="badge {% if submission.status == 'pending' %}bg-warning{% elif submission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
-                                            <i class="fas {% if submission.status == 'pending' %}fa-clock{% elif submission.status == 'approved' %}fa-check{% else %}fa-times{% endif %} mr-1"></i>
+                                        <span
+                                            class="badge {% if submission.status == 'pending' %}bg-warning{% elif submission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                            <i
+                                                class="fas {% if submission.status == 'pending' %}fa-clock{% elif submission.status == 'approved' %}fa-check{% else %}fa-times{% endif %} mr-1"></i>
                                             {{ submission.status|title }}
                                         </span>
                                     </td>
                                     <td>{{ submission.submitted_at|date:"M d, Y H:i" }}</td>
                                     <td>
                                         {% if submission.verified_by %}
-                                            <div>
-                                                <div class="font-medium">{{ submission.verified_by.get_full_name|default:submission.verified_by.username }}</div>
-                                                <div class="text-sm text-gray-500">{{ submission.verified_by.email }}</div>
-                                            </div>
+                                        <div>
+                                            <div class="font-medium">{{
+                                                submission.verified_by.get_full_name|default:submission.verified_by.username
+                                                }}</div>
+                                            <div class="text-sm text-gray-500">{{ submission.verified_by.email }}</div>
+                                        </div>
                                         {% else %}
-                                            <span class="text-gray-400">-</span>
+                                        <span class="text-gray-400">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if submission.verified_at %}
-                                            {{ submission.verified_at|date:"M d, Y H:i" }}
+                                        {{ submission.verified_at|date:"M d, Y H:i" }}
                                         {% else %}
-                                            <span class="text-gray-400">-</span>
+                                        <span class="text-gray-400">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="flex gap-2">
                                             {% if submission.status == 'pending' %}
-                                                <button class="btn btn-sm btn-success" onclick="approveSubmission({{ submission.id }})">
-                                                    <i class="fas fa-check mr-1"></i>Approve
-                                                </button>
-                                                <button class="btn btn-sm btn-danger" onclick="declineSubmission({{ submission.id }})">
-                                                    <i class="fas fa-times mr-1"></i>Decline
-                                                </button>
+                                            <button class="btn btn-sm btn-success"
+                                                onclick="approveSubmission({{ submission.id }})">
+                                                <i class="fas fa-check mr-1"></i>Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-danger"
+                                                onclick="declineSubmission({{ submission.id }})">
+                                                <i class="fas fa-times mr-1"></i>Decline
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -136,9 +149,9 @@
                                 <tr>
                                     <td colspan="8" class="text-center text-gray-500 py-8">
                                         {% if status_filter %}
-                                            No {{ status_filter }} submissions found.
+                                        No {{ status_filter }} submissions found.
                                         {% else %}
-                                            No data submissions found.
+                                        No data submissions found.
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -151,25 +164,26 @@
                     {% if submissions_page.has_other_pages %}
                     <div class="flex items-center justify-between mt-4">
                         <div class="text-sm text-gray-700 dark:text-gray-300">
-                            Showing {{ submissions_page.start_index }} to {{ submissions_page.end_index }} of {{ submissions_page.paginator.count }} results
+                            Showing {{ submissions_page.start_index }} to {{ submissions_page.end_index }} of {{
+                            submissions_page.paginator.count }} results
                         </div>
                         <nav class="flex gap-2">
                             {% if submissions_page.has_previous %}
-                                <a href="?page=1&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">First</a>
-                                <a href="?page={{ submissions_page.previous_page_number }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Previous</a>
+                            <a href="?page=1&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">First</a>
+                            <a href="?page={{ submissions_page.previous_page_number }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Previous</a>
                             {% endif %}
-                            
+
                             <span class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded">
                                 Page {{ submissions_page.number }} of {{ submissions_page.paginator.num_pages }}
                             </span>
-                            
+
                             {% if submissions_page.has_next %}
-                                <a href="?page={{ submissions_page.next_page_number }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Next</a>
-                                <a href="?page={{ submissions_page.paginator.num_pages }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Last</a>
+                            <a href="?page={{ submissions_page.next_page_number }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Next</a>
+                            <a href="?page={{ submissions_page.paginator.num_pages }}&type=data{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Last</a>
                             {% endif %}
                         </nav>
                     </div>
@@ -184,7 +198,7 @@
     {% include 'usermanagement/common/footer.html' %}
     {% include 'usermanagement/common/js.html' %}
 
-<script src="{% static 'assets/js/data_submissions.js' %}"></script>
+    <script src="{% static 'assets/js/data_submissions.js' %}"></script>
 </body>
 
 </html>

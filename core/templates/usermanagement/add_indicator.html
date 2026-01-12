@@ -13,7 +13,8 @@
             <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
                 <div class="flex-1 min-w-0">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Add Indicator</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1">Create a new indicator and submit it for approval.</p>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Create a new indicator and submit it for approval.
+                    </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <a href="{% url 'user_management_dashboard' %}" class="btn btn-outline-secondary">
@@ -55,7 +56,7 @@
                             <select name="frequency" id="frequency" class="form-control">
                                 <option value="">-- Select Frequency --</option>
                                 {% for val, display in frequency_choices %}
-                                    <option value="{{ val }}">{{ display }}</option>
+                                <option value="{{ val }}">{{ display }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -66,24 +67,66 @@
                         </div>
 
                         <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Data Type</label>
+                            <input type="text" name="data_type" id="data_type" class="form-control"
+                                placeholder="e.g. Percentage, Number, etc." />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Responsible Entity</label>
+                            <input type="text" name="responsible_entity" id="responsible_entity" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Tags (Comma separated)</label>
+                            <input type="text" name="tags" id="tags" class="form-control"
+                                placeholder="tag1, tag2, tag3" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">SDG Link (URL)</label>
+                            <input type="url" name="sdg_link" id="sdg_link" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">KPI Characteristics</label>
+                            <textarea name="kpi_characteristics" id="kpi_characteristics" class="form-control" rows="3"
+                                placeholder="Explain the key performance indicator characteristics"></textarea>
+                        </div>
+
+
+                        <div class="mb-4">
                             <label class="form-label">Methodology</label>
                             <textarea name="methodology" id="methodology" class="form-control" rows="3"></textarea>
                         </div>
 
                         <div class="mb-4">
-                            {% if assigned_category %}
-                                <label class="form-label">Category</label>
-                                <div class="form-control bg-gray-100">{{ assigned_category.name_ENG }} {% if assigned_category.name_AMH %} / {{ assigned_category.name_AMH }}{% endif %}</div>
-                                <input type="hidden" id="assigned_category_id" value="{{ assigned_category.id }}" />
+                            {% if assigned_categories %}
+                            <label class="form-label">Category</label>
+                            {% if assigned_categories|length > 1 %}
+                            <select id="assigned_category_id" class="form-select" required>
+                                <option value="">-- Select Category --</option>
+                                {% for cat in assigned_categories %}
+                                <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
                             {% else %}
-                                <label class="form-label">Category</label>
-                                <div class="text-sm text-red-600">You do not have an assigned category. Please request to be assigned by your category manager before submitting indicators.</div>
-                                <input type="hidden" id="assigned_category_id" value="" />
+                            {% with assigned_category=assigned_categories.0 %}
+                            <div class="form-control bg-gray-100">{{ assigned_category.name_ENG }} {% if assigned_category.name_AMH %} / {{ assigned_category.name_AMH }}{% endif %}</div>
+                            <input type="hidden" id="assigned_category_id" value="{{ assigned_category.id }}" />
+                            {% endwith %}
+                            {% endif %}
+                            {% else %}
+                            <label class="form-label">Category</label>
+                            <div class="text-sm text-red-600">You do not have an assigned category. Please request to be
+                                assigned by your category manager before submitting indicators.</div>
+                            <input type="hidden" id="assigned_category_id" value="" />
                             {% endif %}
                         </div>
 
                         <div class="flex gap-2">
-                            <button type="submit" id="submit-indicator-btn" class="btn btn-primary">Submit Indicator</button>
+                            <button type="submit" id="submit-indicator-btn" class="btn btn-primary">Submit
+                                Indicator</button>
                             <a href="{% url 'user_management_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
@@ -127,6 +170,13 @@
             const source = document.getElementById('source') ? document.getElementById('source').value.trim() : '';
             const methodology = document.getElementById('methodology') ? document.getElementById('methodology').value.trim() : '';
 
+            // New fields
+            const data_type = document.getElementById('data_type') ? document.getElementById('data_type').value.trim() : '';
+            const responsible_entity = document.getElementById('responsible_entity') ? document.getElementById('responsible_entity').value.trim() : '';
+            const tags = document.getElementById('tags') ? document.getElementById('tags').value.trim() : '';
+            const sdg_link = document.getElementById('sdg_link') ? document.getElementById('sdg_link').value.trim() : '';
+            const kpi_characteristics = document.getElementById('kpi_characteristics') ? document.getElementById('kpi_characteristics').value.trim() : '';
+
             const assignedCategoryId = document.getElementById('assigned_category_id') ? document.getElementById('assigned_category_id').value : '';
 
             const alertEl = document.getElementById('add-indicator-alert');
@@ -151,6 +201,11 @@
                 frequency,
                 source,
                 methodology,
+                data_type,
+                responsible_entity,
+                tags,
+                sdg_link,
+                kpi_characteristics,
                 category_ids: [assignedCategoryId]
             };
 
@@ -179,7 +234,7 @@
             });
         });
     </script>
-    
-    </body>
-    
-    </html>
+
+</body>
+
+</html>

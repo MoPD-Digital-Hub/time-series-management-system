@@ -8,23 +8,23 @@
     {% include 'usermanagement/common/header.html' %}
 
     </div><!-- [ Header ] end -->
-       <!-- [ Main Content ] start -->
+    <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
-            
+
 
             <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
                 <div class="flex-1 min-w-0">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Users Management</h2>
                     <p class="text-gray-600 dark:text-gray-400 mt-1">Manage system users and their roles</p>
                 </div>
-                    <div class="flex items-center gap-2">
-                        {% if request.user.is_category_manager %}
-                        <button id="open-add-user" class="btn btn-primary">
-                            <i class="fas fa-user-plus mr-2"></i>Add User
-                        </button>
-                        {% endif %}
-                    </div>
+                <div class="flex items-center gap-2">
+                    {% if request.user.is_category_manager %}
+                    <button id="open-add-user" class="btn btn-primary">
+                        <i class="fas fa-user-plus mr-2"></i>Add User
+                    </button>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Search-->
@@ -32,24 +32,37 @@
                 <div class="card-body">
                     <form method="GET" class="flex flex-col sm:flex-row gap-4">
                         <div class="flex-1">
-                            <input type="text" name="search" value="{{ search_query }}" 
-                                   class="form-control" placeholder="Search users by email, name, or username...">
+                            <input type="text" name="search" value="{{ search_query }}" class="form-control"
+                                placeholder="Search users by email, name, or username...">
                         </div>
                         <div class="sm:w-48">
                             <select name="role" class="form-select">
                                 <option value="">All Roles</option>
-                                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Administrators</option>
-                                <option value="category_manager" {% if role_filter == 'category_manager' %}selected{% endif %}>Category Managers</option>
-                                <option value="importer" {% if role_filter == 'importer' %}selected{% endif %}>Data Importers</option>
+                        
+                                <option value="admin"
+                                    {% if role_filter == 'admin' %}selected{% endif %}>
+                                    Administrators
+                                </option>
+                        
+                                <option value="category_manager"
+                                    {% if role_filter == 'category_manager' %}selected{% endif %}>
+                                    Category Managers
+                                </option>
+                        
+                                <option value="importer"
+                                    {% if role_filter == 'importer' %}selected{% endif %}>
+                                    Data Importers
+                                </option>
                             </select>
                         </div>
+
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-search mr-2"></i>Search
                         </button>
                         {% if search_query or role_filter %}
-                            <a href="{% url 'users_list' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times mr-2"></i>Clear
-                            </a>
+                        <a href="{% url 'users_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times mr-2"></i>Clear
+                        </a>
                         {% endif %}
                     </form>
                 </div>
@@ -69,7 +82,7 @@
                                     <th>Status</th>
                                     <th>Last Login</th>
                                     <th>Date Joined</th>
-                                    <th>Linked</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -78,15 +91,17 @@
                                     <td>
                                         <div class="flex items-center">
                                             {% if user.photo %}
-                                                <img src="{{ user.photo.url }}" alt="{{ user.get_full_name }}" 
-                                                     class="w-8 h-8 rounded-full mr-3">
+                                            <img src="{{ user.photo.url }}" alt="{{ user.get_full_name }}"
+                                                class="w-8 h-8 rounded-full mr-3">
                                             {% else %}
-                                                <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                                                    <i class="fas fa-user text-gray-600"></i>
-                                                </div>
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                                <i class="fas fa-user text-gray-600"></i>
+                                            </div>
                                             {% endif %}
                                             <div>
-                                                <div class="font-semibold">{{ user.get_full_name|default:user.username }}</div>
+                                                <div class="font-semibold">{{ user.get_full_name|default:user.username}}
+                                                </div>
                                                 <div class="text-sm text-gray-500">@{{ user.username }}</div>
                                             </div>
                                         </div>
@@ -95,53 +110,61 @@
                                     <td>
                                         <div class="flex flex-wrap gap-1">
                                             {% if user.is_staff %}
-                                                <span class="badge bg-danger">Admin</span>
+                                            <span class="badge bg-danger">Admin</span>
                                             {% endif %}
                                             {% if user.is_category_manager %}
-                                                <span class="badge bg-warning">Category Manager</span>
+                                            <span class="badge bg-warning">Category Manager</span>
                                             {% endif %}
                                             {% if user.is_importer %}
-                                                <span class="badge bg-info">Importer</span>
+                                            <span class="badge bg-info">Importer</span>
                                             {% endif %}
                                             {% if not user.is_staff and not user.is_category_manager and not user.is_importer %}
-                                                <span class="badge bg-secondary">User</span>
+                                            <span class="badge bg-secondary">User</span>
                                             {% endif %}
                                         </div>
                                     </td>
                                     <td>
-                                        {# Show categories the user manages, or the manager's category for importers #}
                                         {% if user.managed_categories.exists %}
+                                        <div class="flex flex-wrap gap-1">
                                             {% for assign in user.managed_categories.all %}
-                                                {{ assign.category.name_ENG }}{% if not forloop.last %}, {% endif %}
+                                            <span class="badge bg-light text-dark border">{{ assign.category.name_ENG }}</span>
                                             {% endfor %}
+                                        </div>
                                         {% elif user.manager and user.manager.managed_categories.exists %}
-                                            {% with mc=user.manager.managed_categories.first %}
-                                                {{ mc.category.name_ENG }}
-                                            {% endwith %}
+                                        <div class="text-sm text-gray-500 italic">
+                                            Inherited:
+                                            {% for assign in user.manager.managed_categories.all %}
+                                            {{ assign.category.name_ENG }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </div>
                                         {% else %}
-                                            <span class="text-gray-400">-</span>
+                                        <span class="text-gray-400">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        <span
+                                            class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                             {% if user.is_active %}Active{% else %}Inactive{% endif %}
                                         </span>
                                     </td>
                                     <td>
                                         {% if user.last_login %}
-                                            {{ user.last_login|date:"M d, Y H:i" }}
+                                        {{ user.last_login|date:"M d, Y H:i" }}
                                         {% else %}
-                                            <span class="text-gray-400">Never</span>
+                                        <span class="text-gray-400">Never</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ user.date_joined|date:"M d, Y" }}</td>
                                     <td>
                                         <div class="flex gap-2">
-                                            {% if user.managed_categories.exists %}
-                                                <span class="btn btn-sm btn-outline-info" title="Manages: {{ user.managed_categories.first.category.name_ENG }}">
-                                                    <i class="fas fa-link"></i>
-                                                </span>
-                                            {% endif %}
+                                            <button class="btn btn-sm btn-outline-primary edit-user-btn"
+                                                data-id="{{ user.id }}" data-email="{{ user.email }}"
+                                                data-first="{{ user.first_name }}" data-last="{{ user.last_name }}"
+                                                data-active="{{ user.is_active|yesno:'true,false' }}"
+                                                data-categories='[{% for assign in user.managed_categories.all %}"{{ assign.category.id }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                                                title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -149,9 +172,9 @@
                                 <tr>
                                     <td colspan="7" class="text-center text-gray-500 py-8">
                                         {% if search_query or role_filter %}
-                                            No users found matching your criteria.
+                                        No users found matching your criteria.
                                         {% else %}
-                                            No users found.
+                                        No users found.
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -160,74 +183,30 @@
                         </table>
                     </div>
 
-                    <!-- Modal -->
-                    <div id="add-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div class="bg-white rounded-lg w-96 p-4">
-                            <h3 class="font-semibold mb-2">Create Importer</h3>
-                            <div id="add-user-alert"></div>
-                            <div class="mb-2">
-                                <label class="form-label">Email</label>
-                                <input id="new-user-email" class="form-control" type="email" />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Password (optional)</label>
-                                <input id="new-user-password" class="form-control" type="password" />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Photo (optional)</label>
-                                <input id="new-user-photo" class="form-control" type="file" accept="image/*" />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Assign to Category</label>
-                                {% if manager_categories %}
-                                <select id="new-user-category" class="form-select">
-                                    <option value="">(Choose a category)</option>
-                                    {% for cat in manager_categories %}
-                                        <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% else %}
-                                    <div class="text-sm text-gray-500">You have no categories assigned.</div>
-                                {% endif %}
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">First name</label>
-                                <input id="new-user-first" class="form-control" type="text" />
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Last name</label>
-                                <input id="new-user-last" class="form-control" type="text" />
-                            </div>
-                            <div class="flex gap-2 justify-end mt-3">
-                                <button id="cancel-add-user" class="btn btn-outline-secondary">Cancel</button>
-                                <button id="submit-add-user" class="btn btn-primary">Create Importer</button>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Pagination -->
                     {% if users_page.has_other_pages %}
                     <div class="flex items-center justify-between mt-4">
                         <div class="text-sm text-gray-700 dark:text-gray-300">
-                            Showing {{ users_page.start_index }} to {{ users_page.end_index }} of {{ users_page.paginator.count }} results
+                            Showing {{ users_page.start_index }} to {{ users_page.end_index }} of {{users_page.paginator.count }} results
                         </div>
                         <nav class="flex gap-2">
                             {% if users_page.has_previous %}
-                                <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">First</a>
-                                <a href="?page={{ users_page.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Previous</a>
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">First</a>
+                            <a href="?page={{ users_page.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Previous</a>
                             {% endif %}
-                            
+
                             <span class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded">
                                 Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}
                             </span>
-                            
+
                             {% if users_page.has_next %}
-                                <a href="?page={{ users_page.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Next</a>
-                                <a href="?page={{ users_page.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
-                                   class="btn btn-sm btn-outline-primary">Last</a>
+                            <a href="?page={{ users_page.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Next</a>
+                            <a href="?page={{ users_page.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Last</a>
                             {% endif %}
                         </nav>
                     </div>
@@ -242,8 +221,105 @@
     {% include 'usermanagement/common/footer.html' %}
     {% include 'usermanagement/common/js.html' %}
 
+    <!-- Modal: Centered "ID Card" Style -->
+    <div id="add-user-modal"
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[2147483647] p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-gray-100 flex flex-col max-h-[85vh] transition-all"
+            style="width: 320px; max-width: calc(100% - 2rem);">
+            <!-- Header -->
+            <div class="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/10">
+                <h2 id="modal-title" class="text-[13px] font-bold text-slate-800 tracking-tight">User Profile</h2>
+                <button onclick="document.getElementById('add-user-modal').classList.add('hidden')"
+                    class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50">
+                    <i class="fas fa-times text-base"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div id="add-user-alert"></div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email</label>
+                        <input id="new-user-email"
+                            class="form-control form-control-sm rounded-lg border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                            type="email" placeholder="email@example.com" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">First
+                                Name</label>
+                            <input id="new-user-first" class="form-control form-control-sm rounded-lg border-slate-200"
+                                type="text" />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last
+                                Name</label>
+                            <input id="new-user-last" class="form-control form-control-sm rounded-lg border-slate-200"
+                                type="text" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Password</label>
+                        <input id="new-user-password" class="form-control form-control-sm rounded-lg border-slate-200"
+                            type="password" placeholder="••••••••" />
+                        <p class="text-[9px] text-slate-400 mt-0.5">Empty to keep current</p>
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Category
+                            Access</label>
+                        {% if manager_categories %}
+                        <select id="new-user-category"
+                            class="form-select form-select-sm rounded-lg border-slate-200 h-auto" multiple size="3">
+                            {% for cat in manager_categories %}
+                            <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-[9px] text-slate-400 mt-1 italic">Ctrl + click for multi</p>
+                        {% else %}
+                        <div class="bg-slate-50 p-2 rounded text-[10px] text-slate-400 italic text-center">No categories
+                            available</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center gap-2 p-3 bg-blue-50/20 rounded-xl border border-blue-100/30">
+                        <input type="checkbox" id="user-is-active"
+                            class="form-check-input w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500" checked />
+                        <label for="user-is-active" class="text-[12px] font-bold text-slate-700">Account Active</label>
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Photo</label>
+                        <input id="new-user-photo"
+                            class="form-control form-control-sm text-[10px] border-none bg-slate-50 py-1" type="file"
+                            accept="image/*" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-4 border-t border-gray-50 flex justify-end gap-2 bg-slate-50/5">
+                <button id="cancel-add-user"
+                    class="btn btn-outline-secondary px-4 text-[11px] font-semibold h-8 rounded-lg">Cancel</button>
+                <input type="hidden" id="edit-user-id" value="" />
+                <button id="submit-add-user"
+                    class="btn btn-primary px-6 text-[11px] font-bold h-8 rounded-lg shadow-lg shadow-blue-500/10">Save
+                    Profile</button>
+            </div>
+        </div>
+    </div>
     <script>
-        
+
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -259,27 +335,83 @@
             return cookieValue;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const openBtn = document.getElementById('open-add-user');
             const modal = document.getElementById('add-user-modal');
             const cancelBtn = document.getElementById('cancel-add-user');
             const submitBtn = document.getElementById('submit-add-user');
+            const editUserButtons = document.querySelectorAll('.edit-user-btn');
+
+            const modalTitle = document.getElementById('modal-title');
+            const editUserId = document.getElementById('edit-user-id');
+            const emailInput = document.getElementById('new-user-email');
+            const passwordInput = document.getElementById('new-user-password');
+            const firstInput = document.getElementById('new-user-first');
+            const lastInput = document.getElementById('new-user-last');
+            const categorySelect = document.getElementById('new-user-category');
+            const activeCheckbox = document.getElementById('user-is-active');
 
             if (openBtn && modal) {
-                openBtn.addEventListener('click', () => { modal.classList.remove('hidden'); });
+                openBtn.addEventListener('click', () => {
+                    // Reset for Create
+                    modalTitle.textContent = 'Create Importer';
+                    editUserId.value = '';
+                    emailInput.value = '';
+                    passwordInput.value = '';
+                    firstInput.value = '';
+                    lastInput.value = '';
+                    activeCheckbox.checked = true;
+                    if (categorySelect) {
+                        Array.from(categorySelect.options).forEach(opt => opt.selected = false);
+                    }
+                    modal.classList.remove('hidden');
+                });
             }
+
+            if (editUserButtons.length > 0) {
+                editUserButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        const email = btn.dataset.email;
+                        const first = btn.dataset.first;
+                        const last = btn.dataset.last;
+                        const isActive = btn.dataset.active === 'true';
+                        const assignedCats = JSON.parse(btn.dataset.categories || '[]');
+
+                        modalTitle.textContent = 'Edit User';
+                        editUserId.value = id;
+                        emailInput.value = email;
+                        passwordInput.value = ''; // Don't show password
+                        firstInput.value = first;
+                        lastInput.value = last;
+                        activeCheckbox.checked = isActive;
+
+                        if (categorySelect) {
+                            Array.from(categorySelect.options).forEach(opt => {
+                                opt.selected = assignedCats.includes(String(opt.value));
+                            });
+                        }
+
+                        modal.classList.remove('hidden');
+                    });
+                });
+            }
+
             if (cancelBtn && modal) {
                 cancelBtn.addEventListener('click', () => { modal.classList.add('hidden'); });
             }
 
             if (submitBtn) {
                 submitBtn.addEventListener('click', async () => {
-                    const email = document.getElementById('new-user-email').value.trim();
-                    const first = document.getElementById('new-user-first').value.trim();
-                    const last = document.getElementById('new-user-last').value.trim();
-                    const password = document.getElementById('new-user-password').value;
+                    const userId = editUserId.value;
+                    const email = emailInput.value.trim();
+                    const first = firstInput.value.trim();
+                    const last = lastInput.value.trim();
+                    const password = passwordInput.value;
+                    const isActive = activeCheckbox.checked;
                     const photoInput = document.getElementById('new-user-photo');
                     const alertEl = document.getElementById('add-user-alert');
+
                     alertEl.innerHTML = '';
                     if (!email) { alertEl.innerHTML = '<div class="text-red-600">Email required</div>'; return; }
 
@@ -288,34 +420,48 @@
                         formData.append('email', email);
                         formData.append('first_name', first);
                         formData.append('last_name', last);
-                        const assignedCategoryEl = document.getElementById('new-user-category');
-                        if (assignedCategoryEl && assignedCategoryEl.value) {
-                            formData.append('assigned_category', assignedCategoryEl.value);
+                        formData.append('is_active', isActive);
+
+                        if (categorySelect) {
+                            const selectedValues = Array.from(categorySelect.selectedOptions).map(opt => opt.value);
+                            selectedValues.forEach(val => {
+                                formData.append('assigned_categories[]', val);
+                            });
                         }
+
                         if (password) formData.append('password', password);
                         if (photoInput && photoInput.files && photoInput.files.length > 0) {
                             formData.append('photo', photoInput.files[0]);
                         }
 
-                        const resp = await fetch('{% url "create_importer_api" %}', {
-                            method: 'POST',
+                        let url = '{% url "create_importer_api" %}';
+                        if (userId) {
+                            // Update URL: we need to replace the ID manually since it's client side
+                            url = `/user-management/api/users/${userId}/update/`;
+                        }
+
+                        const resp = await fetch(url, {
+                            method: 'POST', // We use POST for both (create/update) as supported by DRF @api_view
                             credentials: 'same-origin',
                             headers: {
                                 'X-CSRFToken': getCookie('csrftoken')
                             },
                             body: formData
                         });
+
                         const data = await resp.json();
                         if (!resp.ok) {
-                            alertEl.innerHTML = '<div class="text-red-600">' + (data.error || 'Failed') + '</div>';
+                            alertEl.innerHTML = '<div class="text-red-600 p-2 border border-red-200 bg-red-50 rounded">' + (data.error || 'Failed') + '</div>';
                             return;
                         }
-                        let msg = 'Importer created: ' + data.email;
-                        if (data.password) msg += ' (password: ' + data.password + ')';
-                        alertEl.innerHTML = '<div class="text-green-600">' + msg + '</div>';
+
+                        let msg = userId ? 'User updated successfully' : 'Importer created: ' + data.email;
+                        if (!userId && data.password) msg += ' (password: ' + data.password + ')';
+
+                        alertEl.innerHTML = '<div class="text-green-600 p-2 border border-green-200 bg-green-50 rounded">' + msg + '</div>';
                         setTimeout(() => { window.location.reload(); }, 900);
                     } catch (err) {
-                        alertEl.innerHTML = '<div class="text-red-600">' + (err.message || 'Request failed') + '</div>';
+                        alertEl.innerHTML = '<div class="text-red-600 p-2 border border-red-200 bg-red-50 rounded">' + (err.message || 'Request failed') + '</div>';
                     }
                 });
             }

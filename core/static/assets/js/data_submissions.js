@@ -162,8 +162,15 @@ async function fetchDataSubmissionsIfAvailable() {
     items.forEach((item) => {
       const id = item.id || "";
       const indicator = item.indicator_details || {};
-      const title_eng = indicator.title_eng || "Untitled";
-      const title_amh = indicator.title_amh || "";
+      let title_eng = indicator.title_eng || "Untitled";
+      let title_amh = indicator.title_amh || "";
+
+      // If this is a bulk submission (no single indicator), show filename
+      if (item.indicator === null && item.data_file) {
+        const filename = item.data_file.split('/').pop();
+        title_eng = `Bulk: ${filename}`;
+        title_amh = "በርካታ ጠቋሚዎች";
+      }
       const submitted_by = item.submitted_by_details || {};
       const submitted_by_name =
         submitted_by.full_name || submitted_by.username || "-";

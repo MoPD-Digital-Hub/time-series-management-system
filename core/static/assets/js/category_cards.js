@@ -59,18 +59,8 @@ $("#filter-btn").on("click", function () {
 
     $.get("/api/topic/" + topicId + "/", function (data) {
         var categories = Array.isArray(data?.categories) ? data.categories : [];
-        var html = "";
-
-        html += `<div class="card mb-4"><div class="card-body">
-            <h5 class="chart-title font-bold mb-4">Results</h5>
-
-            <div class="mb-8">
-                <h6 class="font-semibold mb-3 text-gray-700">Charts</h6>
-        `;
-
-        var found = false;
+        
         var allIndicators = [];
-
         categories.forEach(function (cat) {
             if (catId && cat.id != catId) return;
 
@@ -81,134 +71,11 @@ $("#filter-btn").on("click", function () {
                 : [];
 
             if (indicators.length > 0) {
-                found = true;
                 allIndicators.push(...indicators);
-
-                html += `
-                    <div class="subcat-card p-4 rounded bg-white text-gray-800 shadow mb-6">
-                `;
-
-                for (var i = 0; i < indicators.length; i += 4) {
-                    html += '<div class="flex flex-wrap gap-4 mb-4">';
-
-                    for (var j = 0; j < 4; j++) {
-                        var ind = indicators[i + j];
-                        if (!ind) continue;
-
-                        var chartId = "chart-search-" + ind.id;
-
-                        var lastDP = null;
-                        if (Array.isArray(ind.data_points) && ind.data_points.length > 0) {
-                            lastDP = ind.data_points.reduce((a, b) =>
-                                a.year_GC > b.year_GC ? a : b
-                            );
-                        }
-
-                        html += `
-                            <div class="indicator-item flex-shrink-0" style="flex: 0 1 calc(25% - 1rem); min-width: 220px;">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h5 class="mb-0 text-base font-bold leading-tight max-w-[220px] overflow-hidden line-clamp-2">
-                                                <a href="/indicator/${ind.id}/" target="_blank" class="text-primary-600 hover:underline">
-                                                    ${ind.title_ENG}
-                                                </a>
-                                            </h5>
-                                        </div>
-                                        ${
-                                            lastDP
-                                                ? `<span class="block text-xs text-gray-500 mb-1">${lastDP.year_GC} — ${lastDP.value}</span>`
-                                                : ""
-                                        }
-                                        <div class="w-full h-40">
-                                            <canvas id="${chartId}"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    html += "</div>";
-                }
-
-                html += "</div>";
             }
         });
 
-        if (!found) {
-            html += `<span class="text-xs text-gray-400">No indicators found.</span>`;
-        }
-
-        html += `</div>`;
-
-        /* ================================
-           DATA TABLE UI — FIXED & CLEANED
-        ================================= */
-
-        html += `
-        <div class="mt-8">
-            <div class="border rounded-xl overflow-hidden shadow-sm">
-                <div class="overflow-auto max-h-[600px]">
-                    <table class="min-w-full border-collapse">
-                        <thead class="bg-gray-100 sticky top-0 shadow-sm z-10">
-                            <tr>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-1/3">
-                                    Indicator
-                                </th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-20">
-                                    Year
-                                </th>
-                                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-40">
-                                    Annual Performance
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-        `;
-
-        if (allIndicators.length > 0) {
-            allIndicators.forEach(function (ind) {
-                if (!Array.isArray(ind.data_points) || !ind.data_points.length) return;
-
-                var sortedData = ind.data_points.slice().sort((a, b) => a.year_GC - b.year_GC);
-
-                sortedData.forEach(function (dp, idx) {
-                    html += `
-                        <tr class="hover:bg-gray-50 transition">
-                            ${
-                                idx === 0
-                                    ? `
-                                    <td class="px-5 py-4 text-sm font-semibold text-gray-900 bg-gray-50 align-top"
-                                        rowspan="${sortedData.length}">
-                                        <a href="/indicator/${ind.id}/" target="_blank"
-                                            class="text-primary-600 hover:underline block leading-snug">
-                                            ${ind.title_ENG}
-                                        </a>
-                                    </td>
-                                    `
-                                    : ""
-                            }
-                            <td class="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">${dp.year_GC}</td>
-                            <td class="px-5 py-3 text-sm font-semibold text-gray-800">${dp.value}</td>
-                        </tr>
-                    `;
-                });
-            });
-        } else {
-            html += `<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-400">No data available.</td></tr>`;
-        }
-
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        `;
-
-        html += `</div></div></div>`;
-
-        $("#search-result-section").html(html).show();
+        renderSearchResultsWithPagination(allIndicators, cardColor, 1);
 
         /* ================================
            RENDER CHARTS
@@ -288,6 +155,406 @@ $("#clear-btn").on("click", function () {
     });
 
 });
+
+/* ================================
+   PAGINATION HELPER FUNCTIONS
+================================ */
+
+function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage) {
+    const itemsPerPage = 9; // 3x3 grid
+    const totalPages = Math.ceil(allIndicators.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageIndicators = allIndicators.slice(startIndex, endIndex);
+
+    var html = `<div class="card mb-4"><div class="card-body">
+        <h5 class="chart-title font-bold mb-4">Results</h5>
+
+        <div class="mb-8">
+            <h6 class="font-semibold mb-3 text-gray-700">Charts (Page ${currentPage} of ${totalPages})</h6>
+    `;
+
+    if (pageIndicators.length > 0) {
+        html += `<div class="grid grid-cols-3 gap-4 mb-4">`;
+
+        pageIndicators.forEach(function (ind) {
+            var chartId = "chart-search-" + ind.id;
+
+            var lastDP = null;
+            if (Array.isArray(ind.data_points) && ind.data_points.length > 0) {
+                lastDP = ind.data_points.reduce((a, b) =>
+                    a.year_GC > b.year_GC ? a : b
+                );
+            }
+
+            html += `
+                <div class="indicator-item">
+                    <div class="card h-full">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-2">
+                                <h5 class="mb-0 text-base font-bold leading-tight line-clamp-2">
+                                    <a href="/indicator/${ind.id}/" target="_blank" class="text-primary-600 hover:underline">
+                                        ${ind.title_ENG}
+                                    </a>
+                                </h5>
+                            </div>
+                            ${
+                                lastDP
+                                    ? `<span class="block text-xs text-gray-500 mb-1">${lastDP.year_GC} — ${lastDP.value}</span>`
+                                    : ""
+                            }
+                            <div class="w-full h-40">
+                                <canvas id="${chartId}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        // Pagination controls
+        if (totalPages > 1) {
+            html += `
+                <div class="flex items-center justify-center gap-2 mt-4">
+                    <button onclick="searchPaginationPrev()" ${currentPage === 1 ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <span class="px-4 py-2 text-gray-700">Page ${currentPage} of ${totalPages}</span>
+                    <button onclick="searchPaginationNext()" ${currentPage === totalPages ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span class="text-xs text-gray-400">No indicators found.</span>`;
+    }
+
+    html += `</div>`;
+
+    /* ================================
+       DATA TABLE UI — FIXED & CLEANED
+    ================================= */
+
+    html += `
+    <div class="mt-8">
+        <div class="border rounded-xl overflow-hidden shadow-sm">
+            <div class="overflow-auto max-h-[600px]">
+                <table class="min-w-full border-collapse">
+                    <thead class="bg-gray-100 sticky top-0 shadow-sm z-10">
+                        <tr>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-1/3">
+                                Indicator
+                            </th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-20">
+                                Year
+                            </th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-40">
+                                Annual Performance
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+    `;
+
+    if (allIndicators.length > 0) {
+        allIndicators.forEach(function (ind) {
+            if (!Array.isArray(ind.data_points) || !ind.data_points.length) return;
+
+            var sortedData = ind.data_points.slice().sort((a, b) => a.year_GC - b.year_GC);
+
+            sortedData.forEach(function (dp, idx) {
+                html += `
+                    <tr class="hover:bg-gray-50 transition">
+                        ${
+                            idx === 0
+                                ? `
+                                <td class="px-5 py-4 text-sm font-semibold text-gray-900 bg-gray-50 align-top"
+                                    rowspan="${sortedData.length}">
+                                    <a href="/indicator/${ind.id}/" target="_blank"
+                                        class="text-primary-600 hover:underline block leading-snug">
+                                        ${ind.title_ENG}
+                                    </a>
+                                </td>
+                                `
+                                : ""
+                        }
+                        <td class="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">${dp.year_GC}</td>
+                        <td class="px-5 py-3 text-sm font-semibold text-gray-800">${dp.value}</td>
+                    </tr>
+                `;
+            });
+        });
+    } else {
+        html += `<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-400">No data available.</td></tr>`;
+    }
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    `;
+
+    html += `</div></div></div>`;
+
+    $("#search-result-section").html(html).show();
+
+    // Store pagination state
+    window.searchPaginationState = {
+        allIndicators: allIndicators,
+        cardColor: cardColor,
+        currentPage: currentPage,
+        totalPages: totalPages
+    };
+
+    // Render charts for current page
+    setTimeout(function() {
+        pageIndicators.forEach(function (ind) {
+            var ctx = document.getElementById("chart-search-" + ind.id);
+            if (!ctx) return;
+
+            var labels = Array.isArray(ind.data_points)
+                ? ind.data_points.map((dp) => dp.year_GC)
+                : [];
+
+            var values = Array.isArray(ind.data_points)
+                ? ind.data_points.map((dp) => dp.value)
+                : [];
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: ind.title_ENG,
+                            data: values,
+                            borderColor: cardColor,
+                            backgroundColor: hexToRgba(cardColor, "0.1"),
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: cardColor,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false },
+                    },
+                    scales: {
+                        x: { title: { display: true, text: "Year (GC)" } },
+                        y: { title: { display: true, text: "Performance" } },
+                    },
+                },
+            });
+        });
+    }, 100);
+}
+
+function searchPaginationNext() {
+    if (window.searchPaginationState) {
+        const { allIndicators, cardColor, currentPage, totalPages } = window.searchPaginationState;
+        if (currentPage < totalPages) {
+            renderSearchResultsWithPagination(allIndicators, cardColor, currentPage + 1);
+            $("html, body").animate({ scrollTop: $("#search-result-section").offset().top - 100 }, 300);
+        }
+    }
+}
+
+function searchPaginationPrev() {
+    if (window.searchPaginationState) {
+        const { allIndicators, cardColor, currentPage } = window.searchPaginationState;
+        if (currentPage > 1) {
+            renderSearchResultsWithPagination(allIndicators, cardColor, currentPage - 1);
+            $("html, body").animate({ scrollTop: $("#search-result-section").offset().top - 100 }, 300);
+        }
+    }
+}
+
+function renderTopicChartsWithPagination(topicId, categories, cardColor, topicTitle, currentPage) {
+    const itemsPerPage = 9; // 3x3 grid
+    
+    // Flatten all indicators with category info
+    let allIndicatorsWithCategory = [];
+    categories.forEach(function(cat) {
+        var indicators = Array.isArray(cat?.indicators) ? cat.indicators : [];
+        indicators.forEach(function(ind) {
+            allIndicatorsWithCategory.push({
+                ...ind,
+                categoryName: cat.name_ENG
+            });
+        });
+    });
+    
+    const totalPages = Math.ceil(allIndicatorsWithCategory.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageIndicators = allIndicatorsWithCategory.slice(startIndex, endIndex);
+
+    var html = `<div class="card mb-4">
+        <div class="card-body">
+            <h5 class="chart-title font-bold mb-3" style="color:${cardColor};">
+                List of ${topicTitle} (annual)
+            </h5>
+            <h6 class="font-semibold mb-3 text-gray-700">Page ${currentPage} of ${totalPages}</h6>
+    `;
+
+    if (pageIndicators.length > 0) {
+        html += `<div class="grid grid-cols-3 gap-4 mb-4">`;
+
+        pageIndicators.forEach(function (ind) {
+            var chartId = "chart-" + ind.id;
+
+            var lastDP = null;
+            if (ind.data_points?.length > 0) {
+                lastDP = ind.data_points.reduce((a, b) =>
+                    a.year_GC > b.year_GC ? a : b
+                );
+            }
+
+            html += `
+                <div class="indicator-item">
+                    <div class="card h-full">
+                        <div class="card-body">
+                            <div class="mb-1">
+                                <span class="text-xs font-semibold text-gray-500">${ind.categoryName}</span>
+                            </div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h5 class="mb-0 text-base font-bold leading-tight line-clamp-2" style="color:${cardColor}">
+                                    <a href="/indicator/${ind.id}/" target="_blank"
+                                        class="text-primary-600 hover:underline">
+                                        ${ind.title_ENG}
+                                    </a>
+                                </h5>
+                            </div>
+
+                            ${
+                                lastDP
+                                    ? `<span class="block text-xs mb-1" style="color:${cardColor};">
+                                        ${lastDP.year_GC} — ${lastDP.value}
+                                    </span>`
+                                    : ""
+                            }
+
+                            <div class="w-full h-40">
+                                <canvas id="${chartId}"></canvas>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        // Pagination controls
+        if (totalPages > 1) {
+            html += `
+                <div class="flex items-center justify-center gap-2 mt-4">
+                    <button onclick="topicPaginationPrev()" ${currentPage === 1 ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <span class="px-4 py-2 text-gray-700">Page ${currentPage} of ${totalPages}</span>
+                    <button onclick="topicPaginationNext()" ${currentPage === totalPages ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
+            `;
+        }
+    } else {
+        html += `<span class="text-xs text-gray-400">No indicators</span>`;
+    }
+
+    html += `</div></div>`;
+
+    var section = $("#subcat-section-" + topicId);
+    section.html(html).show();
+
+    // Store pagination state
+    window.topicPaginationState = {
+        topicId: topicId,
+        categories: categories,
+        cardColor: cardColor,
+        topicTitle: topicTitle,
+        currentPage: currentPage,
+        totalPages: totalPages
+    };
+
+    // Render charts for current page
+    setTimeout(function() {
+        pageIndicators.forEach(function (ind) {
+            var ctx = document.getElementById("chart-" + ind.id);
+            if (!ctx) return;
+
+            var labels = ind.data_points?.map((dp) => dp.year_GC) || [];
+            var values = ind.data_points?.map((dp) => dp.value) || [];
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: ind.title_ENG,
+                            data: values,
+                            borderColor: cardColor,
+                            backgroundColor: hexToRgba(cardColor, "0.1"),
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: cardColor,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false },
+                    },
+                    scales: {
+                        x: { title: { display: true, text: "Year (GC)" } },
+                        y: { title: { display: true, text: "Performance" } },
+                    },
+                },
+            });
+        });
+    }, 100);
+}
+
+function topicPaginationNext() {
+    if (window.topicPaginationState) {
+        const { topicId, categories, cardColor, topicTitle, currentPage, totalPages } = window.topicPaginationState;
+        if (currentPage < totalPages) {
+            renderTopicChartsWithPagination(topicId, categories, cardColor, topicTitle, currentPage + 1);
+            $("html, body").animate({ scrollTop: $("#subcat-section-" + topicId).offset().top - 100 }, 300);
+        }
+    }
+}
+
+function topicPaginationPrev() {
+    if (window.topicPaginationState) {
+        const { topicId, categories, cardColor, topicTitle, currentPage } = window.topicPaginationState;
+        if (currentPage > 1) {
+            renderTopicChartsWithPagination(topicId, categories, cardColor, topicTitle, currentPage - 1);
+            $("html, body").animate({ scrollTop: $("#subcat-section-" + topicId).offset().top - 100 }, 300);
+        }
+    }
+}
 
 /* ================================
    COLOR PALETTE
@@ -377,141 +644,18 @@ $(function () {
         $(".subcat-section").html('')
 
         $.get("/api/topic/" + topicId + "/", function (data) {
-            var section = $("#subcat-section-" + topicId);
-            var html = "";
-
-            html += `<div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="chart-title font-bold mb-3" style="color:${cardColor};">
-                        List of ${data.title_ENG} (annual)
-                    </h5>
-            `;
-
             var categories = Array.isArray(data?.categories) ? data.categories : [];
 
-            if (!categories.length) {
-                html += `<span class="text-xs text-gray-400">No categories</span>`;
-            } else {
-                categories.forEach(function (cat) {
-                    html += `
-                        <div class="mb-6">
-                            <h6 class="font-semibold mb-2 mt-6" style="color:${cardColor};">
-                                ${cat?.name_ENG || ""}
-                            </h6>
-                    `;
+            // Use pagination function
+            renderTopicChartsWithPagination(topicId, categories, cardColor, data.title_ENG, 1);
 
-                    var indicators = Array.isArray(cat?.indicators)
-                        ? cat.indicators
-                        : [];
-
-                    if (!indicators.length) {
-                        html += `<span class="text-xs text-gray-400">No indicators</span>`;
-                    } else {
-                        html += `<div class="flex flex-wrap gap-4 mb-4">`;
-
-                        indicators.forEach(function (ind) {
-                            var chartId = "chart-" + ind.id;
-
-                            var lastDP = null;
-                            if (ind.data_points?.length > 0) {
-                                lastDP = ind.data_points.reduce((a, b) =>
-                                    a.year_GC > b.year_GC ? a : b
-                                );
-                            }
-
-                            html += `
-                                <div class="indicator-item flex-shrink-0"
-                                    style="flex: 0 1 calc(25% - 1rem); min-width: 220px;">
-                                    
-                                    <div class="card">
-                                        <div class="card-body">
-
-                                            <div class="flex items-center justify-between mb-2">
-                                                <h5 class="mb-0 text-base font-bold leading-tight line-clamp-2" style="color:${cardColor}">
-                                                    <a href="/indicator/${ind.id}/" target="_blank"
-                                                        class="text-primary-600 hover:underline">
-                                                        ${ind.title_ENG}
-                                                    </a>
-                                                </h5>
-                                            </div>
-
-                                            ${
-                                                lastDP
-                                                    ? `<span class="block text-xs mb-1" style="color:${cardColor};">
-                                                        ${lastDP.year_GC} — ${lastDP.value}
-                                                    </span>`
-                                                    : ""
-                                            }
-
-                                            <div class="w-full h-40">
-                                                <canvas id="${chartId}"></canvas>
-                                            </div>
-
-                                        </div>
-                                    </div>
-
-                                </div>
-                            `;
-                        });
-
-                        html += `</div>`;
-                    }
-
-                    html += `</div>`;
-                });
-            }
-
-            html += `</div></div>`;
-
-            section.html(html).show();
-
-            $("html, body").animate(
-                { scrollTop: section.offset().top - 100 },
-                700
-            );
-
-            categories.forEach(function (cat) {
-                var indicators = Array.isArray(cat?.indicators) ? cat.indicators : [];
-
-                indicators.forEach(function (ind) {
-                    var ctx = document.getElementById("chart-" + ind.id);
-                    if (!ctx) return;
-
-                    var labels = ind.data_points?.map((dp) => dp.year_GC) || [];
-                    var values = ind.data_points?.map((dp) => dp.value) || [];
-
-                    new Chart(ctx, {
-                        type: "line",
-                        data: {
-                            labels,
-                            datasets: [
-                                {
-                                    label: ind.title_ENG,
-                                    data: values,
-                                    borderColor: cardColor,
-                                    backgroundColor: hexToRgba(cardColor, "0.1"),
-                                    tension: 0.3,
-                                    fill: true,
-                                    pointRadius: 3,
-                                    pointBackgroundColor: cardColor,
-                                },
-                            ],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                title: { display: false },
-                            },
-                            scales: {
-                                x: { title: { display: true, text: "Year (GC)" } },
-                                y: { title: { display: true, text: "Performance" } },
-                            },
-                        },
-                    });
-                });
-            });
+            // Scroll to section
+            setTimeout(function() {
+                $("html, body").animate(
+                    { scrollTop: $("#subcat-section-" + topicId).offset().top - 100 },
+                    700
+                );
+            }, 100);
         });
 
         $("#subcat-section-" + topicId).show();

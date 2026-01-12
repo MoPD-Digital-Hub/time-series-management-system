@@ -26,6 +26,21 @@
                 </div>
             </div>
 
+            <style>
+                #previewModal {
+                    z-index: 9999 !important;
+                }
+
+                .modal-backdrop {
+                    z-index: 9998 !important;
+                }
+
+                #preview-table td,
+                #preview-table th {
+                    color: inherit !important;
+                }
+            </style>
+
             <div id="alert-container"></div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -48,19 +63,42 @@
                                     <option value="annual">Annual</option>
                                     <option value="quarter">Quarterly</option>
                                     <option value="monthly">Monthly</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="daily">Daily</option>
                                 </select>
-                                <div class="mt-2">
-                                    <a id="download-sample-link" href="{% url 'sample_template_api' %}?type=annual"
-                                        class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-download mr-1"></i> Download Sample Template
-                                    </a>
-                                </div>
                             </div>
+
                             <div class="mb-3">
-                                <label for="data-indicator" class="form-label">Select Indicator *</label>
+                                <label for="data-category" class="form-label">Select Category *</label>
+                                <select class="form-select" id="data-category" required>
+                                    <option value="">Select a category...</option>
+                                    {% for category in assigned_categories %}
+                                    <option value="{{ category.id }}">{{ category.name_ENG }}</option>
+                                    {% endfor %}
+                                </select>
+
+                            </div>
+
+                            <div class="mb-3" id="indicator-select-container">
+                                <label for="data-indicator" class="form-label">Select Indicator(s) *</label>
                                 <select class="form-select" id="data-indicator" name="indicator_id" required>
                                     <option value="">Select an indicator...</option>
                                 </select>
+                                <div class="mt-2" id="single-download-container">
+                                    <a id="download-sample-link-single" href="#"
+                                        class="btn btn-sm btn-outline-secondary disabled"
+                                        title="Please select an indicator first">
+                                        <i class="fas fa-download mr-1"></i> Download Sample Template (Single)
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="mt-2" id="multiple-download-container" style="display: none;">
+                                <a id="download-sample-link-multiple" href="#"
+                                    class="btn btn-sm btn-outline-secondary disabled"
+                                    title="Please select a category first">
+                                    <i class="fas fa-download mr-1"></i> Download Sample Template (Multiple)
+                                </a>
                             </div>
 
                             <div class="mb-3">
@@ -83,25 +121,74 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
-    </div><!-- [ Main Content ] end -->
-
     {% include 'usermanagement/common/footer.html' %}
     {% include 'usermanagement/common/js.html' %}
 
-<script>
-    const UNASSIGNED_CATEGORIES_API_URL = "{% url 'unassigned_categories_api' %}";
-    const INDICATOR_SUBMISSIONS_API_URL = "{% url 'indicators_list_api' %}";
-    const DATA_SUBMISSIONS_API_URL = "{% url 'data_submissions_api' %}";
-    const DASHBOARD_STATS_URL = "{% url 'indicator_submissions_api' %}";
-    const SUBMIT_INDICATOR_URL = "{% url 'submit_indicator_api' %}";
-    const SUBMIT_DATA_URL = "{% url 'submit_data_api' %}";
-    const SUBMIT_BULK_DATA_URL = "{% url 'submit_bulk_data_api' %}";
-    const SAMPLE_TEMPLATE_URL = "{% url 'sample_template_api' %}";
-</script>
+    <!-- Preview Modal: Custom ID Card Style -->
+    <div id="previewModal"
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[2147483647] p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-gray-100 flex flex-col max-h-[90vh] transition-all"
+            style="width: 850px; max-width: calc(100% - 2rem);">
+            <!-- Header -->
+            <div class="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/10">
+                <h2 id="modal-title" class="text-[14px] font-bold text-slate-800 tracking-tight">Data Preview</h2>
+                <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                    class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50">
+                    <i class="fas fa-times text-base"></i>
+                </button>
+            </div>
 
-<script src="{% static 'assets/js/importer_dashboard.js' %}"></script>
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto">
+                <div id="preview-info" class="mb-4 flex items-center gap-3">
+                    <span
+                        class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-bold uppercase tracking-wider border border-blue-100"
+                        id="preview-row-count"></span>
+                    <span id="preview-mode-text" class="text-xs font-semibold text-slate-500"></span>
+                </div>
+
+                <div class="border border-slate-100 rounded-xl overflow-hidden bg-slate-50/30">
+                    <div class="table-responsive" style="max-height: 450px;">
+                        <table class="table table-sm table-hover mb-0" id="preview-table">
+                            <thead class="bg-slate-100/50">
+                                <tr id="preview-thead"
+                                    class="text-slate-600 uppercase text-[10px] font-bold tracking-widest"></tr>
+                            </thead>
+                            <tbody id="preview-tbody" class="text-[12px] text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="preview-warnings" class="mt-4 space-y-2"></div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-4 border-t border-gray-50 flex justify-end gap-3 bg-slate-50/5">
+                <button onclick="document.getElementById('previewModal').classList.add('hidden')"
+                    class="btn btn-outline-secondary px-5 text-[12px] font-semibold h-10 rounded-lg">Cancel</button>
+                <button type="button"
+                    class="btn btn-primary px-8 text-[12px] font-bold h-10 rounded-lg shadow-lg shadow-blue-500/20"
+                    id="confirm-submit-btn">Confirm & Submit Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const UNASSIGNED_CATEGORIES_API_URL = "{% url 'unassigned_categories_api' %}";
+        const INDICATOR_SUBMISSIONS_API_URL = "{% url 'indicators_list_api' %}";
+        const DATA_SUBMISSIONS_API_URL = "{% url 'data_submissions_api' %}";
+        const DASHBOARD_STATS_URL = "{% url 'indicator_submissions_api' %}";
+        const SUBMIT_INDICATOR_URL = "{% url 'submit_indicator_api' %}";
+        const SUBMIT_DATA_URL = "{% url 'submit_data_api' %}";
+        const SUBMIT_BULK_DATA_URL = "{% url 'submit_bulk_data_api' %}";
+        const SAMPLE_TEMPLATE_URL = "{% url 'sample_template_api' %}";
+        const PREVIEW_DATA_URL = "{% url 'preview_data_submission_api' %}";
+    </script>
+
+    <script src="{% static 'assets/js/importer_dashboard.js' %}"></script>
 
 
 </body>
