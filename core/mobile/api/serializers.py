@@ -652,6 +652,10 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
     def get_quarter_data(self, obj):
         year = self.context.get('year')
         quarter = self.context.get('quarter')
+        month = self.context.get('month')
+
+        if year and month:
+            return []
 
 
         qs = obj.quarter_data.filter(
@@ -680,6 +684,10 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
     def get_month_data(self, obj):
         year = self.context.get('year')
         month = self.context.get('month')
+        quarter = self.context.get('quarter')
+
+        if year and quarter:
+            return []
 
         qs = obj.month_data.all()
 
