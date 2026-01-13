@@ -1,4 +1,4 @@
-from mobile.models import MobileDahboardOverview
+from mobile.models import MobileDahboardOverview, HighFrequency
 from rest_framework import serializers
 from django.db.models import OuterRef, Subquery
 from django.db.models import IntegerField
@@ -60,11 +60,6 @@ class MonthDataPreviousSerializer(serializers.ModelSerializer):
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
     
-
-
-
-
-
 
 
 class TopicSerializer(serializers.ModelSerializer):
@@ -181,17 +176,13 @@ class IndicatorSerializer(serializers.ModelSerializer):
     children = serializers.SerializerMethodField()
     
    
-
     class Meta:
         model = Indicator
         fields = '__all__'
     
 
     def get_children(self, obj):
-        # safe, DB-agnostic fallback
-        children_qs = obj.children.filter().order_by("rank") #is_dashboard_visible = True
-        #children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
-        #return IndicatorSerializer(children_list, many=True, context=self.context).data
+        children_qs = obj.children.filter().order_by("rank") 
         return IndicatorSerializer(children_qs, many=True, context=self.context).data
     
     def get_annual_data(self, obj):
@@ -626,3 +617,105 @@ class UpdatedCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
+
+
+class IndicatorShortSerializer(serializers.ModelSerializer):
+    annual_data = serializers.SerializerMethodField()
+    quarter_data = QuarterDataSerializer(many = True , read_only = True)
+    month_data =serializers.SerializerMethodField()
+    
+   
+    class Meta:
+        model = Indicator
+        fields = ('id','title_ENG', 'code', 'annual_data', 'quarter_data', 'month_data', 'children')
+    
+
+    def get_children(self, obj):
+        children_qs = obj.children.filter().order_by("rank") 
+        return IndicatorSerializer(children_qs, many=True, context=self.context).data
+    
+    def get_annual_data(self, obj):
+        year = self.context.get('year')
+
+        qs = obj.annual_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)
+        )
+
+        if year:
+            qs = qs.filter(for_datapoint__year_EC=year)
+
+        qs = qs.order_by('-for_datapoint__year_EC')[:12]
+
+        return AnnualDataSerializer(list(qs)[::-1], many=True).data
+
+    def get_quarter_data(self, obj):
+        year = self.context.get('year')
+        quarter = self.context.get('quarter')
+
+        qs = obj.quarter_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)
+        )
+
+        if year:
+            qs = qs.filter(for_datapoint__year_EC=year)
+
+        if quarter:
+            qs = qs.filter(for_datapoint__quarter__title_ENG=quarter)
+
+        qs = qs.annotate(
+            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_ec_int')[:12]
+
+        return QuarterDataSerializer(list(qs)[::-1], many=True).data
+    
+    def get_month_data(self, obj):
+        year = self.context.get('year')
+        month = self.context.get('month')
+
+        qs = obj.month_data.all()
+
+        if year:
+            qs = qs.filter(for_datapoint__year_EC=year)
+
+        if month:
+            qs = qs.filter(for_datapoint__month__month_ENG=month)
+
+        qs = qs.order_by('-for_datapoint__id')[:12]
+
+        return MonthDataSerializer(list(qs)[::-1], many=True).data
+
+
+
+class HighFrequencySerializer(serializers.ModelSerializer):
+    indicator = serializers.SerializerMethodField()
+
+    year = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='year_EC'
+    )
+    quarter = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='title_ENG'
+    )
+    month = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='month_ENG'
+    )
+    class Meta:
+        model = HighFrequency
+        fields = '__all__'
+
+    
+    def get_indicator(self, obj):
+        return IndicatorShortSerializer(
+            obj.indicator,
+            context={
+                **self.context,
+                'year': obj.year.year_EC if obj.year else None,
+                'quarter': obj.quarter.title_ENG if obj.quarter else None,
+                'month': obj.month.month_ENG if obj.month else None,
+            }
+        ).data
+
+
+    

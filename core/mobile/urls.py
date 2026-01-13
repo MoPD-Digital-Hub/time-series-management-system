@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from mobile.api import api
 
 urlpatterns = [
@@ -28,5 +28,7 @@ urlpatterns = [
 
     ### Updated API 
     path('categories/<str:topic_id>', api.categories, name='category lists'),
-    path('kpis/<str:category_id>', api.kpis, name='kpi lists')
+    path('kpis/<str:category_id>', api.kpis, name='kpi lists'),
+
+    path('', include('mobile.api.urls')),
 ]
