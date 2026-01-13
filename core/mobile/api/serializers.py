@@ -633,7 +633,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         children_qs = obj.children.filter(is_dashboard_visible = True).order_by("rank") 
-        return IndicatorSerializer(children_qs, many=True, context=self.context).data
+        return IndicatorShortSerializer(children_qs, many=True, context=self.context).data
     
     def get_annual_data(self, obj):
         year = self.context.get('year')
