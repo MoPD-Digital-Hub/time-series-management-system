@@ -623,11 +623,12 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
     month_data =serializers.SerializerMethodField()
+    latest_data = serializers.SerializerMethodField()
     
    
     class Meta:
         model = Indicator
-        fields = ('id','title_ENG', 'code', 'annual_data', 'quarter_data', 'month_data', 'children')
+        fields = ('id','title_ENG', 'code', 'measurement_units', 'measurement_units_quarter', 'measurement_units_month','latest_data', 'annual_data', 'quarter_data', 'month_data', 'children')
     
 
     def get_children(self, obj):
@@ -656,6 +657,13 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
             Q(for_datapoint__year_EC__isnull=False)
         )
 
+        if year and quarter:
+            qs = qs.filter(
+                for_datapoint__year_EC=year,
+                for_datapoint__quarter__title_ENG=quarter
+            )
+            return QuarterDataSerializer(qs[:1], many=True).data
+
         if year:
             qs = qs.filter(for_datapoint__year_EC=year)
 
@@ -667,12 +675,19 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
         ).order_by('-year_ec_int')[:12]
 
         return QuarterDataSerializer(list(qs)[::-1], many=True).data
-    
+
     def get_month_data(self, obj):
         year = self.context.get('year')
         month = self.context.get('month')
 
         qs = obj.month_data.all()
+
+        if year and month:
+            qs = qs.filter(
+                for_datapoint__year_EC=year,
+                for_datapoint__month__month_ENG=month
+            )
+            return MonthDataSerializer(qs[:1], many=True).data
 
         if year:
             qs = qs.filter(for_datapoint__year_EC=year)
@@ -681,8 +696,33 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
             qs = qs.filter(for_datapoint__month__month_ENG=month)
 
         qs = qs.order_by('-for_datapoint__id')[:12]
+        month_list = list(qs)[::-1]
 
-        return MonthDataSerializer(list(qs)[::-1], many=True).data
+        return MonthDataSerializer(month_list, many=True).data
+
+    def get_latest_data(self, obj):
+        # Get the latest entry based on for_datapoint__year_EC from each dataset
+        latest_annual = obj.annual_data.order_by('-for_datapoint__year_EC').first() if obj.annual_data.exists() else None
+        latest_quarter = obj.quarter_data.order_by('-for_datapoint__year_EC').first() if obj.quarter_data.exists() else None
+        latest_month = obj.month_data.order_by('-for_datapoint__year_EC').first() if obj.month_data.exists() else None
+
+        # Extract year_EC values safely
+        annual_year = getattr(latest_annual.for_datapoint, 'year_EC', None) if latest_annual else None
+        quarter_year = getattr(latest_quarter.for_datapoint, 'year_EC', None) if latest_quarter else None
+        month_year = getattr(latest_month.for_datapoint, 'year_EC', None) if latest_month else None
+
+        # Default to a very old year for comparison if missing
+        annual_year = annual_year or 0
+        quarter_year = quarter_year or 0
+        month_year = month_year or 0
+
+        # Compare the year_EC values to determine the most recent dataset
+        latest_data = max(
+            [(annual_year, 'annual'), (quarter_year, 'quarterly'), (month_year, 'monthly')],
+            key=lambda x: x[0]
+        )
+
+        return latest_data[1]
 
 
 
