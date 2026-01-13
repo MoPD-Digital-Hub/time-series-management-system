@@ -621,8 +621,8 @@ class UpdatedCategorySerializer(serializers.ModelSerializer):
 
 class IndicatorShortSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
-    quarter_data = QuarterDataSerializer(many = True , read_only = True)
-    month_data =serializers.SerializerMethodField()
+    quarter_data = serializers.SerializerMethodField()
+    month_data = serializers.SerializerMethodField()
     latest_data = serializers.SerializerMethodField()
     
    
@@ -653,6 +653,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
         year = self.context.get('year')
         quarter = self.context.get('quarter')
 
+
         qs = obj.quarter_data.filter(
             Q(for_datapoint__year_EC__isnull=False)
         )
@@ -660,7 +661,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
         if year and quarter:
             qs = qs.filter(
                 for_datapoint__year_EC=year,
-                for_datapoint__quarter__title_ENG=quarter
+                for_quarter__title_ENG=quarter
             )
             return QuarterDataSerializer(qs[:1], many=True).data
 
@@ -668,7 +669,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
             qs = qs.filter(for_datapoint__year_EC=year)
 
         if quarter:
-            qs = qs.filter(for_datapoint__quarter__title_ENG=quarter)
+            qs = qs.filter(for_quarter__title_ENG=quarter)
 
         qs = qs.annotate(
             year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
@@ -685,7 +686,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
         if year and month:
             qs = qs.filter(
                 for_datapoint__year_EC=year,
-                for_datapoint__month__month_ENG=month
+                for_month__month_ENG=month
             )
             return MonthDataSerializer(qs[:1], many=True).data
 
@@ -693,7 +694,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
             qs = qs.filter(for_datapoint__year_EC=year)
 
         if month:
-            qs = qs.filter(for_datapoint__month__month_ENG=month)
+            qs = qs.filter(for_month__month_ENG=month)
 
         qs = qs.order_by('-for_datapoint__id')[:12]
         month_list = list(qs)[::-1]
