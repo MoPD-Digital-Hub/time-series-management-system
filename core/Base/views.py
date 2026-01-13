@@ -1,7 +1,7 @@
 from django.shortcuts import render , HttpResponse, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from rest_framework import status
 from .models import (
     Topic,
@@ -217,7 +217,14 @@ def index(request):
 
 def data_view(request, cat_title):
     category = Category.objects.filter(name_ENG=cat_title).first()
-    indicators = Indicator.objects.filter(for_category=category, is_verified=True) if category else []
+    if category:
+        indicators = Indicator.objects.filter(for_category=category, is_verified=True).annotate(
+            has_annual=Exists(AnnualData.objects.filter(indicator=OuterRef('pk'), is_verified=True)),
+            has_quarterly=Exists(QuarterData.objects.filter(indicator=OuterRef('pk'), is_verified=True)),
+            has_monthly=Exists(MonthData.objects.filter(indicator=OuterRef('pk'), is_verified=True)),
+        )
+    else:
+        indicators = []
     topics = Topic.objects.prefetch_related('categories').all()
     # Build datapoints (unique years) from annual data for the selected indicators
     datapoints = []
