@@ -624,7 +624,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
     quarter_data = serializers.SerializerMethodField()
     month_data = serializers.SerializerMethodField()
     latest_data = serializers.SerializerMethodField()
-    
+    children = serializers.SerializerMethodField()
    
     class Meta:
         model = Indicator
