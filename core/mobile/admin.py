@@ -49,6 +49,8 @@ class HighFrequencyAdmin(admin.ModelAdmin):
 
     ordering = ('row',)
 
+    autocomplete_fields = ['indicator']
+
     fieldsets = (
         ('Indicator Configuration', {
             'fields': ('indicator', 'chart_type')
