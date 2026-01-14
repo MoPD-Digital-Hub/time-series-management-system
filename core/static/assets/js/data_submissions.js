@@ -168,7 +168,7 @@ async function fetchDataSubmissionsIfAvailable() {
       // If this is a bulk submission (no single indicator), show filename
       if (item.indicator === null && item.data_file) {
         const filename = item.data_file.split('/').pop();
-        title_eng = `Bulk: ${filename}`;
+        title_eng = `Mulitple: ${filename}`;
         title_amh = "በርካታ ጠቋሚዎች";
       }
       const submitted_by = item.submitted_by_details || {};

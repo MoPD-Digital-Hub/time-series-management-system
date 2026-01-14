@@ -69,8 +69,8 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="data-category" class="form-label">Select Category *</label>
-                                <select class="form-select" id="data-category" required>
+                                <label for="data-category" class="form-label">Select Category</label>
+                                <select class="form-select" id="data-category">
                                     <option value="">Select a category...</option>
                                     {% for category in assigned_categories %}
                                     <option value="{{ category.id }}">{{ category.name_ENG }}</option>
@@ -80,8 +80,8 @@
                             </div>
 
                             <div class="mb-3" id="indicator-select-container">
-                                <label for="data-indicator" class="form-label">Select Indicator(s) *</label>
-                                <select class="form-select" id="data-indicator" name="indicator_id" required>
+                                <label for="data-indicator" class="form-label">Select Indicator </label>
+                                <select class="form-select" id="data-indicator" name="indicator_id">
                                     <option value="">Select an indicator...</option>
                                 </select>
                                 <div class="mt-2" id="single-download-container">

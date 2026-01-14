@@ -149,7 +149,9 @@ class DataSubmission(models.Model):
     indicator = models.ForeignKey(
         'Base.Indicator', 
         on_delete=models.CASCADE,
-        related_name="data_submissions"
+        related_name="data_submissions",
+        null=True,
+        blank=True
     )
     submitted_by = models.ForeignKey(
         CustomUser,

@@ -36,6 +36,7 @@ class Document(models.Model):
     title_ENG = models.CharField(max_length=300, unique = True)
     title_AMH = models.CharField(max_length=300, null = True)
     topic = models.ForeignKey(Topic, null=True, blank=True, on_delete=models.SET_NULL)
+    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL, related_name='documents')
     file= models.FileField(upload_to='documents/')
 
     def __str__(self):

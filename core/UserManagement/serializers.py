@@ -100,11 +100,13 @@ class IndicatorSubmissionSerializer(serializers.ModelSerializer):
         ]
     
     def get_indicator_details(self, obj):
-        return {
-            'id': obj.indicator.id,
-            'title_eng': obj.indicator.title_ENG,
-            'title_amh': obj.indicator.title_AMH,
-        }
+        if hasattr(obj, 'indicator') and obj.indicator:
+            return {
+                'id': obj.indicator.id,
+                'title_eng': obj.indicator.title_ENG,
+                'title_amh': obj.indicator.title_AMH,
+            }
+        return {'id': None, 'title_eng': 'Bulk Upload', 'title_amh': 'ጥቅል ሰቀላ'}
     
     def get_submitted_by_details(self, obj):
         return {
@@ -140,11 +142,13 @@ class DataSubmissionSerializer(serializers.ModelSerializer):
         ]
     
     def get_indicator_details(self, obj):
-        return {
-            'id': obj.indicator.id,
-            'title_eng': obj.indicator.title_ENG,
-            'title_amh': obj.indicator.title_AMH,
-        }
+        if hasattr(obj, 'indicator') and obj.indicator:
+            return {
+                'id': obj.indicator.id,
+                'title_eng': obj.indicator.title_ENG,
+                'title_amh': obj.indicator.title_AMH,
+            }
+        return {'id': None, 'title_eng': 'Bulk Upload', 'title_amh': 'ጥቅል ሰቀላ'}
     
     def get_submitted_by_details(self, obj):
         return {

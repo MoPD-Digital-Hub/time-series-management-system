@@ -343,13 +343,27 @@ def documents_list(request):
     else:
         form = DocumentForm()
     
+    topic_id = request.GET.get('topic')
+    category_id = request.GET.get('category')
+    
     documents = Document.objects.all().order_by('-id')
+    if topic_id:
+        documents = documents.filter(topic_id=topic_id)
+    if category_id:
+        documents = documents.filter(category_id=category_id)
+        
     topics = Topic.objects.filter(is_initiative=False)
+    categories = Category.objects.all()
+    if topic_id:
+        categories = categories.filter(topic_id=topic_id)
     
     context = {
         'form': form,
         'documents': documents,
         'topics': topics,
+        'categories': categories,
+        'selected_topic': topic_id,
+        'selected_category': category_id,
     }
     return render(request, 'usermanagement/documents_list.html', context)
 
