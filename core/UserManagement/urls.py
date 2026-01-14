@@ -56,4 +56,8 @@ urlpatterns = [
     path('api/approve-pending-data/', api_views.approve_pending_data, name='approve_pending_data'),
     path('api/decline-pending-data/', api_views.decline_pending_data, name='decline_pending_data'),
     path('api/approve-all-table-data/', api_views.approve_all_table_data_api, name='approve_all_table_data'),
+
+    # Document management
+    path('documents/', views.documents_list, name='documents_list'),
+    path('documents/<int:id>/delete/', views.delete_document, name='delete_document'),
 ]

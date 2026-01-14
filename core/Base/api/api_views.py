@@ -528,7 +528,7 @@ def indicators_bulk_api(request):
 
     # Optimize query: only fetch needed fields to reduce memory usage
     indicators = list(
-        Indicator.objects.filter(id__in=id_list)
+        Indicator.objects.filter(id__in=id_list, for_category__topic__is_initiative=False)
         .only('id', 'title_ENG', 'title_AMH', 'code')
     )
 
@@ -898,7 +898,7 @@ def dashboard_counts_api(request):
 
 @api_view(['GET'])
 def indicators_per_topic_api(request):
-    topics = Topic.objects.prefetch_related('categories__indicators').all()
+    topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
     result = []
     for topic in topics:
         count = 0

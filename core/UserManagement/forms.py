@@ -6,6 +6,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.views import PasswordChangeView
 from django.urls import reverse_lazy
 from django.shortcuts import render
+from Base.models import Topic
 
 
 
@@ -53,3 +54,20 @@ class Login_Form(forms.Form):
     }))
     class Meta:
         fields = ['email', 'password']
+
+
+from Base.models import Document
+
+class DocumentForm(forms.ModelForm):
+    class Meta:
+        model = Document
+        fields = ['title_ENG', 'title_AMH', 'topic', 'file']
+        widgets = {
+            'title_ENG': forms.TextInput(attrs={'class': 'form-control'}),
+            'title_AMH': forms.TextInput(attrs={'class': 'form-control'}),
+            'topic': forms.Select(attrs={'class': 'form-control'}),
+            'file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['topic'].queryset = Topic.objects.filter(is_initiative=False)

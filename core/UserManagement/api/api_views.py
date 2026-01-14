@@ -232,10 +232,21 @@ def category_assignments_api(request):
 
 @api_view(['GET'])
 def unassigned_categories_api(request):
-    """Get list of categories not assigned to any manager"""
-    assigned_category_ids = CategoryAssignment.objects.values_list('category_id', flat=True)
-    unassigned_categories = Category.objects.exclude(id__in=assigned_category_ids).prefetch_related('indicators')
+    """Get list of categories not assigned to any manager with optional filtering"""
+    topic_id = request.GET.get('topic_id')
+    search = request.GET.get('search')
     
+    assigned_category_ids = CategoryAssignment.objects.values_list('category_id', flat=True)
+    unassigned_categories = Category.objects.filter(topic__is_initiative=False).exclude(id__in=assigned_category_ids).prefetch_related('indicators')
+    
+    if topic_id:
+        unassigned_categories = unassigned_categories.filter(topic_id=topic_id)
+        
+    if search:
+        unassigned_categories = unassigned_categories.filter(
+            Q(name_ENG__icontains=search) | Q(name_AMH__icontains=search)
+        )
+        
     serializer = UnassignedCategorySerializer(unassigned_categories, many=True)
     return Response(serializer.data)
 
@@ -340,9 +351,9 @@ def update_user_api(request, pk):
     # We only allow syncing categories that the CURRENT manager (request.user) has access to.
     manager_accessible_cats = []
     if request.user.is_superuser:
-        manager_accessible_cats = list(Category.objects.values_list('id', flat=True))
+        manager_accessible_cats = list(Category.objects.filter(topic__is_initiative=False).values_list('id', flat=True))
     else:
-        manager_accessible_cats = list(CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True))
+        manager_accessible_cats = list(CategoryAssignment.objects.filter(manager=request.user, category__topic__is_initiative=False).values_list('category_id', flat=True))
 
     valid_new_cat_ids = []
     for cid in assigned_categories:
@@ -421,14 +432,16 @@ def recent_table_data_submissions_api(request):
         if request.user.is_importer:
             # Importers see their own pending data
             q_filter &= Q(submitted_by=request.user)
-        elif request.user.is_category_manager:
             # Managers see managed importers or assigned categories
             managed_importers = CustomUser.objects.filter(manager=request.user)
-            assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            assigned_categories = CategoryAssignment.objects.filter(manager=request.user, category__topic__is_initiative=False).values_list('category_id', flat=True)
             q_filter &= (Q(submitted_by__in=managed_importers) | Q(indicator__for_category__in=assigned_categories))
         else:
             # Other roles (if any) see nothing by default
             return Response([])
+    
+    # Global filter for initiatives
+    q_filter &= Q(indicator__for_category__topic__is_initiative=False)
 
     # Fetch from models
     annual = AnnualData.objects.filter(q_filter).select_related('indicator', 'submitted_by', 'for_datapoint').order_by('-created_at')[:limit]
@@ -1553,7 +1566,7 @@ class WeeklySidebarList(APIView):
         indicator_ids = request.GET.get('ids', '').split(',')
         indicator_ids = [i for i in indicator_ids if i.strip()]
 
-        unique_dates_qs = KPIRecord.objects.filter(record_type='weekly')
+        unique_dates_qs = KPIRecord.objects.filter(record_type='weekly', indicator__for_category__topic__is_initiative=False)
         if indicator_ids:
             unique_dates_qs = unique_dates_qs.filter(indicator_id__in=indicator_ids)
         
@@ -1588,7 +1601,7 @@ class WeeklySidebarList(APIView):
         # Format for payload
         payload = []
         for item in page_items:
-            rec_qs = KPIRecord.objects.filter(record_type='weekly', date=item['date'])
+            rec_qs = KPIRecord.objects.filter(record_type='weekly', date=item['date'], indicator__for_category__topic__is_initiative=False)
             if indicator_ids:
                 rec_qs = rec_qs.filter(indicator_id__in=indicator_ids)
             rec = rec_qs.first()
@@ -1636,7 +1649,7 @@ class DailySidebarList(APIView):
         indicator_ids = [i for i in indicator_ids if i.strip()]
 
         # Get all daily KPI records ordered by date (most recent first)
-        qs = KPIRecord.objects.filter(record_type='daily')
+        qs = KPIRecord.objects.filter(record_type='daily', indicator__for_category__topic__is_initiative=False)
         if indicator_ids:
             qs = qs.filter(indicator_id__in=indicator_ids)
         
@@ -1840,10 +1853,10 @@ def review_pending_data(request):
     results = []
     assigned_categories = []
     if not request.user.is_superuser:
-        assigned_categories = list(CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True))
+        assigned_categories = list(CategoryAssignment.objects.filter(manager=request.user, category__topic__is_initiative=False).values_list('category_id', flat=True))
 
     # 1. Annual Data
-    annuals = AnnualData.objects.filter(is_verified=False).select_related('indicator', 'for_datapoint')
+    annuals = AnnualData.objects.filter(is_verified=False, indicator__for_category__topic__is_initiative=False).select_related('indicator', 'for_datapoint')
     if not request.user.is_superuser:
         annuals = annuals.filter(indicator__for_category__in=assigned_categories).distinct()
     
@@ -1857,7 +1870,7 @@ def review_pending_data(request):
         })
 
     # 2. Quarterly Data
-    quarters = QuarterData.objects.filter(is_verified=False).select_related('indicator', 'for_quarter', 'for_datapoint')
+    quarters = QuarterData.objects.filter(is_verified=False, indicator__for_category__topic__is_initiative=False).select_related('indicator', 'for_quarter', 'for_datapoint')
     if not request.user.is_superuser:
         quarters = quarters.filter(indicator__for_category__in=assigned_categories).distinct()
 
@@ -1873,7 +1886,7 @@ def review_pending_data(request):
         })
 
     # 3. Monthly Data
-    months = MonthData.objects.filter(is_verified=False).select_related('indicator', 'for_month', 'for_datapoint')
+    months = MonthData.objects.filter(is_verified=False, indicator__for_category__topic__is_initiative=False).select_related('indicator', 'for_month', 'for_datapoint')
     if not request.user.is_superuser:
         months = months.filter(indicator__for_category__in=assigned_categories).distinct()
 
@@ -1889,7 +1902,7 @@ def review_pending_data(request):
         })
 
     # 4. KPI Records (Weekly/Daily)
-    kpis = KPIRecord.objects.filter(is_verified=False).select_related('indicator')
+    kpis = KPIRecord.objects.filter(is_verified=False, indicator__for_category__topic__is_initiative=False).select_related('indicator')
     if not request.user.is_superuser:
         kpis = kpis.filter(indicator__for_category__in=assigned_categories).distinct()
 
@@ -1987,8 +2000,10 @@ def approve_all_table_data_api(request):
     try:
         q_filter = Q(is_verified=False)
         if not request.user.is_superuser:
-            assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            assigned_categories = CategoryAssignment.objects.filter(manager=request.user, category__topic__is_initiative=False).values_list('category_id', flat=True)
             q_filter &= Q(indicator__for_category__in=assigned_categories)
+        
+        q_filter &= Q(indicator__for_category__topic__is_initiative=False)
 
         AnnualData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
         QuarterData.objects.filter(q_filter).update(is_verified=True, is_seen=True)

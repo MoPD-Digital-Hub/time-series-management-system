@@ -58,11 +58,66 @@
         $('#topic-list .topic-checkbox').prop('checked', this.checked).trigger('change');
     });
     $('#category-select-all').on('change', function () {
-        $('#category-list .cat-checkbox').prop('checked', this.checked).trigger('change');
+        $('#category-list label:visible .cat-checkbox').prop('checked', this.checked).trigger('change');
     });
     $('#ind-select-all').on('change', function () {
-        $('#ind-list .ind-checkbox').prop('checked', this.checked);
+        $('#ind-list label:visible .ind-checkbox').prop('checked', this.checked);
     });
+
+    // Cascading Filter Logic
+    function updateFilters() {
+        var selectedTopics = $('#topic-list .topic-checkbox:checked').map(function () { return $(this).data('id'); }).get();
+
+        var topicSearch = $('#search-topic').val().toLowerCase();
+        var catSearch = $('#search-category').val().toLowerCase();
+        var indSearch = $('#search-ind').val().toLowerCase();
+
+        // Topic Search
+        $('#topic-list label').each(function () {
+            var text = $(this).text().toLowerCase();
+            if (text.includes(topicSearch)) $(this).show();
+            else $(this).hide();
+        });
+
+        // Filter Categories based on Topics and Search
+        $('#category-list label').each(function () {
+            var topicId = $(this).data('topic');
+            var text = $(this).text().toLowerCase();
+
+            var topicMatch = selectedTopics.length === 0 || selectedTopics.includes(topicId);
+            var searchMatch = text.includes(catSearch);
+
+            if (topicMatch && searchMatch) {
+                $(this).show();
+            } else {
+                $(this).hide();
+                if (!topicMatch) $(this).find('.cat-checkbox').prop('checked', false);
+            }
+        });
+
+        // Filter Indicators based on Topics, Categories and Search
+        var actualSelectedCats = $('#category-list .cat-checkbox:checked').map(function () { return $(this).data('id'); }).get();
+
+        $('#ind-list label').each(function () {
+            var topicId = $(this).data('topic');
+            var catId = $(this).data('cat');
+            var text = $(this).text().toLowerCase();
+
+            var topicMatch = selectedTopics.length === 0 || selectedTopics.includes(topicId);
+            var catMatch = actualSelectedCats.length === 0 || actualSelectedCats.includes(catId);
+            var searchMatch = text.includes(indSearch);
+
+            if (topicMatch && catMatch && searchMatch) {
+                $(this).show();
+            } else {
+                $(this).hide();
+                if (!topicMatch || !catMatch) $(this).find('.ind-checkbox').prop('checked', false);
+            }
+        });
+    }
+
+    $('.topic-checkbox, .cat-checkbox').on('change', updateFilters);
+    $('#search-topic, #search-category, #search-ind').on('input', updateFilters);
 
     function collectSelection() {
         selections.indicators = [];
@@ -120,7 +175,7 @@
             beforeSend: function () {
                 $('#explorer-head').html('<tr><th>Loading...</th></tr>');
                 $('#explorer-body').html('<tr><td class="text-center py-3">Loading...</td></tr>');
-                try { applyBtn.prop('disabled', true); } catch(e){}
+                try { applyBtn.prop('disabled', true); } catch (e) { }
             }
         })
             .done(function (resp) {
@@ -219,7 +274,7 @@
                 $('#explorer-body').html('<tr><td class="text-center py-3 text-danger">Failed to load data.</td></tr>');
             })
             .always(function () {
-                try { applyBtn.prop('disabled', false); } catch(e){}
+                try { applyBtn.prop('disabled', false); } catch (e) { }
                 currentRequest = null;
             });
         currentRequest = indicatorsReq;
