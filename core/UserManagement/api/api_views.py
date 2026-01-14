@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ..models import CustomUser, CategoryAssignment, IndicatorSubmission, DataSubmission
@@ -673,11 +674,108 @@ def _import_data_submission_to_db(submission: DataSubmission):
                     result['errors'].append({'row': i, 'error': f'Unknown indicator code: {row_indicator_code}'})
                     continue
 
-            # determine year
+            # Check if it's "Wide" format
+            is_annual_wide = False
+            year_cols = []
+            for k in row.keys():
+                if k.isdigit() and len(k) == 4:
+                    year_cols.append(k)
+            if year_cols:
+                is_annual_wide = True
+
+            is_period_wide = ('for_datapoint' in row) and ('for_quarter' in row or 'for_month' in row)
+            
+            if is_annual_wide:
+                # Wide format (Annual only - years as columns)
+                for year_str in year_cols:
+                    perf_raw = row.get(year_str)
+                    if perf_raw in (None, ''):
+                        continue
+                    try:
+                        performance = float(perf_raw)
+                        datapoint, _ = DataPoint.objects.get_or_create(year_EC=year_str)
+                        obj, created = AnnualData.objects.update_or_create(
+                            indicator=target_indicator,
+                            for_datapoint=datapoint,
+                            defaults={'performance': performance, 'is_verified': True}
+                        )
+                        if created: result['created'] += 1
+                        else: result['updated'] += 1
+                    except Exception as e:
+                        result['errors'].append({'row': i, 'error': f'Invalid value for {year_str}: {perf_raw}'})
+                continue
+
+            if is_period_wide:
+                # Wide-indicator format: for_datapoint, for_quarter/for_month, IND1, IND2...
+                year_raw = (row.get('for_datapoint') or '').strip()
+                if not year_raw:
+                    continue
+                
+                datapoint, _ = DataPoint.objects.get_or_create(year_EC=str(year_raw))
+                
+                # Identify period
+                quarter_num = None
+                month_num = None
+                if 'for_quarter' in row and row.get('for_quarter') != '':
+                    try: quarter_num = int(row.get('for_quarter'))
+                    except: pass
+                if 'for_month' in row and row.get('for_month') != '':
+                    try: month_num = int(row.get('for_month'))
+                    except: pass
+                
+                # Identify indicator columns (all except control columns)
+                control_cols = ['for_datapoint', 'for_quarter', 'for_month', 'indicator', 'title_eng', 'title_amh']
+                for col_name, val in row.items():
+                    if col_name in control_cols or val in (None, ''):
+                        continue
+                    
+                    # Match indicator by code or title
+                    ind_obj = Indicator.objects.filter(code__iexact=col_name).first()
+                    if not ind_obj:
+                        ind_obj = Indicator.objects.filter(title_ENG__iexact=col_name).first()
+                    
+                    if not ind_obj:
+                        continue
+                    
+                    try:
+                        performance = float(val)
+                        if quarter_num:
+                            q_obj, _ = Quarter.objects.get_or_create(number=quarter_num, defaults={'title_ENG': f'Q{quarter_num}', 'title_AMH': f'Q{quarter_num}'})
+                            obj, created = QuarterData.objects.update_or_create(
+                                indicator=ind_obj,
+                                for_datapoint=datapoint,
+                                for_quarter=q_obj,
+                                defaults={'performance': performance, 'is_verified': True}
+                            )
+                        elif month_num:
+                            m_obj = Month.objects.filter(number=month_num).first()
+                            if not m_obj:
+                                m_obj = Month.objects.create(number=month_num, month_ENG=str(month_num), month_AMH=str(month_num))
+                            obj, created = MonthData.objects.update_or_create(
+                                indicator=ind_obj,
+                                for_datapoint=datapoint,
+                                for_month=m_obj,
+                                defaults={'performance': performance, 'is_verified': True}
+                            )
+                        else:
+                            # Assume annual if neither quarter nor month
+                            obj, created = AnnualData.objects.update_or_create(
+                                indicator=ind_obj,
+                                for_datapoint=datapoint,
+                                defaults={'performance': performance, 'is_verified': True}
+                            )
+                        
+                        if created: result['created'] += 1
+                        else: result['updated'] += 1
+                    except Exception as e:
+                        result['errors'].append({'row': i, 'error': f'Invalid value for indicator {col_name}: {val}'})
+                continue
+
+            # Long format (continues below)
             year = row.get('year_ec') or row.get('year_gc')
             if not year:
                 result['skipped'] += 1
-                result['errors'].append({'row': i, 'error': 'Missing year_EC/year_GC'})
+                result['errors'].append({'row': i, 'error': 'Missing year_EC/year_GC or year-columns'})
                 continue
 
             # performance
@@ -823,6 +921,7 @@ def _import_data_submission_to_db(submission: DataSubmission):
 
 
 @api_view(['POST'])
+@transaction.atomic
 def submit_bulk_data_api(request):
     if not request.user.is_importer:
         return Response({'error': 'Access denied. Only importers can submit data.'}, status=status.HTTP_403_FORBIDDEN)
@@ -876,7 +975,33 @@ def submit_bulk_data_api(request):
         processed_indicators = set()
         for i, raw in enumerate(iter_rows_from_upload(data_file, ext), start=1):
             try:
-                row = { (k or '').strip().lower(): (v if v is not None else '') for k,v in raw.items() }
+                row = { (str(k) or '').strip().lower(): v for k,v in raw.items() }
+                
+                # Check format
+                is_annual_wide = any(k.isdigit() and len(k) == 4 for k in row.keys())
+                is_period_wide = ('for_datapoint' in row) and ('for_quarter' in row or 'for_month' in row)
+
+                if is_period_wide:
+                    # Wide-Indicator format: for_datapoint, for_quarter/for_month, IND1, IND2...
+                    control_cols = ['for_datapoint', 'for_quarter', 'for_month', 'indicator', 'title_eng', 'title_amh']
+                    for col_name, val in row.items():
+                        if col_name in control_cols or val in (None, ''):
+                            continue
+                        
+                        # col_name is expected to be indicator code
+                        if allowed_indicator_codes and col_name not in allowed_indicator_codes:
+                            continue
+                        
+                        try:
+                            ind_obj = Indicator.objects.get(code__iexact=col_name)
+                            float(val)
+                            processed_indicators.add(ind_obj)
+                            result['created'] += 1
+                        except Indicator.DoesNotExist:
+                            pass
+                        except Exception:
+                            result['errors'].append({'row': i, 'error': f'Invalid value in column {col_name}: {val}'})
+                    continue
 
                 code = (row.get('indicator') or '').strip()
                 if not code:
@@ -895,25 +1020,37 @@ def submit_bulk_data_api(request):
                     result['errors'].append({'row': i, 'error': f'Unknown indicator code: {code}'})
                     continue
 
-                # Basic validation: check year and performance presence
-                year = row.get('year_ec') or row.get('year_gc')
-                perf_raw = row.get('performance') or row.get('value') or row.get('amount')
-                
-                if not year or perf_raw in (None, ''):
-                    result['skipped'] += 1
-                    result['errors'].append({'row': i, 'error': 'Missing required fields (year or performance)'})
-                    continue
-                
-                try:
-                    float(perf_raw)
-                except Exception:
-                    result['skipped'] += 1
-                    result['errors'].append({'row': i, 'error': f'Invalid performance value: {perf_raw}'})
-                    continue
-
-                # If we got here, the row is valid enough for a submission record
-                processed_indicators.add(indicator)
-                result['created'] += 1 # In this context, 'created' means 'successfully parsed row'
+                if is_annual_wide:
+                    # Annual Wide (Years as columns)
+                    year_cols = [k for k in row.keys() if k.isdigit() and len(k) == 4]
+                    for year in year_cols:
+                        perf_raw = row.get(year)
+                        if perf_raw in (None, ''):
+                            continue
+                        try:
+                            float(perf_raw)
+                            processed_indicators.add(indicator)
+                            result['created'] += 1
+                        except Exception:
+                            result['errors'].append({'row': i, 'error': f'Invalid performance value for {year}: {perf_raw}'})
+                else:
+                    # Long format
+                    year = row.get('year_ec') or row.get('year_gc')
+                    perf_raw = row.get('performance') or row.get('value') or row.get('amount')
+                    
+                    if not year or perf_raw in (None, ''):
+                        result['skipped'] += 1
+                        result['errors'].append({'row': i, 'error': 'Missing required fields (year or performance or year-columns)'})
+                        continue
+                    
+                    try:
+                        float(perf_raw)
+                        processed_indicators.add(indicator)
+                        result['created'] += 1
+                    except Exception:
+                        result['skipped'] += 1
+                        result['errors'].append({'row': i, 'error': f'Invalid performance value: {perf_raw}'})
+                        continue
 
             except Exception as e:
                 result['skipped'] += 1
@@ -1035,31 +1172,44 @@ def sample_template_api(request):
 
     # Build sample dataset
     if kind == 'annual':
-        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'performance')
+        headers = ['indicator', '2016', '2017', '2018', '2019']
         if prefill_indicators:
-            rows = [(ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', '') for ind in prefill_indicators]
+            rows = [(ind['code'] or ind['title_ENG'], '', '', '', '') for ind in prefill_indicators]
         else:
-            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 123.45)]
+            rows = [('IND001', '123.45', '130.00', '', '')]
         filename = f"sample_{kind}_data.xlsx"
     elif kind == 'quarter':
-        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'quarter', 'performance')
+        # Wide-indicator format: for_datapoint, for_quarter, IND1, IND2...
+        headers = ['for_datapoint', 'for_quarter']
         if prefill_indicators:
+            headers += [ind['code'] or ind['title_ENG'] for ind in prefill_indicators]
             rows = []
-            for ind in prefill_indicators:
-                for q in range(1, 5):
-                    rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', q, ''))
+            for q in range(1, 5):
+                row = ['2016', q] + ([''] * len(prefill_indicators))
+                rows.append(row)
         else:
-            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 25.5)]
+            headers += ['IND001', 'IND002']
+            rows = [
+                ('2017', 1, '43', '342'),
+                ('2017', 2, '2', '243'),
+                ('2017', 3, '12', '43'),
+                ('2017', 4, '32', '43')
+            ]
         filename = f"sample_{kind}_data.xlsx"
     elif kind == 'monthly':
-        headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'month', 'performance')
+        # Wide-indicator format: for_datapoint, for_month, IND1, IND2...
+        headers = ['for_datapoint', 'for_month']
         if prefill_indicators:
+            headers += [ind['code'] or ind['title_ENG'] for ind in prefill_indicators]
             rows = []
-            for ind in prefill_indicators:
-                for m in range(1, 13):
-                    rows.append((ind['code'] or ind['title_ENG'], ind['title_ENG'], ind['title_AMH'], '2016', m, ''))
+            for m in range(1, 13):
+                row = ['2016', m] + ([''] * len(prefill_indicators))
+                rows.append(row)
         else:
-            rows = [('IND001', 'Sample English Title', 'የናሙና አማርኛ ርዕስ', '2016', 1, 10.0)]
+            headers += ['IND001', 'IND002']
+            rows = [
+                ('2017', m, '10', '20') for m in range(1, 13)
+            ]
         filename = f"sample_{kind}_data.xlsx"
     elif kind == 'weekly':
         headers = ('indicator', 'title_eng', 'title_amh', 'year_EC', 'month', 'week', 'performance')
@@ -1206,77 +1356,88 @@ def submit_data_api(request):
     data_file = request.FILES.get('data_file')
     notes = request.data.get('notes', '')
     
-    if not indicator_id:
-        return Response({'error': 'Indicator ID is required.'}, 
+    # If indicator_id is missing, but we have a data file, we can still proceed (it's effectively a bulk upload)
+    if not indicator_id and not data_file:
+        return Response({'error': 'Indicator ID or a data file is required.'}, 
                        status=status.HTTP_400_BAD_REQUEST)
     
+    indicator = None
+    if indicator_id:
+        try:
+            indicator = Indicator.objects.get(id=indicator_id)
+        except Exception:
+            return Response({'error': 'Invalid indicator ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate uploaded file format (read only header / first row) to avoid expensive loops
+    if data_file:
+        filename = (getattr(data_file, 'name', '') or '').lower()
+        _, ext = os.path.splitext(filename)
+        ext = ext.lower()
+
+        # Helper to check required columns
+        def _check_columns(cols):
+            cols_l = [str(c).strip().lower() for c in cols if c is not None]
+            has_year = any(x in cols_l for x in ('year_ec', 'year_gc', 'for_datapoint'))
+            has_perf = any(x in cols_l for x in ('performance', 'value', 'amount'))
+            has_period = any(x in cols_l for x in ('for_quarter', 'for_month'))
+            # Also allow numeric headers (wide format)
+            has_numeric_year = any(str(x).isdigit() and len(str(x)) == 4 for x in cols_l)
+            # Valid if: (Standard Long) OR (Annual Wide) OR (Quarterly/Monthly Wide)
+            return (has_year and has_perf) or has_numeric_year or (has_year and has_period)
+
+        if ext == '.csv':
+            try:
+                # read a small chunk and extract first non-empty line as header
+                data_file.seek(0)
+                sample = data_file.read(8192)
+                # ensure we have text
+                if isinstance(sample, bytes):
+                    sample_text = sample.decode('utf-8', errors='replace')
+                else:
+                    sample_text = str(sample)
+                first_line = None
+                for ln in sample_text.splitlines():
+                    if ln.strip():
+                        first_line = ln
+                        break
+                if not first_line:
+                    return Response({'error': 'CSV file appears empty or malformed (no header found).'}, status=status.HTTP_400_BAD_REQUEST)
+                # detect delimiter simply
+                delimiter = ',' if first_line.count(',') >= first_line.count(';') else ';'
+                import csv as _csv
+                header = next(_csv.reader([first_line], delimiter=delimiter))
+                if not _check_columns(header):
+                    return Response({'error': 'CSV missing required columns. Required: year_EC/year_GC and performance/value/amount (case-insensitive).'}, status=status.HTTP_400_BAD_REQUEST)
+            finally:
+                try:
+                    data_file.seek(0)
+                except Exception:
+                    pass
+        elif ext in ('.xls', '.xlsx'):
+            if not openpyxl:
+                return Response({'error': 'Excel import requires openpyxl on the server. Please install openpyxl.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                data_file.seek(0)
+                wb = openpyxl.load_workbook(data_file, read_only=True, data_only=True)
+                ws = wb.active
+                # read header row only
+                header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+                if not header_row:
+                    return Response({'error': 'Excel file appears empty or malformed (no header found).'}, status=status.HTTP_400_BAD_REQUEST)
+                cols = [ (str(c).strip() if c is not None else '') for c in header_row ]
+                if not _check_columns(cols):
+                    return Response({'error': 'Excel missing required columns. Required: year_EC/year_GC and performance/value/amount (case-insensitive).'}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({'error': 'Failed to inspect Excel file header: ' + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            finally:
+                try:
+                    data_file.seek(0)
+                except Exception:
+                    pass
+        else:
+            return Response({'error': 'Unsupported file type. Accepts .csv, .xls, .xlsx only.'}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
-        indicator = Indicator.objects.get(id=indicator_id)
-        # Validate uploaded file format (read only header / first row) to avoid expensive loops
-        if data_file:
-            filename = (getattr(data_file, 'name', '') or '').lower()
-            _, ext = os.path.splitext(filename)
-            ext = ext.lower()
-
-            # Helper to check required columns
-            def _check_columns(cols):
-                cols_l = [c.strip().lower() for c in cols if c is not None]
-                has_year = any(x in cols_l for x in ('year_ec', 'year_gc'))
-                has_perf = any(x in cols_l for x in ('performance', 'value', 'amount'))
-                return has_year and has_perf
-
-            if ext == '.csv':
-                try:
-                    # read a small chunk and extract first non-empty line as header
-                    data_file.seek(0)
-                    sample = data_file.read(8192)
-                    # ensure we have text
-                    if isinstance(sample, bytes):
-                        sample_text = sample.decode('utf-8', errors='replace')
-                    else:
-                        sample_text = str(sample)
-                    first_line = None
-                    for ln in sample_text.splitlines():
-                        if ln.strip():
-                            first_line = ln
-                            break
-                    if not first_line:
-                        return Response({'error': 'CSV file appears empty or malformed (no header found).'}, status=status.HTTP_400_BAD_REQUEST)
-                    # detect delimiter simply
-                    delimiter = ',' if first_line.count(',') >= first_line.count(';') else ';'
-                    import csv as _csv
-                    header = next(_csv.reader([first_line], delimiter=delimiter))
-                    if not _check_columns(header):
-                        return Response({'error': 'CSV missing required columns. Required: year_EC/year_GC and performance/value/amount (case-insensitive).'}, status=status.HTTP_400_BAD_REQUEST)
-                finally:
-                    try:
-                        data_file.seek(0)
-                    except Exception:
-                        pass
-            elif ext in ('.xls', '.xlsx'):
-                if not openpyxl:
-                    return Response({'error': 'Excel import requires openpyxl on the server. Please install openpyxl.'}, status=status.HTTP_400_BAD_REQUEST)
-                try:
-                    data_file.seek(0)
-                    wb = openpyxl.load_workbook(data_file, read_only=True, data_only=True)
-                    ws = wb.active
-                    # read header row only
-                    header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
-                    if not header_row:
-                        return Response({'error': 'Excel file appears empty or malformed (no header found).'}, status=status.HTTP_400_BAD_REQUEST)
-                    cols = [ (str(c).strip() if c is not None else '') for c in header_row ]
-                    if not _check_columns(cols):
-                        return Response({'error': 'Excel missing required columns. Required: year_EC/year_GC and performance/value/amount (case-insensitive).'}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    return Response({'error': 'Failed to inspect Excel file header: ' + str(e)}, status=status.HTTP_400_BAD_REQUEST)
-                finally:
-                    try:
-                        data_file.seek(0)
-                    except Exception:
-                        pass
-            else:
-                return Response({'error': 'Unsupported file type. Accepts .csv, .xls, .xlsx only.'}, status=status.HTTP_400_BAD_REQUEST)
-
         # Create submission record (file passed validations)
         submission = DataSubmission.objects.create(
             indicator=indicator,
@@ -1287,8 +1448,6 @@ def submit_data_api(request):
         )
 
         return Response({'message': 'Data submitted successfully', 'submission_id': submission.id}, status=status.HTTP_201_CREATED)
-    except Indicator.DoesNotExist:
-        return Response({'error': 'Invalid indicator'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

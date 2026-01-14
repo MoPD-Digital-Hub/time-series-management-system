@@ -87,27 +87,23 @@ $(document).ready(function () {
     const linkSingle = $("#download-sample-link-single");
 
     if (isMultiple) {
-      if (!categoryId) {
-        linkMultiple.addClass("disabled").attr("href", "#").attr("title", "Please select a category first");
-      } else {
-        linkMultiple.removeClass("disabled").removeAttr("title");
-        let url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + "&multiple=1&category_id=" + encodeURIComponent(categoryId);
-        if (indicators && Array.isArray(indicators)) {
-          indicators.forEach(id => {
-            url += "&indicator_ids[]=" + encodeURIComponent(id);
-          });
-        }
-        linkMultiple.attr("href", url);
+      linkMultiple.removeClass("disabled").removeAttr("title");
+      let url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + "&multiple=1";
+      if (categoryId) url += "&category_id=" + encodeURIComponent(categoryId);
+      if (indicators && Array.isArray(indicators)) {
+        indicators.forEach(id => {
+          url += "&indicator_ids[]=" + encodeURIComponent(id);
+        });
       }
+      linkMultiple.attr("href", url);
     } else {
       const indicatorId = Array.isArray(indicators) ? indicators[0] : indicators;
-      if (!indicatorId) {
-        linkSingle.addClass("disabled").attr("href", "#").attr("title", "Please select an indicator first");
-      } else {
-        linkSingle.removeClass("disabled").removeAttr("title");
-        const url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind) + "&indicator_id=" + encodeURIComponent(indicatorId);
-        linkSingle.attr("href", url);
+      linkSingle.removeClass("disabled").removeAttr("title");
+      let url = SAMPLE_TEMPLATE_URL + "?type=" + encodeURIComponent(kind);
+      if (indicatorId) {
+        url += "&indicator_id=" + encodeURIComponent(indicatorId);
       }
+      linkSingle.attr("href", url);
     }
   }
 });
@@ -295,10 +291,6 @@ $("#data-form").on("submit", function (e) {
   const mode = $('input[name="entry-mode"]:checked').val();
   const isMultiple = mode === "multiple";
   const indicatorId = $("#data-indicator").val(); // Might be array if multiple
-  if (!isMultiple && !indicatorId) {
-    showAlert("Please select an indicator before submitting.", "danger");
-    return;
-  }
 
   const fileInput = $("#data-file")[0];
   const file = fileInput?.files?.[0] || null;
