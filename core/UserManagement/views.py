@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .forms import Login_Form
+from .forms import Login_Form, DocumentForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect
@@ -13,8 +13,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.core.paginator import Paginator  
 from .models import CustomUser, CategoryAssignment
-from Base.models import Category, Indicator, Topic
-from Base.models import Category, Indicator, Topic
+from Base.models import Category, Indicator, Topic, Document
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
@@ -178,14 +177,16 @@ def submissions_list(request):
 @user_passes_test(admin_required, login_url='/user-management/login/')
 def category_assignments(request):
     page_number = request.GET.get('page', 1)
-    assignments = CategoryAssignment.objects.select_related('manager', 'category', 'category__topic').order_by('category__name_ENG')
+    assignments = CategoryAssignment.objects.select_related('manager', 'category', 'category__topic').filter(category__topic__is_initiative=False).order_by('category__name_ENG')
     paginator = Paginator(assignments, 20)
     assignments_page = paginator.get_page(page_number)
     category_managers_count = CustomUser.objects.filter(is_category_manager=True, managed_categories__isnull=False).distinct().count()
     assigned_categories_count = CategoryAssignment.objects.values('category').distinct().count()
-    unassigned_categories = Category.objects.annotate(num_assignments=Count('category_managers')).filter(num_assignments=0)
+    unassigned_categories = Category.objects.annotate(num_assignments=Count('category_managers')).filter(num_assignments=0, topic__is_initiative=False).select_related('topic').prefetch_related('indicators')
     # Get all category managers
     managers = CustomUser.objects.filter(is_category_manager=True).order_by('first_name', 'last_name')
+    from Base.models import Topic
+    topics = Topic.objects.filter(is_initiative=False)
 
     return render(request, 'usermanagement/category_assignments.html', {
         'assignments_page': assignments_page,
@@ -193,6 +194,7 @@ def category_assignments(request):
         'assigned_categories_count': assigned_categories_count,
         'unassigned_categories': unassigned_categories,
         'managers': managers,
+        'topics': topics,
     })
 
 
@@ -328,3 +330,32 @@ def review_table_data(request):
     if not (request.user.is_category_manager or request.user.is_superuser):
          return render(request, 'usermanagement/access_denied.html') 
     return render(request, 'usermanagement/review_table_data.html')
+
+
+@login_required
+def documents_list(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Document uploaded successfully.')
+            return redirect('documents_list')
+    else:
+        form = DocumentForm()
+    
+    documents = Document.objects.all().order_by('-id')
+    topics = Topic.objects.filter(is_initiative=False)
+    
+    context = {
+        'form': form,
+        'documents': documents,
+        'topics': topics,
+    }
+    return render(request, 'usermanagement/documents_list.html', context)
+
+@login_required
+def delete_document(request, id):
+    document = get_object_or_404(Document, id=id)
+    document.delete()
+    messages.success(request, 'Document deleted successfully.')
+    return redirect('documents_list')

@@ -72,13 +72,17 @@ class CategoryAssignmentSerializer(serializers.ModelSerializer):
 
 class UnassignedCategorySerializer(serializers.ModelSerializer):
     indicator_count = serializers.SerializerMethodField()
+    topic_name_eng = serializers.SerializerMethodField()
     
     class Meta:
         model = Category
-        fields = ['id', 'name_ENG', 'name_AMH', 'indicator_count']
+        fields = ['id', 'name_ENG', 'name_AMH', 'indicator_count', 'topic_name_eng']
     
     def get_indicator_count(self, obj):
         return obj.indicators.count()
+
+    def get_topic_name_eng(self, obj):
+        return obj.topic.title_ENG if obj.topic else "No Topic"
 
 
 class IndicatorSubmissionSerializer(serializers.ModelSerializer):

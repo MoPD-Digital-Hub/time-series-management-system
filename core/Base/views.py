@@ -185,22 +185,22 @@ def Welcome(request):
 
 
 def topics_list(request):
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     return render(request, 'base/topics.html', {'topics': topics})
 
 def categories_list(request):
     categories = Category.objects.prefetch_related('indicators').all()
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     return render(request, 'base/categories.html', {'categories': categories, 'topics': topics})
 
 def indicators_list(request):
     indicators = Indicator.objects.filter(is_verified=True)
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     return render(request, 'base/indicators.html', {'indicators': indicators, 'topics': topics})
 
 def indicator_view(request, indicator_id):
     indicator = get_object_or_404(Indicator, id=indicator_id, is_verified=True)
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     context = {
         'indicator': indicator,
         'topics': topics,
@@ -209,7 +209,7 @@ def indicator_view(request, indicator_id):
 
 @login_required
 def index(request):
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     context = {
         'topics': topics
     }
@@ -225,7 +225,7 @@ def data_view(request, cat_title):
         )
     else:
         indicators = []
-    topics = Topic.objects.prefetch_related('categories').all()
+    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     # Build datapoints (unique years) from annual data for the selected indicators
     datapoints = []
     table_rows = []
@@ -275,7 +275,7 @@ def data_view(request, cat_title):
 
 @login_required
 def data_explorer(request):
-    topics = Topic.objects.prefetch_related('categories__indicators').all()
+    topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
     context = {
         'topics': topics,
     }
