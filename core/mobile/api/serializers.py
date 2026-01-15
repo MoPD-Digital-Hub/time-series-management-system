@@ -676,8 +676,9 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
             qs = qs.filter(for_quarter__title_ENG=quarter)
 
         qs = qs.annotate(
-            year_ec_int=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_ec_int')[:12]
+        year_ec_int=Cast('for_datapoint__year_EC', IntegerField()),
+        quarter_int=Cast('for_quarter__number', IntegerField()), 
+    ).order_by('-year_ec_int', '-quarter_int')[:12]
 
         return QuarterDataSerializer(list(qs)[::-1], many=True).data
 
