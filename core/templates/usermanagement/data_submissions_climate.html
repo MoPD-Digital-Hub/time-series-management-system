@@ -18,11 +18,11 @@
                     <p class="text-gray-600 dark:text-gray-400 mt-1">Review and manage data submissions</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a href="{% url 'submissions_list' %}?type=indicator" class="btn btn-outline-secondary">
+                    <a href="{% url 'submissions_list_climate' %}?type=indicator" class="btn btn-outline-secondary">
                         <i class="fas fa-chart-line mr-2"></i>Indicator Submissions
                     </a>
                     {% if request.user.is_importer %}
-                    <a href="{% url 'importer_dashboard' %}" class="btn btn-primary">
+                    <a href="{% url 'importer_dashboard_climate' %}" class="btn btn-primary">
                         <i class="fas fa-plus mr-2"></i>Add Data Submission
                     </a>
                     {% endif %}
