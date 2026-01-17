@@ -1073,11 +1073,11 @@ def climate_indicators_analytics_api(request):
     if indicator_id:
         indicators = indicators.filter(id=indicator_id)
     
-    recent_years = DataPoint.objects.order_by('-year_GC')[:5]  # last 5 years
+    recent_years = DataPoint.objects.order_by('-year_EC')[:5]  # last 5 years
     
     result = []
     for ind in indicators:
-        annual_data_qs = AnnualData.objects.filter(indicator=ind, for_datapoint__in=recent_years).order_by('for_datapoint__year_GC')
+        annual_data_qs = AnnualData.objects.filter(indicator=ind, for_datapoint__in=recent_years).order_by('for_datapoint__year_EC')
         annual_data = [
             {
                 'year_ec': ad.for_datapoint.year_EC,
