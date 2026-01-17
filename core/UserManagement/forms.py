@@ -61,12 +61,12 @@ from Base.models import Document
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
-        fields = ['title_ENG', 'title_AMH', 'topic', 'category', 'file']
+        fields = ['title_ENG', 'title_AMH', 'topic', 'document_category', 'file']
         widgets = {
             'title_ENG': forms.TextInput(attrs={'class': 'form-control'}),
             'title_AMH': forms.TextInput(attrs={'class': 'form-control'}),
             'topic': forms.Select(attrs={'class': 'form-control'}),
-            'category': forms.Select(attrs={'class': 'form-control'}),
+            'document_category': forms.Select(attrs={'class': 'form-control'}),
             'file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
     def __init__(self, *args, **kwargs):

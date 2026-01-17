@@ -1,0 +1,381 @@
+{% load static %}
+<!doctype html>
+<html lang="en" class="preset-1" data-pc-sidebar-caption="true" data-pc-layout="vertical" data-pc-direction="ltr" dir="ltr">
+<head>
+    <title>Climate Dashboard | TSMS</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0,minimal-ui">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
+
+    <style>
+        :root { --sidebar-width: 280px; --content-bg: #f8fafc; }
+        body { background: var(--content-bg); }
+        .climate-main-content { margin-left: var(--sidebar-width); min-height: 100vh; }
+
+        .chart-wrapper { position: relative; height: 320px; width: 100%; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+
+        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1050; display: none; }
+        .indicator-drawer { 
+            position: fixed; bottom: -100%; left: var(--sidebar-width); right: 0; 
+            height: 85vh; background: #fff; z-index: 1051; transition: 0.4s ease;
+            border-radius: 20px 20px 0 0; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); overflow-y: auto;
+        }
+        .indicator-drawer.open { bottom: 0; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #f8fafc; padding: 12px; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+        .indicator-row:hover { background: #f1f5f9; cursor: pointer; }
+
+        .meta-icon { width: 20px; display: inline-block; }
+        @media (max-width: 1024px) {
+            .climate-main-content { margin-left: 0; }
+            .analytics-grid { grid-template-columns: 1fr; }
+            .indicator-drawer { left: 0; }
+        }
+    </style>
+</head>
+
+<body>
+    {% include "base/common/climate_sidebar.html" %}
+    
+
+    <main class="climate-main-content">
+        <div class="content-header p-4 bg-white border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 fw-bold mb-1">{{ climate_topic.title_ENG }} Management</h1>
+                    <p class="text-muted mb-0">Analytics & Document Library</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-primary-subtle text-primary p-2">{{ indicators.count }} Indicators</span>
+                    <span class="badge bg-success-subtle text-success p-2">{{ documents.count }} Documents</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <!-- Filters -->
+            <div class="content-card mb-4 p-4 bg-white rounded shadow-sm border-0" style="border-left: 6px solid #3b82f6 !important;">
+    <div class="d-flex align-items-center gap-4 border-bottom pb-4 mb-4">
+        <div class="bg-dark text-white p-3 rounded-3 shadow-sm">
+            <i class="fas fa-radar fa-2x"></i>
+        </div>
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">Climate Impact & Governance Portal</h3>
+            <div class="d-flex align-items-center gap-2">
+                <p class="mb-0 text-secondary fw-medium">Strategic Monitoring of National Climate Commitments</p>
+                <span class="badge rounded-pill bg-success px-3">Live Analysis</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="bg-primary-subtle p-2 rounded">
+                        <i class="fas fa-microchip text-primary"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0">Thematic Intelligence</h6>
+                </div>
+                <p class="small text-muted mb-0">Navigate the climate landscape through sector-specific lenses to decode complex environmental variables and dependencies.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="h-100 border-start ps-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="bg-info-subtle p-2 rounded">
+                        <i class="fas fa-fingerprint text-info"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0">Evidence-Based Auditing</h6>
+                </div>
+                <p class="small text-muted mb-0">Access a transparent audit trail for every metric. Review specific methodologies, data custodians, and historical accuracy via the detail blade.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="h-100 border-start ps-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="bg-warning-subtle p-2 rounded">
+                        <i class="fas fa-crosshairs text-warning"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0">Target Synchronicity</h6>
+                </div>
+                <p class="small text-muted mb-0">Evaluate the delta between current trajectories and policy-defined targets to ensure alignment with national resilience goals.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center bg-light-subtle p-2 rounded">
+        <div class="d-flex gap-4">
+            <div class="small text-muted"><i class="fas fa-shield-alt me-1 text-primary"></i> ISO-Aligned Standards</div>
+            <div class="small text-muted"><i class="fas fa-sync me-1 text-primary"></i> Automated Validation</div>
+        </div>
+        <div class="small text-muted fw-bold">
+            <i class="far fa-clock me-1"></i> Reporting Period: <span class="text-primary">{{ climate_topic.updated_at|date:"Y" }} Analysis Cycle</span>
+        </div>
+    </div>
+</div>
+
+            <!-- Analytics Grid -->
+            <div class="analytics-grid">
+                <div class="content-card p-3 bg-white rounded shadow-sm">
+                    <h6 class="fw-bold mb-3">Performance Trends (Last 5 Years)</h6>
+                    <div class="chart-wrapper"><canvas id="main-trend-chart"></canvas></div>
+                </div>
+                <div class="content-card p-3 bg-white rounded shadow-sm">
+                    <h6 class="fw-bold mb-3">Data Distribution</h6>
+                    <div class="chart-wrapper"><canvas id="category-dist-chart"></canvas></div>
+                </div>
+                <div class="content-card p-3 bg-white rounded shadow-sm">
+                    <h6 class="fw-bold mb-3">Gap Analysis vs Target</h6>
+                    <div class="chart-wrapper"><canvas id="gap-analysis-chart"></canvas></div>
+                </div>
+                <div class="content-card p-3 bg-white rounded shadow-sm">
+                    <h6 class="fw-bold mb-3">New Indicator Trend</h6>
+                    <div class="chart-wrapper"><canvas id="new-indicator-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="content-card mb-4 p-3 bg-white rounded shadow-sm">
+                <div class="mb-2 fw-bold text-muted small"><i class="fas fa-filter me-1"></i> Filter Analytics</div>
+                <div class="d-flex flex-wrap gap-2" id="category-filters">
+                    <button class="filter-btn active btn btn-outline-primary btn-sm" data-category-id="">All Categories</button>
+                    {% for category in categories %}
+                    <button class="filter-btn btn btn-outline-primary btn-sm" data-category-id="{{ category.id }}">{{ category.name_ENG }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Indicators Table -->
+            <div class="content-card p-3 bg-white rounded shadow-sm">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Indicator</th>
+                            <th>Latest Perf.</th>
+                            <th>Target</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="indicators-tbody">
+                        {% for item in indicators_with_latest %}
+                        <tr class="indicator-row" data-indicator-id="{{ item.indicator.id }}" data-category-ids="{% for cat in item.indicator.for_category.all %}{{ cat.id }},{% endfor %}">
+                            <td><strong>{{ item.indicator.code|default:"-" }}</strong></td>
+                            <td class="small">{{ item.indicator.title_ENG }}</td>
+                            <td><span class="fw-bold">{{ item.latest_performance|default:"-" }}</span></td>
+                            <td class="text-muted">{{ item.latest_target|default:"-" }}</td>
+                            <td><button class="btn btn-sm btn-primary">Details</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Drawer -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <div class="indicator-drawer" id="indicator-drawer">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+            <h5 id="drawer-title" class="mb-0 fw-bold text-primary">Details</h5>
+            <button class="btn-close" id="drawer-close-btn"></button>
+        </div>
+        <div class="p-4 overflow-auto row" id="drawer-content"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let trendChart = null, distChart = null, gapChart = null, newChart = null, drawerChart = null;
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+
+            // --- Load Analytics ---
+            function loadAnalytics(catId = '') {
+                const url = `/api/climate/indicators/analytics/?topic_id={{ climate_topic.id }}${catId ? '&category_id=' + catId : ''}`;
+                $.getJSON(url, function(res) {
+                    if (res.result === 'SUCCESS' && res.data.length > 0) renderCharts(res.data);
+                });
+            }
+
+            function renderCharts(data) {
+                const years = [...new Set(data.flatMap(ind => ind.annual_data.map(d => d.year_gc)))].sort();
+
+                // Performance Trend
+                if (trendChart) trendChart.destroy();
+                trendChart = new Chart($('#main-trend-chart'), {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: data.slice(0, 5).map((ind, i) => ({
+                            label: ind.indicator.code || ind.indicator.title_ENG.substring(0,10),
+                            data: ind.annual_data.map(d => d.performance),
+                            borderColor: colors[i % colors.length], tension: 0.3, fill: false
+                        }))
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // Data Distribution
+                if (distChart) distChart.destroy();
+                distChart = new Chart($('#category-dist-chart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.slice(0, 5).map(i => i.indicator.code || 'Ind'),
+                        datasets: [{ data: data.slice(0, 5).map(i => i.annual_data.length), backgroundColor: colors }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // Gap Analysis
+                if (gapChart) gapChart.destroy();
+                gapChart = new Chart($('#gap-analysis-chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.slice(0, 10).map(i => i.indicator.code || 'Ind'),
+                        datasets: [
+                            { label: 'Performance', data: data.slice(0, 10).map(i => i.latest_performance), backgroundColor: '#3b82f6' },
+                            { label: 'Target', data: data.slice(0, 10).map(i => i.latest_target), backgroundColor: '#e9ecef' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // New Indicator Trend
+                if (newChart) newChart.destroy();
+                newChart = new Chart($('#new-indicator-chart'), {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: data.slice(5, 10).map((ind, i) => ({
+                            label: ind.indicator.code || ind.indicator.title_ENG.substring(0,10),
+                            data: ind.annual_data.map(d => d.performance),
+                            borderColor: colors[i % colors.length], tension: 0.3
+                        }))
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // --- Drawer Logic ---
+            $(document).on('click', '.indicator-row', function() {
+                const id = $(this).data('indicator-id');
+                $('#drawer-overlay').fadeIn();
+                $('#indicator-drawer').addClass('open');
+                $('#drawer-content').html('<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>');
+
+                $.getJSON(`/api/climate/indicators/analytics/?indicator_id=${id}`, function(res) {
+                    const ind = res.data[0];
+                    $('#drawer-title').text(ind.indicator.title_ENG);
+
+                    // Metadata with icons - styled as cards
+                    const metaData = [
+                        {icon:'fa-code', label:'Code', value: ind.indicator.code},
+                        {icon:'fa-ruler', label:'Units', value: ind.indicator.measurement_units},
+                        {icon:'fa-calendar', label:'Frequency', value: ind.indicator.frequency},
+                        {icon:'fa-list-check', label:'KPI', value: ind.indicator.kpi_characteristics},
+                        {icon:'fa-circle-info', label:'Status', value: ind.indicator.status},
+                        {icon:'fa-book-open', label:'Description', value: ind.indicator.description},
+                        {icon:'fa-user', label:'Responsible', value: ind.indicator.responsible_entity},
+                        {icon:'fa-layer-group', label:'Tags', value: ind.indicator.tags},
+                        {icon:'fa-link', label:'SDG Link', value: ind.indicator.sdg_link}
+                    ];
+
+                    let metaHTML = '<div class="row g-3 mb-4">';
+                    metaData.forEach(m => {
+                        metaHTML += `
+                            <div class="col-md-4">
+                                <div class="card shadow-sm h-100 border-0">
+                                    <div class="card-body p-2 d-flex align-items-start">
+                                        <i class="fas ${m.icon} text-primary me-2 fs-5"></i>
+                                        <div>
+                                            <div class="fw-bold text-dark small">${m.label}</div>
+                                            <div class="text-muted small">${m.value ?? '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    metaHTML += '</div>';
+
+                    // Chart + Table side by side
+                    let contentHTML = `
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="card shadow-sm border-0">
+                                    <div class="card-body p-2">
+                                        <div class="chart-wrapper"><canvas id="drawer-annual-chart"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-body p-2">
+                                        <h6 class="fw-bold">Annual Data</h6>
+                                        <table class="data-table table table-sm mb-0">
+                                            <thead class="table-light"><tr><th>Year</th><th>Performance</th><th>Target</th></tr></thead>
+                                            <tbody>${ind.annual_data.map(d => `<tr><td>${d.year_gc}</td><td>${d.performance ?? '-'}</td><td>${d.target ?? '-'}</td></tr>`).join('')}</tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    $('#drawer-content').html(metaHTML + contentHTML);
+
+                    // Drawer Chart
+                    const ctx = $('#drawer-annual-chart');
+                    if(drawerChart) drawerChart.destroy();
+                    drawerChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ind.annual_data.map(d => d.year_gc),
+                            datasets: [{
+                                label: 'Performance',
+                                data: ind.annual_data.map(d => d.performance),
+                                borderColor: '#10b981',
+                                backgroundColor:'rgba(16,185,129,0.1)',
+                                fill:true,
+                                tension:0.3
+                            }]
+                        },
+                        options: { responsive:true, maintainAspectRatio:false }
+                    });
+                });
+
+            });
+
+            $('#drawer-close-btn, #drawer-overlay').click(function() {
+                $('#drawer-overlay').fadeOut();
+                $('#indicator-drawer').removeClass('open');
+            });
+
+            $('.filter-btn').on('click', function() {
+                $('.filter-btn').removeClass('active');
+                $(this).addClass('active');
+                const catId = $(this).data('category-id');
+                $('.indicator-row').each(function() {
+                    $(this).toggle(!catId || $(this).data('category-ids').toString().includes(catId));
+                });
+                loadAnalytics(catId);
+            });
+
+            // Init
+            loadAnalytics();
+        });
+    </script>
+</body>
+</html>

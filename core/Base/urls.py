@@ -66,4 +66,27 @@ urlpatterns = [
     path('api/trending-indicators/', api_views.trending_indicator_list_create, name='trending-indicator-list-create'),
     path('api/trending-indicators/<int:pk>/', api_views.trending_indicator_detail, name='trending-indicator-detail'),
     path('api/indicators-per-category/', api_views.indicators_per_category_api, name='indicators-per-category-api'),
+
+
+    #### Climate #######
+    path('climate-dashboard/', views.climate_dashboard, name='climate_dashboard'),
+    path('climate-user-dashboard/', views.climate_user_management_dashboard, name='climate_user_management_dashboard'),
+    path('users_list_climate/', views.users_list_climate, name='users_list_climate'),
+    path('climate_review_table_data/', views.climate_review_table_data, name='climate_review_table_data'),
+    path('submissions_list_climate/', views.submissions_list_climate, name='submissions_list_climate'),
+    path('climate_data_explorer/', views.climate_data_explorer, name='climate_data_explorer'),
+
+    path('documents_list_climate/', views.documents_list_climate, name='documents_list_climate'),
+    path('climate_document/' , views.climate_document , name='climate_document'),
+    path('api/climate/documents/search/', api_views.climate_documents_search_api, name='climate-documents-search-api'),
+    path('api/climate/indicators/analytics/', api_views.climate_indicators_analytics_api, name='climate-indicators-analytics-api'),
+
+
+
+    path('importer_dashboard_climate/', views.importer_dashboard_climate, name='importer_dashboard_climate'),
+    path('data_table_explorer_climate/', views.data_table_explorer_climate, name='data_table_explorer_climate'),
+    path('add_indicator_climate/', views.add_indicator_climate, name='add_indicator_climate'),
+    
+    
+    
 ]

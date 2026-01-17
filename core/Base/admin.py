@@ -27,8 +27,17 @@ class TopicAdmin(ImportExportModelAdmin):
     resource_classes = [TopicResource]
 admin.site.register(Topic,TopicAdmin)
 
+class DocumentCategoryAdmin(ImportExportModelAdmin):
+    list_display = ('name_ENG', 'name_AMH', 'rank')
+    list_editable = ('rank',)
+    search_fields = ('name_ENG', 'name_AMH')
+
+admin.site.register(DocumentCategory, DocumentCategoryAdmin)
+
 class DocumentAdmin(ImportExportModelAdmin):
-    list_display = ('title_ENG', 'title_AMH', 'topic', 'file')
+    list_display = ('title_ENG', 'title_AMH', 'topic', 'category', 'document_category', 'file')
+    list_filter = ('topic', 'category', 'document_category')
+    search_fields = ('title_ENG', 'title_AMH')
 
 admin.site.register(Document, DocumentAdmin)
 

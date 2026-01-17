@@ -12,7 +12,10 @@ from .models import (
     DataPoint,
     Quarter,
     MonthData,
-    KPIRecord 
+    KPIRecord,
+    Document,
+    DocumentCategory,
+    ProjectInitiatives
 )
 from UserAdmin.forms import(
     IndicatorForm
@@ -23,6 +26,11 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from datetime import timedelta
 from django.utils import timezone
+from UserManagement.models import *
+
+from UserManagement.forms import *
+
+from django.core.paginator import Paginator  
 
 @login_required(login_url='login')
 def indicator_detail_view(request, id):
@@ -160,9 +168,7 @@ def indicator_detail_view(request, id):
 
     else:
         return HttpResponse("Bad Request!")
-
-
-    
+  
 @api_view(['GET'])
 def search_category_indicator(request):
     queryset = []
@@ -175,8 +181,6 @@ def search_category_indicator(request):
             )
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : list(queryset)}, status=status.HTTP_200_OK)
     
-
-
 # my Views
 
 def Welcome(request):
@@ -280,3 +284,374 @@ def data_explorer(request):
         'topics': topics,
     }
     return render(request, 'base/data_explorer.html', context)
+
+
+
+
+@login_required
+def climate_dashboard(request):
+    """
+    Climate Dashboard combining analytics and document-based knowledge management.
+    """
+    # Get or create Climate topic
+    climate_topic = Topic.objects.get(
+        title_ENG__iexact='Climate'
+    )
+    
+    # Get categories for climate topic
+    categories = Category.objects.filter(topic=climate_topic, is_deleted=False).order_by('rank')
+    
+    # Get indicators for climate topic
+    indicators = Indicator.objects.filter(
+        for_category__topic=climate_topic,
+        is_verified=True,
+        is_dashboard_visible=True
+    ).distinct().order_by('rank', 'title_ENG')
+    
+    # Get document categories (not filtered by topic since DocumentCategory doesn't have topic field)
+    document_categories = DocumentCategory.objects.all().order_by('rank', 'name_ENG')
+    
+    # Get documents for climate topic
+    documents = Document.objects.filter(topic=climate_topic).select_related('document_category', 'category').order_by('-id')
+    
+    # Get recent annual data for key indicators (last 5 years)
+    recent_years = DataPoint.objects.order_by('-year_GC')[:5]
+    annual_data = AnnualData.objects.filter(
+        indicator__in=indicators,
+        for_datapoint__in=recent_years,
+        
+    ).select_related('indicator', 'for_datapoint').order_by('-for_datapoint__year_GC', 'indicator__rank')
+    
+    # Get quarterly data for recent year
+    latest_year = recent_years.first() if recent_years.exists() else None
+    quarterly_data = []
+    if latest_year:
+        quarterly_data = QuarterData.objects.filter(
+            indicator__in=indicators,
+            for_datapoint=latest_year,
+            
+        ).select_related('indicator', 'for_datapoint', 'for_quarter').order_by('for_quarter__number')
+    
+    # Get monthly data for recent year
+    monthly_data = []
+    if latest_year:
+        monthly_data = MonthData.objects.filter(
+            indicator__in=indicators,
+            for_datapoint=latest_year,
+            
+        ).select_related('indicator', 'for_datapoint', 'for_month').order_by('for_month__number')
+    
+    # Get project initiatives related to climate
+    initiatives = ProjectInitiatives.objects.filter(is_initiative=True).order_by('-created')[:5]
+    
+    # Prepare data for charts and latest values for indicators
+    indicators_data = []
+    indicators_with_latest = []
+    
+    # Create a dictionary to store latest annual data per indicator
+    latest_data_map = {}
+    for ad in annual_data.order_by('indicator_id', '-for_datapoint__year_GC'):
+        if ad.indicator_id not in latest_data_map:
+            latest_data_map[ad.indicator_id] = {
+                'performance': ad.performance,
+                'target': ad.target,
+                'year_gc': ad.for_datapoint.year_GC if ad.for_datapoint else None,
+            }
+    
+    # Prepare indicators with latest data
+    for indicator in indicators:
+        latest = latest_data_map.get(indicator.id, {})
+        indicators_with_latest.append({
+            'indicator': indicator,
+            'latest_performance': latest.get('performance'),
+            'latest_target': latest.get('target'),
+            'latest_year': latest.get('year_gc'),
+        })
+    
+    # Prepare data for charts (top 10 indicators)
+    for indicator in indicators[:10]:
+        ind_annual = annual_data.filter(indicator=indicator).order_by('for_datapoint__year_GC')
+        indicators_data.append({
+            'indicator': indicator,
+            'annual_data': [
+                {
+                    'year_ec': ad.for_datapoint.year_EC,
+                    'year_gc': ad.for_datapoint.year_GC,
+                    'performance': float(ad.performance) if ad.performance else None,
+                    'target': float(ad.target) if ad.target else None,
+                }
+                for ad in ind_annual
+            ]
+        })
+    
+    context = {
+        'climate_topic': climate_topic,
+        'categories': categories,
+        'document_categories': document_categories,
+        'indicators': indicators,
+        'indicators_with_latest': indicators_with_latest,
+        'documents': documents,
+        'annual_data': annual_data,
+        'quarterly_data': quarterly_data,
+        'monthly_data': monthly_data,
+        'indicators_data': indicators_data,
+        'recent_years': recent_years,
+        'latest_year': latest_year,
+        'initiatives': initiatives,
+        'topics': Topic.objects.prefetch_related('categories').filter(is_initiative=False),
+    }
+    return render(request, 'base/climate_dashboard.html', context)
+
+@login_required
+def climate_user_management_dashboard(request):
+    return render(request, 'usermanagement/climate_user_management_dashboard.html')
+
+
+@login_required
+def users_list_climate(request):
+    search_query = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    page_number = int(request.GET.get('page', 1))
+    users_qs = CustomUser.objects.select_related('manager').prefetch_related('managed_categories__category').filter(climate_user=True).order_by('email')
+
+    if request.user.is_authenticated and request.user.is_category_manager and not request.user.is_staff:
+        users_qs = CustomUser.objects.filter(Q(is_importer=True, manager=request.user) | Q(id=request.user.id)).order_by('email')
+
+    if search_query:
+        users_qs = users_qs.filter(
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(username__icontains=search_query)
+        )
+
+    if role_filter:
+        if role_filter == 'category_manager':
+            users_qs = users_qs.filter(is_category_manager=True)
+        elif role_filter == 'importer':
+            users_qs = users_qs.filter(is_importer=True)
+        elif role_filter == 'admin':
+            users_qs = users_qs.filter(is_staff=True)
+
+    paginator = Paginator(users_qs, 20)
+    users_page = paginator.get_page(page_number)
+
+    manager_categories = []
+    if request.user.is_authenticated and request.user.is_category_manager:
+        manager_categories = [assign.category for assign in CategoryAssignment.objects.filter(manager=request.user).select_related('category')]
+
+    return render(request, 'usermanagement/users_list_climate.html', {
+        'users_page': users_page,
+        'search_query': search_query,
+        'role_filter': role_filter,
+        'manager_categories': manager_categories,
+    })
+
+@login_required
+def climate_review_table_data(request):
+    if not (request.user.is_category_manager or request.user.is_superuser):
+         return render(request, 'usermanagement/access_denied_climate.html') 
+    return render(request, 'usermanagement/review_table_data_climate.html')
+
+
+
+@login_required
+def submissions_list_climate(request):
+    # Allow only managers
+    if not (request.user.is_category_manager or request.user.is_superuser):
+        messages.error(request, 'Access denied. Only managers can access this page.')
+        return render(request, 'usermanagement/climate_access_denied.html')
+
+    submission_type = request.GET.get('type', 'indicator')
+    status_filter = request.GET.get('status', '')
+    page_number = int(request.GET.get('page', 1))
+
+    if submission_type == 'indicator':
+        submissions_qs = IndicatorSubmission.objects.select_related(
+            'indicator', 'submitted_by', 'verified_by'
+        ).order_by('-submitted_at')
+        template = 'usermanagement/indicator_submissions_climate.html'
+    else:
+        submissions_qs = DataSubmission.objects.select_related(
+            'indicator', 'submitted_by', 'verified_by'
+        ).order_by('-submitted_at')
+        template = 'usermanagement/data_submissions_climate.html'
+
+    # Filter by manager assignment if not superuser/staff
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        submissions_qs = submissions_qs.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+
+    if status_filter:
+        submissions_qs = submissions_qs.filter(status=status_filter)
+
+    # Calculate pending count for tabs
+    if submission_type == 'indicator':
+        pending_qs = IndicatorSubmission.objects.filter(status='pending')
+    else:
+        pending_qs = DataSubmission.objects.filter(status='pending')
+    
+    if not (request.user.is_staff or request.user.is_superuser):
+        managed_importers = CustomUser.objects.filter(manager=request.user)
+        assigned_categories = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        pending_qs = pending_qs.filter(
+            Q(submitted_by__in=managed_importers) |
+            Q(indicator__for_category__in=assigned_categories)
+        ).distinct()
+    
+    pending_count = pending_qs.count()
+
+    paginator = Paginator(submissions_qs, 20)
+    submissions_page = paginator.get_page(page_number)
+
+    return render(request, template, {
+        'submission_type': submission_type,
+        'submissions_page': submissions_page,
+        'status_filter': status_filter,
+        'pending_count': pending_count
+    })
+
+
+
+@login_required
+def climate_document(request):
+    """
+    Climate Dashboard combining analytics and document-based knowledge management.
+    """
+    # Get or create Climate topic
+    climate_topic, created = Topic.objects.get_or_create(
+        title_ENG__iexact='Climate',
+        defaults={
+            'title_ENG': 'Climate',
+            'title_AMH': 'አየር ንብከት',
+            'is_dashboard': True,
+            'rank': 1
+        }
+    )
+    
+    
+    
+    # Get document categories (not filtered by topic since DocumentCategory doesn't have topic field)
+    document_categories = DocumentCategory.objects.all().order_by('rank', 'name_ENG')
+    
+    # Get documents for climate topic
+    documents = Document.objects.filter(topic=climate_topic).select_related('document_category', 'category').order_by('-id')
+    
+ 
+
+    context = {
+        'climate_topic': climate_topic,
+        'document_categories': document_categories,
+        'documents': documents,
+    }
+    return render(request, 'base/climate_documents.html', context)
+
+@login_required
+def climate_data_explorer(request):
+    topics = Topic.objects.prefetch_related('categories__indicators').filter(title_ENG__iexact='Climate')
+    context = {
+        'topics': topics,  # iterable
+    }
+    return render(request, 'base/climate_data_explorer.html', context)
+
+
+@login_required
+def importer_dashboard_climate(request):
+    if not request.user.is_importer:
+        messages.error(request, 'Access denied. Only data importers can access this page.')
+        return render(request, 'usermanagement/access_denied.html')
+    
+    # Get categories managed by the importer's manager
+    assigned_categories = []
+    manager = getattr(request.user, 'manager', None)
+    if manager:
+        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
+    
+    return render(request, 'usermanagement/importer_dashboard_climate.html', {
+        'assigned_categories': assigned_categories
+    })
+
+@login_required
+def data_table_explorer_climate(request):
+    user = request.user
+    if user.is_superuser:
+        categories = Category.objects.prefetch_related('indicators').all().order_by('name_ENG')
+    else:
+        # Determine the manager to check assignments for
+        target_manager = user if user.is_category_manager else getattr(user, 'manager', None)
+        
+        if target_manager:
+            category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
+            categories = Category.objects.filter(id__in=category_ids).prefetch_related('indicators').order_by('name_ENG')
+        else:
+            categories = Category.objects.none()
+
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'usermanagement/data_table_explorer_climate.html', context)
+
+
+@login_required
+def add_indicator_climate(request):
+    if not request.user.is_importer:
+        messages.error(request, 'Access denied. Only data importers can submit indicators.')
+        return render(request, 'usermanagement/dashboard.html')
+
+    categories = Category.objects.all().order_by('name_ENG')
+    frequency_choices = Indicator.FREQUENCY_CHOICES
+
+    # Determine the importer's assigned categories via their category manager
+    assigned_categories = []
+    manager = getattr(request.user, 'manager', None)
+    if manager is not None:
+        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
+
+    return render(request,'usermanagement/add_indicator_climate.html',
+        {
+            'categories': categories,
+            'frequency_choices': frequency_choices,
+            'assigned_categories': assigned_categories,
+        }
+    )
+
+
+@login_required
+def documents_list_climate(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Document uploaded successfully.')
+            return redirect('documents_list')
+    else:
+        form = DocumentForm()
+    
+    topic_id = request.GET.get('topic')
+    category_id = request.GET.get('category')
+    
+    documents = Document.objects.all().order_by('-id')
+    if topic_id:
+        documents = documents.filter(topic_id=topic_id)
+    if category_id:
+        documents = documents.filter(category_id=category_id)
+        
+    topics = Topic.objects.filter(is_initiative=False)
+    categories = Category.objects.all()
+    if topic_id:
+        categories = categories.filter(topic_id=topic_id)
+    
+    context = {
+        'form': form,
+        'documents': documents,
+        'topics': topics,
+        'categories': categories,
+        'selected_topic': topic_id,
+        'selected_category': category_id,
+    }
+    return render(request, 'usermanagement/documents_list_climate.html', context)
+

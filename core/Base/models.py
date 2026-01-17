@@ -31,16 +31,36 @@ class Topic(models.Model):
     class Meta:
         ordering = ['rank'] 
 
+class DocumentCategory(models.Model):
+    """
+    Separate category model for documents, independent from Indicator categories.
+    """
+    name_ENG = models.CharField(max_length=300, unique=True)
+    name_AMH = models.CharField(max_length=300, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    rank = models.IntegerField(null=True, blank=True, default=0)
+
+    class Meta:
+        verbose_name = "Document Category"
+        verbose_name_plural = "Document Categories"
+        ordering = ['rank', 'name_ENG']
+
+    def __str__(self):
+        return self.name_ENG
+
+
 class Document(models.Model):
     # Responsible to store file documents
     title_ENG = models.CharField(max_length=300, unique = True)
     title_AMH = models.CharField(max_length=300, null = True)
     topic = models.ForeignKey(Topic, null=True, blank=True, on_delete=models.SET_NULL)
-    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL, related_name='documents')
+    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL)
+    document_category = models.ForeignKey(DocumentCategory, null=True, blank=True, on_delete=models.SET_NULL, related_name='documents')
     file= models.FileField(upload_to='documents/')
 
     def __str__(self):
         return self.title_ENG
+    
 
 class Category(models.Model):
     name_ENG = models.CharField(max_length=300, unique = True)

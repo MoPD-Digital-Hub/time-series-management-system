@@ -286,7 +286,7 @@ def create_importer_api(request):
         suffix += 1
 
     try:
-        user = UM_CustomUser.objects.create_user(email=email, username=username, first_name=first_name, last_name=last_name, password=password)
+        user = UM_CustomUser.objects.create_user(email=email, username=username, first_name=first_name, last_name=last_name, password=password , climate_user=request.user.climate_user)
         user.is_importer = True
         user.manager = request.user
         if photo:

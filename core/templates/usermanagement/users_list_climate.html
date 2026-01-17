@@ -1,0 +1,547 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+<link rel="stylesheet"
+ href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+
+<style>
+.choices { font-size: 12px; }
+
+.choices__inner {
+    min-height: 42px;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+}
+
+.choices__item--selectable {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.choices__list--dropdown {
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 20px rgba(0,0,0,.05);
+}
+
+/* ====== BASE FORM CONTROLS ====== */
+.form-control,
+.form-select {
+    font-size: 12px;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+/* Small size consistency */
+.form-control-sm,
+.form-select-sm {
+    font-size: 12px;
+    padding: 9px 12px;
+}
+
+/* Hover */
+.form-control:hover,
+.form-select:hover {
+    border-color: #cbd5f5;
+}
+
+/* Focus */
+.form-control:focus,
+.form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    outline: none;
+}
+
+/* Disabled */
+.form-control:disabled,
+.form-select:disabled {
+    background-color: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* Placeholder */
+.form-control::placeholder {
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+/* ====== FILE INPUT ====== */
+input[type="file"].form-control {
+    padding: 6px 8px;
+    font-size: 11px;
+    background-color: #f8fafc;
+    border-style: dashed;
+}
+
+/* ====== CHECKBOX ====== */
+.form-check-input {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* ====== LABELS ====== */
+label {
+    letter-spacing: 0.08em;
+}
+
+/* ====== INPUT GROUP SPACING ====== */
+.modal input,
+.modal select {
+    margin-top: 2px;
+}
+
+/* ====== FORM SECTION CARDS (subtle) ====== */
+.form-section {
+    padding: 12px;
+    border-radius: 0.75rem;
+    background: linear-gradient(to bottom, #ffffff, #fafafa);
+    border: 1px solid #f1f5f9;
+}
+
+/* ====== BUTTON POLISH ====== */
+.btn {
+    border-radius: 0.75rem;
+    font-size: 12px;
+}
+
+.btn-primary {
+    box-shadow: 0 10px 20px rgba(59,130,246,.25);
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f1f5f9;
+}
+</style>
+
+
+<body>
+       {% include "base/common/climate_sidebar.html" %}
+         {% include 'base/common/header.html' %}
+
+
+    </div><!-- [ Header ] end -->
+    <!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
+
+
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Users Management</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Manage system users and their roles</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if request.user.is_category_manager %}
+                    <button id="open-add-user" class="btn btn-primary">
+                        <i class="fas fa-user-plus mr-2"></i>Add User
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Search-->
+            <div class="card mb-6">
+                <div class="card-body">
+                    <form method="GET" class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <input type="text" name="search" value="{{ search_query }}" class="form-control"
+                                placeholder="Search users by email, name, or username...">
+                        </div>
+                        <div class="sm:w-48">
+                            <select name="role" class="form-select">
+                                <option value="">All Roles</option>
+                        
+                                <option value="admin"
+                                    {% if role_filter == 'admin' %}selected{% endif %}>
+                                    Administrators
+                                </option>
+                        
+                                <option value="category_manager"
+                                    {% if role_filter == 'category_manager' %}selected{% endif %}>
+                                    Category Managers
+                                </option>
+                        
+                                <option value="importer"
+                                    {% if role_filter == 'importer' %}selected{% endif %}>
+                                    Data Importers
+                                </option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
+                        {% if search_query or role_filter %}
+                        <a href="{% url 'users_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times mr-2"></i>Clear
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Roles</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Date Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users_page %}
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center">
+                                            {% if user.photo %}
+                                            <img src="{{ user.photo.url }}" alt="{{ user.get_full_name }}"
+                                                class="w-8 h-8 rounded-full mr-3">
+                                            {% else %}
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                                                <i class="fas fa-user text-gray-600"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="font-semibold">{{ user.get_full_name|default:user.username}}
+                                                </div>
+                                                <div class="text-sm text-gray-500">@{{ user.username }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-1">
+                                            {% if user.is_staff %}
+                                            <span class="badge bg-danger">Admin</span>
+                                            {% endif %}
+                                            {% if user.is_category_manager %}
+                                            <span class="badge bg-warning">Category Manager</span>
+                                            {% endif %}
+                                            {% if user.is_importer %}
+                                            <span class="badge bg-info">Importer</span>
+                                            {% endif %}
+                                            {% if not user.is_staff and not user.is_category_manager and not user.is_importer %}
+                                            <span class="badge bg-secondary">User</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if user.managed_categories.exists %}
+                                        <div class="flex flex-wrap gap-1">
+                                            {% for assign in user.managed_categories.all %}
+                                            <span class="badge bg-light text-dark border">{{ assign.category.name_ENG }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% elif user.manager and user.manager.managed_categories.exists %}
+                                        <div class="text-sm text-gray-500 italic">
+                                            Inherited:
+                                            {% for assign in user.manager.managed_categories.all %}
+                                            {{ assign.category.name_ENG }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-gray-400">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                        {{ user.last_login|date:"M d, Y H:i" }}
+                                        {% else %}
+                                        <span class="text-gray-400">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary edit-user-btn"
+                                                data-id="{{ user.id }}" data-email="{{ user.email }}"
+                                                data-first="{{ user.first_name }}" data-last="{{ user.last_name }}"
+                                                data-active="{{ user.is_active|yesno:'true,false' }}"
+                                                data-categories='[{% for assign in user.managed_categories.all %}"{{ assign.category.id }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                                                title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-gray-500 py-8">
+                                        {% if search_query or role_filter %}
+                                        No users found matching your criteria.
+                                        {% else %}
+                                        No users found.
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                    <!-- Pagination -->
+                    {% if users_page.has_other_pages %}
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="text-sm text-gray-700 dark:text-gray-300">
+                            Showing {{ users_page.start_index }} to {{ users_page.end_index }} of {{users_page.paginator.count }} results
+                        </div>
+                        <nav class="flex gap-2">
+                            {% if users_page.has_previous %}
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">First</a>
+                            <a href="?page={{ users_page.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Previous</a>
+                            {% endif %}
+
+                            <span class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded">
+                                Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}
+                            </span>
+
+                            {% if users_page.has_next %}
+                            <a href="?page={{ users_page.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Next</a>
+                            <a href="?page={{ users_page.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Last</a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    </div><!-- [ Main Content ] end -->
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+    <!-- Modal: Centered "ID Card" Style -->
+   <!-- Add User Modal -->
+    <div id="add-user-modal"
+        class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[2147483647] p-4 backdrop-blur-sm">
+
+        <div class="bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-gray-100 flex flex-col max-h-[85vh]"
+            style="width:560px; max-width:calc(100% - 2rem);">
+
+            <!-- Header -->
+            <div class="px-5 py-4 border-b flex justify-between items-center">
+                <h2 id="modal-title" class="text-sm font-bold text-slate-800">User Profile</h2>
+                <button onclick="document.getElementById('add-user-modal').classList.add('hidden')">
+                    <i class="fas fa-times text-slate-400 hover:text-red-500"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div id="add-user-alert"></div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email</label>
+                    <input id="new-user-email" type="email"
+                        class="form-control form-control-sm rounded-lg border-slate-200"
+                        placeholder="email@example.com">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">First Name</label>
+                        <input id="new-user-first" class="form-control form-control-sm rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Last Name</label>
+                        <input id="new-user-last" class="form-control form-control-sm rounded-lg">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Password</label>
+                    <input id="new-user-password" type="password"
+                        class="form-control form-control-sm rounded-lg"
+                        placeholder="••••••••">
+                    <p class="text-[9px] text-slate-400">Leave empty to keep current</p>
+                </div>
+
+                <!-- Category Multi Select -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        Category Access
+                    </label>
+
+                    <select id="new-user-category"
+                        class="form-select form-select-sm rounded-lg choices-multi"
+                        multiple>
+                        {% for cat in manager_categories %}
+                        <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <p class="text-[9px] text-slate-400 italic mt-1">
+                        Select one or more categories
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2 p-3 bg-blue-50/30 rounded-lg border">
+                    <input type="checkbox" id="user-is-active" checked>
+                    <label class="text-xs font-bold">Account Active</label>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Photo</label>
+                    <input id="new-user-photo" type="file"
+                        class="form-control form-control-sm text-xs bg-slate-50"
+                        accept="image/*">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-4 border-t flex justify-end gap-2">
+                <button id="cancel-add-user" class="btn btn-outline-secondary btn-sm">
+                    Cancel
+                </button>
+                <input type="hidden" id="edit-user-id">
+                <button id="submit-add-user" class="btn btn-primary btn-sm">
+                    Save Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
+       <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script>
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+   
+
+let categoryChoices = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const modal = document.getElementById('add-user-modal');
+    const openBtn = document.getElementById('open-add-user');
+    const cancelBtn = document.getElementById('cancel-add-user');
+
+    const editUserId = document.getElementById('edit-user-id');
+    const emailInput = document.getElementById('new-user-email');
+    const passwordInput = document.getElementById('new-user-password');
+    const firstInput = document.getElementById('new-user-first');
+    const lastInput = document.getElementById('new-user-last');
+    const activeCheckbox = document.getElementById('user-is-active');
+    const categorySelect = document.getElementById('new-user-category');
+
+    /* INIT CHOICES */
+    if (categorySelect) {
+        categoryChoices = new Choices(categorySelect, {
+            removeItemButton: true,
+            searchEnabled: true,
+            shouldSort: false,
+            itemSelectText: '',
+        });
+    }
+
+    /* CREATE USER */
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            editUserId.value = '';
+            emailInput.value = '';
+            passwordInput.value = '';
+            firstInput.value = '';
+            lastInput.value = '';
+            activeCheckbox.checked = true;
+
+            if (categoryChoices) {
+                categoryChoices.removeActiveItems();
+            }
+
+            modal.classList.remove('hidden');
+        });
+    }
+
+    /* EDIT USER */
+    document.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+
+            editUserId.value = btn.dataset.id;
+            emailInput.value = btn.dataset.email;
+            firstInput.value = btn.dataset.first;
+            lastInput.value = btn.dataset.last;
+            passwordInput.value = '';
+            activeCheckbox.checked = btn.dataset.active === 'true';
+
+            const assignedCats = JSON.parse(btn.dataset.categories || '[]');
+
+            if (categoryChoices) {
+                categoryChoices.removeActiveItems();
+                assignedCats.forEach(id => {
+                    categoryChoices.setChoiceByValue(String(id));
+                });
+            }
+
+            modal.classList.remove('hidden');
+        });
+    });
+
+    /* CLOSE */
+    cancelBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+});
+</script>
+
+</body>
+
+</html>

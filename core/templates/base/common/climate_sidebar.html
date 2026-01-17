@@ -1,0 +1,768 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+        .pc-navbar .pc-link {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+                padding: .75rem 1rem;
+                transition: all 0.3s ease;
+                border-radius: 8px;
+                margin: 0 0.5rem;
+        }
+
+        .pc-navbar .pc-link:hover {
+                background: rgba(59, 130, 246, 0.1);
+                transform: translateX(4px);
+        }
+
+        .pc-navbar .pc-mtext {
+                display: block;
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: break-word;
+                font-weight: 500;
+        }
+
+        .pc-navbar .pc-micon {
+                flex: 0 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                background: rgba(59, 130, 246, 0.1);
+                border-radius: 8px;
+                transition: all 0.3s ease;
+        }
+
+        .pc-navbar .pc-link:hover .pc-micon {
+                background: rgba(59, 130, 246, 0.2);
+                transform: scale(1.1);
+        }
+
+        .pc-navbar .pc-badge {
+                margin-left: auto;
+                background: #3b82f6;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+        }
+
+        .pc-submenu {
+                padding-left: 0;
+                margin: 0;
+        }
+
+        .pc-submenu .pc-item {
+                list-style: none;
+        }
+
+        .pc-submenu .pc-link {
+                padding-left: 3.5rem;
+                font-size: 0.875rem;
+        }
+
+        .topic-card .topic-bg {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transform: scale(1.5);
+                transition: transform 0.5s ease-out;
+        }
+
+        .topic-card:hover .topic-bg {
+                transform: scale(1);
+        }
+
+        /* Modern user card */
+        .pc-user-card {
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .pc-user-card .card-body {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
+        }
+</style>
+
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-bg: #1e293b;
+            --sidebar-active: #3b82f6;
+            --content-bg: #f8fafc;
+        }
+
+        /* Custom Sidebar */
+        .climate-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            color: #fff;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .climate-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .climate-sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .climate-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-header h3 i {
+            color: #10b981;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0.75rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: var(--sidebar-active);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .nav-section-title {
+            padding: 1rem 1.5rem 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .climate-main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            background: var(--content-bg);
+        }
+
+        .content-header {
+            background: #fff;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .content-body {
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-card.primary { border-left-color: #3b82f6; }
+        .stat-card.success { border-left-color: #10b981; }
+        .stat-card.warning { border-left-color: #f59e0b; }
+        .stat-card.info { border-left-color: #06b6d4; }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card.primary .stat-icon { background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .stat-card.success .stat-icon { background: rgba(16,185,129,0.1); color: #10b981; }
+        .stat-card.warning .stat-icon { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .stat-card.info .stat-icon { background: rgba(6,182,212,0.1); color: #06b6d4; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0.5rem 0 0.25rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-title i {
+            color: #3b82f6;
+        }
+
+        /* Chart Container */
+        .chart-wrapper {
+            height: 350px;
+            position: relative;
+            min-height: 350px;
+        }
+        
+        .chart-wrapper canvas {
+            max-height: 100% !important;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: #f8fafc;
+        }
+
+        .data-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .indicator-row:hover {
+            background: #f1f5f9 !important;
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
+
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .badge-primary { background: rgba(59,130,246,0.1); color: #3b82f6; }
+
+        /* Document Card */
+        .document-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .document-item:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Search Box */
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+
+        /* Filter Buttons */
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .filter-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .filter-btn.active {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        /* Document Category Tabs */
+        .document-category-tab {
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .document-category-tab:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(59,130,246,0.2);
+        }
+
+        .document-category-tab.active {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+
+        .document-category-tab.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59,130,246,0.4);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .climate-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .climate-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .climate-main-content {
+                margin-left: 0;
+            }
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+
+        /* Bottom Drawer/Canvas */
+        .indicator-drawer {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: 0;
+            background: #fff;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .indicator-drawer.open {
+            height: 85vh;
+        }
+
+        .drawer-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+
+        .drawer-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .drawer-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .drawer-close-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .drawer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .drawer-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metadata-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .metadata-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metadata-value {
+            font-size: 1rem;
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .drawer-chart-container {
+            height: 400px;
+            min-height: 400px;
+            margin-bottom: 2rem;
+            background: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+        
+        .drawer-chart-container canvas {
+            max-height: 100% !important;
+        }
+
+        .drawer-table-container {
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .indicator-drawer {
+                left: 0;
+            }
+            .indicator-drawer.open {
+                height: 90vh;
+            }
+        }
+    </style>
+
+<nav class="pc-sidebar">
+        <div class="navbar-wrapper">
+                <div class="m-header flex items-center py-4 px-6 h-header-height"><a href="{% url 'dashboard_index' %}"
+                                class="b-brand flex items-center gap-3">
+                                <img src="{% static 'assets/images/logo-light.png' %}" class="img-fluid logo-lg"
+                                        alt="logo" data-light="{% static 'assets/images/logo-light.png' %}"
+                                        data-dark="{% static 'assets/images/logo-dark.png' %}">
+                </div>
+                <div class="navbar-content h-[calc(100vh_-_74px)] py-2.5"
+                        style="display:flex; flex-direction:column; max-height:calc(100vh - 74px);">
+                        <div
+                                class="card pc-user-card mx-[15px] mb-[15px] bg-theme-sidebaruserbg dark:bg-themedark-sidebaruserbg">
+                                <div class="card-body !p-5">
+                                        <div class="flex items-center"><img
+                                                        class="shrink-0 w-[45px] h-[45px] rounded-full"
+                                                        src="{% static 'assets/images/profile-icon.png' %}"
+                                                        alt="user-image">
+                                                <div class="ml-4 mr-2 grow">
+                                                        <h7 class="mb-0"><b>Welcome:</b> {{ user.first_name }}
+                                                                {{user.last_name }}</h7>
+                                                        </small>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                        <ul class="pc-navbar"
+                                style="overflow:auto; flex:1; -webkit-overflow-scrolling:touch; overscroll-behavior: contain; padding-bottom:8px;">
+                                
+                             
+                                <li class="pc-item pc-caption">
+                                        <label>Dashboards</label>
+                                </li>
+                                <li class="pc-item">
+                                    <a href="{% url 'climate_dashboard' %}" class="pc-link">
+                                        <span class="pc-micon">
+                                            <i class="fas fa-leaf"></i> <!-- Climate / Dashboard -->
+                                        </span>
+                                        <span class="pc-mtext">Main Dashboard</span>
+                                    </a>
+                                </li>
+
+                                <li class="pc-item">
+                                    <a href="{% url 'climate_user_management_dashboard' %}" class="pc-link">
+                                        <span class="pc-micon">
+                                            <i class="fas fa-person"></i> <!-- Climate / Dashboard -->
+                                        </span>
+                                        <span class="pc-mtext">User Dashboard</span>
+                                    </a>
+                                </li>
+
+                                <li class="pc-item">
+                                        <a href="{% url 'documents_list_climate' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-upload"></i>
+                                                </span>
+                                                <span class="pc-mtext">Add Documents</span>
+                                        </a>
+                                </li>
+
+                                <li class="pc-item">
+                                    <a href="{% url 'climate_document' %}" class="pc-link">
+                                        <span class="pc-micon">
+                                            <i class="fas fa-file-alt"></i> <!-- Documents -->
+                                        </span>
+                                        <span class="pc-mtext">Documents List</span>
+                                    </a>
+                                </li>
+
+                                <li class="pc-item">
+                                    <a href="{% url 'climate_data_explorer' %}" class="pc-link">
+                                        <span class="pc-micon">
+                                            <i class="fas fa-chart-area"></i> <!-- Data Explorer / Graphs -->
+                                        </span>
+                                        <span class="pc-mtext">Data Explorer</span>
+                                    </a>
+                                </li>
+
+                                {% if user.is_category_manager %}
+                                <li class="pc-item pc-caption">
+                                        <label>Category Management</label>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'users_list_climate' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-users"></i>
+                                                </span>
+                                                <span class="pc-mtext">Manage Users</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'climate_review_table_data' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-table"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Table</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'submissions_list_climate' %}?type=indicator&status=pending"
+                                                class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clock"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Indicators</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'submissions_list_climate' %}?type=data&status=pending" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                </span>
+                                                <span class="pc-mtext">Review Data</span>
+                                        </a>
+                                </li>
+                                {% endif %}
+
+                                 {% if user.is_importer %}
+                                <li class="pc-item pc-caption">
+                                        <label>Data Import</label>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'add_indicator_climate' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-plus"></i>
+                                                </span>
+                                                <span class="pc-mtext">Add indicators</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'data_table_explorer_climate' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                </span>
+                                                <span class="pc-mtext">Data Table</span>
+                                        </a>
+                                </li>
+                                <li class="pc-item">
+                                        <a href="{% url 'importer_dashboard_climate' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                        <i class="fas fa-upload"></i>
+                                                </span>
+                                                <span class="pc-mtext">Add Data Submission</span>
+                                        </a>
+                                </li>
+                                 
+                                {% endif %}
+
+
+                        </ul>
+                </div>
+        </div>
+</nav><!-- [ Sidebar Menu ] end -->

@@ -1,0 +1,250 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+<body>
+ {% include "base/common/climate_sidebar.html" %}
+         {% include 'base/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Document Management</h2>
+                </div>
+                <div class="shrink-0 flex gap-2">
+                    <button type="button" class="btn btn-primary flex items-center gap-2" data-pc-toggle="modal"
+                        data-pc-target="#uploadModal">
+                        <i class="fas fa-upload"></i>
+                        Upload Document
+                    </button>
+                </div>
+            </div>
+
+            <!-- Compact Filters -->
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 py-3 px-4">
+                <form method="GET" class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap"><i
+                                class="fas fa-filter mr-1"></i> Filter:</span>
+                    </div>
+
+                    <div class="min-w-[200px]">
+                        <select name="topic" id="filter-topic"
+                            class="form-select text-sm py-1.5 focus:ring-primary-500 border-gray-300">
+                            <option value="">All Topics</option>
+                            {% for topic in topics %}
+                            <option value="{{ topic.id }}" {% if selected_topic == topic.id|stringformat:"s" %}selected{% endif %}>{{ topic.title_ENG }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="min-w-[200px]">
+                        <select name="category" id="filter-category"
+                            class="form-select text-sm py-1.5 focus:ring-primary-500 border-gray-300">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" data-topic="{{ category.topic_id }}" {% if selected_topic == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name_ENG }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2 ml-auto">
+                        <button type="submit" class="btn btn-primary btn-sm px-4">Apply</button>
+                        <a href="{% url 'documents_list' %}" class="btn btn-light-secondary btn-sm px-4">Clean</a>
+                    </div>
+                </form>
+            </div>
+
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Title (ENG)</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Title (AMH)</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Topic</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Category</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        File</th>
+                                    <th
+                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for doc in documents %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ doc.title_ENG }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ doc.title_AMH|default:"-" }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ doc.topic.title_ENG|default:"-" }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ doc.category.name_ENG|default:"-" }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <a href="{{ doc.file.url }}"
+                                            class="text-primary-600 hover:text-primary-900 flex items-center gap-2"
+                                            target="_blank">
+                                            <i class="fas fa-file-download"></i>
+                                            Download
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button type="button" class="text-red-600 hover:text-red-900"
+                                            data-pc-toggle="modal" data-pc-target="#deleteModal{{ doc.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ doc.id }}" tabindex="-1"
+                                            aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Confirm Delete</h5>
+                                                        <button type="button" class="btn-close" data-pc-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body text-center">
+                                                        <p>Are you sure you want to delete
+                                                            <strong>{{doc.title_ENG}}</strong>?
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-pc-dismiss="modal">Cancel</button>
+                                                        <a href="{% url 'delete_document' doc.id %}"
+                                                            class="btn btn-danger">Delete</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">No documents found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered shadow-lg">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-primary-600 py-4">
+                    <h5 class="modal-title text-white font-bold" id="uploadModalLabel">Upload New Document</h5>
+                    <button type="button" class="btn-close btn-close-white" data-pc-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body p-6">
+                        <div class="grid grid-cols-1 gap-6">
+                            {% for field in form %}
+                            <div>
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                <div class="text-red-500 text-xs mt-1">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-gray-50 dark:bg-gray-800/50 p-4">
+                        <button type="button" class="btn btn-light transition-all"
+                            data-pc-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                            class="btn btn-primary px-6 shadow-md hover:shadow-lg transition-all">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+    <script>
+        $(document).ready(function () {
+            const topicSelect = $('#filter-topic');
+            const categorySelect = $('#filter-category');
+            const allCategories = categorySelect.find('option').clone();
+
+            function updateCategories(tSelect, cSelect, currentVal = null) {
+                const selectedTopic = tSelect.val();
+                cSelect.empty();
+                cSelect.append('<option value="">All Categories</option>');
+
+                allCategories.each(function () {
+                    const option = $(this);
+                    const topicId = option.data('topic');
+
+                    if (option.val() === '') return; // Skip dummy
+
+                    if (!selectedTopic || topicId == selectedTopic) {
+                        cSelect.append(option.clone());
+                    }
+                });
+
+                if (currentVal) {
+                    cSelect.val(currentVal);
+                }
+            }
+
+            topicSelect.on('change', function () {
+                updateCategories(topicSelect, categorySelect);
+            });
+
+            // Initial run if topic is selected
+            if (topicSelect.val()) {
+                updateCategories(topicSelect, categorySelect, "{{ selected_category }}");
+            }
+
+            // Also handle cascading for the Upload Modal
+            const modalTopicSelect = $('#uploadModal select[name="topic"]');
+            const modalCategorySelect = $('#uploadModal select[name="category"]');
+
+            modalTopicSelect.on('change', function () {
+                updateCategories(modalTopicSelect, modalCategorySelect);
+            });
+
+            // Trigger initial population for modal
+            updateCategories(modalTopicSelect, modalCategorySelect);
+
+        });
+    </script>
+</body>
+
+</html>

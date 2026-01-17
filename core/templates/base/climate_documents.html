@@ -1,0 +1,261 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en" class="preset-1" data-pc-sidebar-caption="true" data-pc-layout="vertical" data-pc-direction="ltr" dir="ltr">
+<head>
+    <title>Climate Dashboard | TSMS</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0,minimal-ui">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="{% static 'assets/fonts/inter/inter.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/fonts/phosphor/duotone/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/fonts/tabler-icons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/fonts/feather.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/fonts/fontawesome.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
+
+    <!-- jQuery (if needed for your custom scripts) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Your CSS -->
+<link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+<link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    
+</head>
+
+<body>
+    
+
+   {% include "base/common/climate_sidebar.html" %}
+
+
+    <!-- Main Content -->
+    <main class="climate-main-content">
+        <!-- Header -->
+        <div class="content-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #1e293b;">
+                        {{ climate_topic.title_ENG }} Management
+                    </h1>
+                    <p style="margin: 0.5rem 0 0; color: #64748b;">
+                        {{ climate_topic.description|default:"Comprehensive analytics and knowledge management for climate-related data, policies, and initiatives." }}
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <span style="padding: 0.5rem 1rem; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 6px; font-weight: 600;">
+                        {{ categories.count }} Categories
+                    </span>
+                    <span style="padding: 0.5rem 1rem; background: rgba(16,185,129,0.1); color: #10b981; border-radius: 6px; font-weight: 600;">
+                        {{ indicators.count }} Indicators
+                    </span>
+                    <span style="padding: 0.5rem 1rem; background: rgba(6,182,212,0.1); color: #06b6d4; border-radius: 6px; font-weight: 600;">
+                        {{ documents.count }} Documents
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Body -->
+        <div class="content-body">
+           
+            <!-- Documents Tab -->
+            <div>
+                <!-- Search -->
+                <div class="content-card">
+                    <div class="card-title">
+                        <i class="fas fa-search"></i>
+                        Search Documents
+                    </div>
+                    <div>
+                        <input type="text" class="search-input" id="document-search-input" placeholder="Search by title, category...">
+                    </div>
+                </div>
+
+                <!-- Document Category Tabs -->
+                <div class="content-card">
+                    <div class="card-title">
+                        <i class="fas fa-folder"></i>
+                        Document Categories
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                        <button class="filter-btn document-category-tab active" data-category-id="" style="position: relative;">
+                            All Documents
+                            <span style="margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: rgba(59,130,246,0.2); border-radius: 12px; font-size: 0.75rem;" id="all-docs-count">{{ documents.count }}</span>
+                        </button>
+                        {% for doc_category in document_categories %}
+                        <button class="filter-btn document-category-tab" data-category-id="{{ doc_category.id }}" style="position: relative;">
+                            {{ doc_category.name_ENG }}
+                            <span style="margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: rgba(59,130,246,0.2); border-radius: 12px; font-size: 0.75rem;" class="doc-category-count" data-category="{{ doc_category.id }}">0</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Documents List -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600; color: #1e293b;">
+                                Document Library
+                            </h3>
+                            <span style="padding: 0.25rem 0.75rem; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 20px; font-size: 0.875rem; font-weight: 600;" id="document-count">{{ documents.count }}</span>
+                        </div>
+                        <div id="documents-container">
+                           <div class="row g-4">
+                                {% for document in documents %}
+                                <div class="col-3 col-sm-3 col-md-3 col-lg-3">
+                                    <div class="document-item h-100" data-category-id="{{ document.document_category.id|default:'' }}">
+                                        <div style="display: flex; flex-direction: column; height: 100%; justify-content: space-between;">
+                                            <div>
+                                                <h4 style="margin: 0 0 0.5rem; font-size: 1rem; font-weight: 600; color: #1e293b;">
+                                                    <i class="fas fa-file-pdf" style="color: #ef4444; margin-right: 0.5rem;"></i>
+                                                    {{ document.title_ENG }}
+                                                </h4>
+
+                                                {% if document.title_AMH %}
+                                                <p style="margin: 0 0 0.5rem; color: #64748b; font-size: 0.875rem;">
+                                                    {{ document.title_AMH }}
+                                                </p>
+                                                {% endif %}
+
+                                                {% if document.document_category %}
+                                                <span class="category-badge badge-primary">
+                                                    {{ document.document_category.name_ENG }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+
+                                            <a href="{{ document.file.url }}" target="_blank" class="btn-primary mt-3" style="text-decoration: none;">
+                                                <i class="fas fa-download"></i> Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-6 text-center py-5" style="color: #94a3b8;">
+                                    <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                    <p>No documents found. Documents will appear here once uploaded.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+
+        // Category Filter
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId;
+                
+                // Update active button
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Filter table rows
+                const rows = document.querySelectorAll('#analytics-tab .data-table tbody tr');
+                rows.forEach(row => {
+                    const categoryIds = row.dataset.categoryIds || '';
+                    if (!categoryId || categoryIds.includes(categoryId + ',')) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Reload chart
+                loadIndicatorsChart(categoryId);
+            });
+        });
+
+        // Document Category Tabs
+        let currentDocumentCategory = '';
+        document.querySelectorAll('.document-category-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const categoryId = this.dataset.categoryId || '';
+                
+                // Update active tab
+                document.querySelectorAll('.document-category-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                currentDocumentCategory = categoryId;
+                filterDocuments();
+            });
+        });
+
+        // Document Search
+        const documentSearchInput = document.getElementById('document-search-input');
+        
+        function filterDocuments() {
+            const searchQuery = documentSearchInput.value.toLowerCase();
+            const categoryId = currentDocumentCategory;
+            const documents = document.querySelectorAll('.document-item');
+            let visibleCount = 0;
+            
+            // Count documents per category
+            const categoryCounts = {};
+            documents.forEach(doc => {
+                const docCategoryId = doc.dataset.categoryId || '';
+                if (!categoryCounts[docCategoryId]) {
+                    categoryCounts[docCategoryId] = 0;
+                }
+                categoryCounts[docCategoryId]++;
+            });
+            
+            // Update category counts
+            document.querySelectorAll('.doc-category-count').forEach(countEl => {
+                const catId = countEl.dataset.category;
+                countEl.textContent = categoryCounts[catId] || 0;
+            });
+            
+            // Filter documents
+            documents.forEach(doc => {
+                const docCategoryId = doc.dataset.categoryId || '';
+                const docTitle = doc.textContent.toLowerCase();
+                
+                const matchesSearch = !searchQuery || docTitle.includes(searchQuery);
+                const matchesCategory = !categoryId || docCategoryId === categoryId;
+                
+                if (matchesSearch && matchesCategory) {
+                    doc.style.display = '';
+                    visibleCount++;
+                } else {
+                    doc.style.display = 'none';
+                }
+            });
+            
+            // Update total count
+            document.getElementById('document-count').textContent = visibleCount;
+            document.getElementById('all-docs-count').textContent = documents.length;
+        }
+        
+        documentSearchInput.addEventListener('input', filterDocuments);
+        
+        // Initialize document counts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            filterDocuments();
+        });
+
+  </script>
+</body>
+</html>

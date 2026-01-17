@@ -112,105 +112,26 @@ class AnnualDataWideResource(resources.ModelResource):
     indicator = fields.Field(
         column_name='indicator',
         attribute='indicator',
-        widget=ForeignKeyWidget(Indicator, 'code')  
+        widget=ForeignKeyWidget(Indicator, 'code')
     )
+
     for_datapoint = fields.Field(
         column_name='for_datapoint',
         attribute='for_datapoint',
-        widget=ForeignKeyWidget(DataPoint, 'year_EC') 
-    )
-    performance = fields.Field(
-        column_name='performance',
-        attribute='performance'
+        widget=ForeignKeyWidget(DataPoint, 'year_EC')
     )
 
     class Meta:
         model = AnnualData
-        skip_unchanged = True
-        report_skipped = True
-        import_id_fields = ('indicator', 'for_datapoint',)
+        import_id_fields = ('indicator', 'for_datapoint')
         fields = ('indicator', 'for_datapoint', 'performance')
+        skip_unchanged = False
+        report_skipped = True
 
-    def get_instance(self, instance_loader, row):
-        indicator_code = row.get('indicator')
-        year_ec = row.get('for_datapoint')
-        if not indicator_code or not year_ec:
-            return None
-
-        try:
-            indicator = Indicator.objects.get(code=indicator_code)
-            datapoint = DataPoint.objects.get(year_EC=year_ec)
-            return AnnualData.objects.get(indicator=indicator, for_datapoint=datapoint)
-        except (Indicator.DoesNotExist, DataPoint.DoesNotExist, AnnualData.DoesNotExist):
-            return None
-        
     def before_import_row(self, row, **kwargs):
-        if row.get('for_datapoint') is None:
-               pass
-        year = row.get("for_datapoint")
-        if year:
-            datapoint, created = DataPoint.objects.get_or_create(year_EC=year)
-            row["for_datapoint"] = datapoint.year_EC
-
-    def import_data(self, dataset, dry_run=False, raise_errors=False, use_transactions=None, **kwargs):
-        result_dataset = Dataset(headers=['indicator', 'for_datapoint', 'performance'])
-
-        new_count = 0
-        updated_count = 0
-
-        for row_number, row in enumerate(dataset.dict, start=1):
-            indicator_key = row.get('indicator')
-            if not indicator_key:
-                continue
-
-            try:
-                indicator = Indicator.objects.get(code=indicator_key)
-            except Indicator.DoesNotExist:
-                continue
-
-            for year, value in row.items():
-                if year == 'indicator' or value in [None, '']:
-                    continue
-
-                try:
-                    datapoint, created = DataPoint.objects.get_or_create(year_EC=year)
-                except DataPoint.DoesNotExist:
-                    continue
-
-                try:
-                    performance = float(value)
-                except ValueError:
-                    continue
-
-                result_dataset.append([indicator_key, year, performance])
-
-                if not dry_run:
-                    obj, created = AnnualData.objects.update_or_create(
-                        indicator=indicator,
-                        for_datapoint=datapoint,
-                        defaults={'performance': performance}
-                    )
-                    if created:
-                        new_count += 1
-                    else:
-                        updated_count += 1
-
-        if dry_run:
-            return super().import_data(result_dataset, dry_run=True, raise_errors=raise_errors, **kwargs)
-
-        result = Result()
-        result.rows = []
-        result.totals = {
-            'new': new_count,
-            'update': updated_count,
-            'skip': 0,
-            'failed': 0,
-            'delete': 0,
-        }
-        result.diff_headers = ['indicator', 'for_datapoint', 'performance']
-
-        return result
-
+        year = str(row.get('for_datapoint', '')).strip()
+        if year.isdigit():
+            DataPoint.objects.get_or_create(year_EC=int(year))
 class QuarterDataResource(resources.ModelResource):    
     indicator = fields.Field(
         column_name='indicator',

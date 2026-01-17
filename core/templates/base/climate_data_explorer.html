@@ -1,0 +1,180 @@
+{% load static %}
+
+<!doctype html>
+
+{% include 'base/common/head.html' %}
+<style>
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+    }
+
+    .dropdown-panel {
+        width: min(320px, 92vw);
+        max-height: 50vh;
+        overflow: auto;
+    }
+
+    .dropdown-panel label span {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    th.vhead {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        vertical-align: bottom;
+        text-align: left;
+        font-size: 0.95em;
+        padding: 0.5rem 0.25rem;
+        height: 120px;
+    }
+</style>
+
+<body>
+    {% include 'base/common/climate_sidebar.html' %}
+    {% include 'base/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-4">
+                        <h5 class="mb-0 font-bold text-lg">Data Explorer</h5>
+                        <div class="flex items-center gap-2">
+                            <button id="clear-all"
+                                class="px-3 py-1 rounded border border-theme-border text-gray-700 hover:bg-gray-50 text-sm">Clear</button>
+                            <button id="apply-selection" class="btn btn-primary btn-sm">Apply</button>
+                        </div>
+                    </div>
+
+
+                    <div class="filter-grid mb-2">
+                        <div class="relative">
+                            <button type="button" id="dd-topic-btn"
+                                class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
+                                <i class="fas fa-layer-group text-primary-500"></i><span>Topics</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="dd-topic"
+                                class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg">
+                                <div class="p-2 border-b">
+                                    <input id="search-topic" type="text" placeholder="Search topics..."
+                                        class="w-full px-2 py-2 text-sm border rounded" />
+                                </div>
+                                <div class="p-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Select All</span>
+                                    <input type="checkbox" id="topic-select-all" class="form-check-input" />
+                                </div>
+                                <div id="topic-list" class="p-2 space-y-1">
+                                    {% for topic in topics %}
+                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50">
+                                        <input type="checkbox" class="topic-checkbox" data-id="{{ topic.id }}"
+                                            data-title="{{ topic.title_eng }}">
+                                        <span class="whitespace-normal break-words">{{ topic.title_ENG }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <button type="button" id="dd-category-btn"
+                                class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
+                                <i class="fas fa-folder text-warning-500"></i><span>Categories</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="dd-category"
+                                class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg">
+                                <div class="p-2 border-b">
+                                    <input id="search-category" type="text" placeholder="Search categories..."
+                                        class="w-full px-2 py-2 text-sm border rounded" />
+                                </div>
+                                <div class="p-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Select All</span>
+                                    <input type="checkbox" id="category-select-all" class="form-check-input" />
+                                </div>
+                                <div id="category-list" class="p-2 space-y-1">
+                                    {% for topic in topics %}
+                                    {% for cat in topic.categories.all %}
+                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50"
+                                        data-topic="{{ topic.id }}">
+                                        <input type="checkbox" class="cat-checkbox" data-id="{{ cat.id }}"
+                                            data-topic="{{ topic.id }}" data-title="{{ cat.title_eng }}">
+                                        <span class="whitespace-normal break-words">{{ cat.name_ENG }}</span>
+                                    </label>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <button type="button" id="dd-ind-btn"
+                                class="w-full justify-between px-3 py-2 rounded border border-theme-border bg-white shadow-sm hover:bg-gray-50 inline-flex items-center gap-2">
+                                <i class="fas fa-chart-line text-success-500"></i><span>Indicators</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div id="dd-ind"
+                                class="hidden absolute z-10 mt-2 dropdown-panel bg-white border border-theme-border rounded shadow-lg">
+                                <div class="p-2 border-b">
+                                    <input id="search-ind" type="text" placeholder="Search indicators..."
+                                        class="w-full px-2 py-2 text-sm border rounded" />
+                                </div>
+                                <div class="p-2 flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Select All</span>
+                                    <input type="checkbox" id="ind-select-all" class="form-check-input" />
+                                </div>
+                                <div id="ind-list" class="p-2 space-y-1">
+                                    {% for topic in topics %}
+                                    {% for cat in topic.categories.all %}
+                                    {% for ind in cat.indicators.all %}
+                                    <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50"
+                                        data-topic="{{ topic.id }}" data-cat="{{ cat.id }}">
+                                        <input type="checkbox" class="ind-checkbox" data-id="{{ ind.id }}"
+                                            data-cat="{{ cat.id }}" data-topic="{{ topic.id }}"
+                                            data-title="{{ ind.title_ENG }}">
+                                        <span class="whitespace-normal break-words">{{ ind.title_ENG }}</span>
+                                    </label>
+                                    {% endfor %}
+                                    {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500">Tip: use the dropdowns to filter; selections cascade and table
+                        updates on change.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="flex items-center gap-3 mb-3">
+                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="annual">Yearly</button>
+                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="quarterly">Quarterly</button>
+                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="monthly">Monthly</button>
+                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="weekly">Weekly</button>
+                        <button class="btn btn-outline-primary btn-sm data-mode" data-mode="daily">Daily</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="explorer-table">
+                            <thead id="explorer-head" class="align-top"></thead>
+                            <tbody id="explorer-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+
+    <script src="{% static 'assets/js/data_explorer.js' %}"></script>
+
+</body>
+
+</html>
