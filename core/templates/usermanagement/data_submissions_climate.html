@@ -38,19 +38,19 @@
             <div class="card mb-6">
                 <div class="card-body">
                     <div class="flex flex-wrap gap-2">
-                        <a href="{% url 'submissions_list' %}?type=data" data-status=""
+                        <a href="{% url 'submissions_list_climate' %}?type=data" data-status=""
                             class="px-4 py-2 rounded-lg font-medium {% if not status_filter %}bg-primary-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             All Submissions
                         </a>
-                        <a href="{% url 'submissions_list' %}?type=data&status=pending" data-status="pending"
+                        <a href="{% url 'submissions_list_climate' %}?type=data&status=pending" data-status="pending"
                             class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'pending' %}bg-yellow-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-clock mr-1"></i>Pending ({{ pending_count|default:0 }})
                         </a>
-                        <a href="{% url 'submissions_list' %}?type=data&status=approved" data-status="approved"
+                        <a href="{% url 'submissions_list_climate' %}?type=data&status=approved" data-status="approved"
                             class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'approved' %}bg-green-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-check mr-1"></i>Approved
                         </a>
-                        <a href="{% url 'submissions_list' %}?type=data&status=declined" data-status="declined"
+                        <a href="{% url 'submissions_list_climate' %}?type=data&status=declined" data-status="declined"
                             class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'declined' %}bg-red-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
                             <i class="fas fa-times mr-1"></i>Declined
                         </a>
