@@ -205,9 +205,9 @@ def login_view(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            auth_login(request, user)
             if user.climate_user:
                 return redirect('climate_dashboard')
-            auth_login(request, user)
             if next_url:
                 return redirect(next_url)
             return redirect('user_management_dashboard')
