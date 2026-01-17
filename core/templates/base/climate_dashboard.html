@@ -210,6 +210,7 @@
             }
 
             function renderCharts(data) {
+                console.log(data)
                 const years = [...new Set(data.flatMap(ind => ind.annual_data.map(d => d.year_gc)))].sort();
 
                 // Performance Trend
