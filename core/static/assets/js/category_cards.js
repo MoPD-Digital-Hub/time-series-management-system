@@ -52,6 +52,9 @@ $("#filter-btn").on("click", function () {
         return;
     }
 
+    // Show loading state
+    $("#search-result-section").html('<div class="card mb-4"><div class="card-body text-center py-8"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-3 text-gray-600">Loading results...</p></div></div>').show();
+
     var color =
         $('.topic-card[data-topicid="' + topicId + '"]').data("color") ||
         "bg-primary-500";
@@ -75,61 +78,8 @@ $("#filter-btn").on("click", function () {
             }
         });
 
+        // Render results - charts will be rendered inside this function
         renderSearchResultsWithPagination(allIndicators, cardColor, 1);
-
-        /* ================================
-           RENDER CHARTS
-        ================================= */
-        categories.forEach(function (cat) {
-            if (catId && cat.id != catId) return;
-
-            var indicators = Array.isArray(cat?.indicators) ? cat.indicators : [];
-
-            indicators.forEach(function (ind) {
-                if (search && !ind.title_ENG.toLowerCase().includes(search)) return;
-
-                var ctx = document.getElementById("chart-search-" + ind.id);
-                if (!ctx) return;
-
-                var labels = Array.isArray(ind.data_points)
-                    ? ind.data_points.map((dp) => dp.year_GC)
-                    : [];
-
-                var values = Array.isArray(ind.data_points)
-                    ? ind.data_points.map((dp) => dp.value)
-                    : [];
-
-                new Chart(ctx, {
-                    type: "line",
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: ind.title_ENG,
-                                data: values,
-                                borderColor: cardColor,
-                                backgroundColor: hexToRgba(cardColor, "0.1"),
-                                tension: 0.3,
-                                fill: true,
-                                pointRadius: 3,
-                                pointBackgroundColor: cardColor,
-                            },
-                        ],
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false },
-                            title: { display: false },
-                        },
-                        scales: {
-                            x: { title: { display: true, text: "Year (GC)" } },
-                            y: { title: { display: true, text: "Performance" } },
-                        },
-                    },
-                });
-            });
-        });
     });
 });
 
@@ -170,12 +120,112 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
     var html = `<div class="card mb-4"><div class="card-body">
         <h5 class="chart-title font-bold mb-4">Results</h5>
 
-        <div class="mb-8">
-            <h6 class="font-semibold mb-3 text-gray-700">Charts (Page ${currentPage} of ${totalPages})</h6>
+        <!-- Side by side layout: Table (left) and Charts (right) -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div style="display: flex; flex-direction: row; gap: 1.5rem; width: 100%;" class="search-results-container">
+                <!-- LEFT SIDE: DATA TABLE -->
+                <div style="flex: 1; min-width: 0; width: 50%;" class="search-table-container">
+                    <h6 class="font-semibold mb-3 text-gray-700">Data Table</h6>
+                    <div class="border rounded-xl overflow-hidden shadow-sm">
+                        <div class="table-scroll-wrapper" style="overflow-x: auto; overflow-y: auto;">
+                            <table class="min-w-full border-collapse" style="min-width: max-content;">
+                                <thead class="bg-gray-100" style="position: sticky; top: 0; z-index: 1000;">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b bg-gray-100" style="position: sticky; left: 0; top: 0; z-index: 1001; min-width: 200px; max-width: 200px; background-color: #f3f4f6 !important;">
+                                            Indicator
+                                        </th>
+    `;
+
+    // Collect all unique years from all indicators
+    // Use year_EC for sorting and year_GC for display
+    var yearMap = {}; // Map year_EC to year_GC for display
+    var yearDataMap = {}; // Map to store indicator data by year_EC
+    
+    if (allIndicators.length > 0) {
+        allIndicators.forEach(function (ind) {
+            if (!Array.isArray(ind.data_points) || !ind.data_points.length) return;
+            
+            yearDataMap[ind.id] = {};
+            
+            ind.data_points.forEach(function (dp) {
+                var yearEC = dp.year_EC;
+                var yearGC = dp.year_GC || (yearEC ? String(yearEC) : null);
+                
+                if (yearEC !== undefined && yearEC !== null) {
+                    yearMap[yearEC] = yearGC || String(yearEC);
+                    yearDataMap[ind.id][yearEC] = dp.value;
+                }
+            });
+        });
+    }
+
+    // Sort years by year_EC in descending order (newest first)
+    var sortedYearECs = Object.keys(yearMap).map(Number).sort(function(a, b) {
+        return b - a; // Descending order
+    });
+
+    // Generate year column headers with vertical text (display year_GC format) - reads top to bottom
+    sortedYearECs.forEach(function(yearEC) {
+        var yearDisplay = yearMap[yearEC] || String(yearEC);
+        html += `
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b bg-gray-100" style="position: sticky; top: 0; z-index: 1000; min-width: 50px; max-width: 50px; height: 120px; background-color: #f3f4f6 !important;">
+                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-90deg); white-space: nowrap;">${yearDisplay}</div>
+                                        </th>
+        `;
+    });
+
+    html += `
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+    `;
+
+    if (allIndicators.length > 0) {
+        allIndicators.forEach(function (ind) {
+            if (!Array.isArray(ind.data_points) || !ind.data_points.length) return;
+
+            html += `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-sm font-semibold text-gray-900 bg-white align-top border-r" style="position: sticky; left: 0; z-index: 1; min-width: 200px; max-width: 200px; background-color: white !important;">
+                            <a href="/indicator/${ind.id}/" target="_blank"
+                                class="text-primary-600 hover:underline block leading-snug">
+                                ${ind.title_ENG}
+                            </a>
+                        </td>
+            `;
+
+            // Add data for each year column (using year_EC as key)
+            sortedYearECs.forEach(function(yearEC) {
+                var value = yearDataMap[ind.id] && yearDataMap[ind.id][yearEC] !== undefined 
+                    ? yearDataMap[ind.id][yearEC] 
+                    : '';
+                html += `
+                        <td class="px-3 py-3 text-sm text-center text-gray-800 whitespace-nowrap border-l" style="position: relative; z-index: 1; background-color: white;">
+                            ${value}
+                        </td>
+                `;
+            });
+
+            html += `</tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="${sortedYearECs.length + 1}" class="px-4 py-3 text-center text-sm text-gray-400">No data available.</td></tr>`;
+    }
+
+    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE: CHARTS -->
+                <div style="flex: 1; min-width: 0; width: 50%;" class="search-charts-container">
+                    <h6 class="font-semibold mb-3 text-gray-700">Charts (Page ${currentPage} of ${totalPages})</h6>
     `;
 
     if (pageIndicators.length > 0) {
-        html += `<div class="grid grid-cols-3 gap-4 mb-4">`;
+        html += `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">`;
 
         pageIndicators.forEach(function (ind) {
             var chartId = "chart-search-" + ind.id;
@@ -234,76 +284,35 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
         html += `<span class="text-xs text-gray-400">No indicators found.</span>`;
     }
 
-    html += `</div>`;
-
-    /* ================================
-       DATA TABLE UI — FIXED & CLEANED
-    ================================= */
-
     html += `
-    <div class="mt-8">
-        <div class="border rounded-xl overflow-hidden shadow-sm">
-            <div class="overflow-auto max-h-[600px]">
-                <table class="min-w-full border-collapse">
-                    <thead class="bg-gray-100 sticky top-0 shadow-sm z-10">
-                        <tr>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-1/3">
-                                Indicator
-                            </th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-20">
-                                Year
-                            </th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b w-40">
-                                Annual Performance
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-    `;
-
-    if (allIndicators.length > 0) {
-        allIndicators.forEach(function (ind) {
-            if (!Array.isArray(ind.data_points) || !ind.data_points.length) return;
-
-            var sortedData = ind.data_points.slice().sort((a, b) => a.year_GC - b.year_GC);
-
-            sortedData.forEach(function (dp, idx) {
-                html += `
-                    <tr class="hover:bg-gray-50 transition">
-                        ${
-                            idx === 0
-                                ? `
-                                <td class="px-5 py-4 text-sm font-semibold text-gray-900 bg-gray-50 align-top"
-                                    rowspan="${sortedData.length}">
-                                    <a href="/indicator/${ind.id}/" target="_blank"
-                                        class="text-primary-600 hover:underline block leading-snug">
-                                        ${ind.title_ENG}
-                                    </a>
-                                </td>
-                                `
-                                : ""
-                        }
-                        <td class="px-5 py-3 text-sm text-gray-700 whitespace-nowrap">${dp.year_GC}</td>
-                        <td class="px-5 py-3 text-sm font-semibold text-gray-800">${dp.value}</td>
-                    </tr>
-                `;
-            });
-        });
-    } else {
-        html += `<tr><td colspan="3" class="px-4 py-3 text-center text-sm text-gray-400">No data available.</td></tr>`;
-    }
-
-    html += `
-                    </tbody>
-                </table>
+                </div>
             </div>
         </div>
-    </div>
-    `;
-
-    html += `</div></div></div>`;
+    </div></div>`;
 
     $("#search-result-section").html(html).show();
+    
+    // Adjust table height based on content to avoid empty space
+    setTimeout(function() {
+        var $tableWrapper = $(".search-table-container .table-scroll-wrapper");
+        var $table = $tableWrapper.find("table");
+        var rowCount = $table.find("tbody tr").length;
+        
+        if (rowCount > 0) {
+            var headerHeight = $table.find("thead").outerHeight() || 120;
+            var rowHeight = 50; // Approximate row height
+            var calculatedHeight = headerHeight + (rowCount * rowHeight) + 20; // 20px padding
+            
+            // If calculated height is less than 600px, use calculated height, otherwise use 600px
+            if (calculatedHeight < 600) {
+                $tableWrapper.css("max-height", calculatedHeight + "px");
+            } else {
+                $tableWrapper.css("max-height", "600px");
+            }
+        } else {
+            $tableWrapper.css("max-height", "auto");
+        }
+    }, 100);
 
     // Store pagination state
     window.searchPaginationState = {
@@ -313,11 +322,14 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
         totalPages: totalPages
     };
 
-    // Render charts for current page
-    setTimeout(function() {
-        pageIndicators.forEach(function (ind) {
+    // Render charts asynchronously using requestAnimationFrame for better performance
+    function renderChartsBatch(indicators, startIndex, batchSize) {
+        var endIndex = Math.min(startIndex + batchSize, indicators.length);
+        
+        for (var i = startIndex; i < endIndex; i++) {
+            var ind = indicators[i];
             var ctx = document.getElementById("chart-search-" + ind.id);
-            if (!ctx) return;
+            if (!ctx) continue;
 
             var labels = Array.isArray(ind.data_points)
                 ? ind.data_points.map((dp) => dp.year_GC)
@@ -326,6 +338,8 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
             var values = Array.isArray(ind.data_points)
                 ? ind.data_points.map((dp) => dp.value)
                 : [];
+
+            if (labels.length === 0 || values.length === 0) continue;
 
             new Chart(ctx, {
                 type: "line",
@@ -347,6 +361,9 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animation for faster rendering
+                    },
                     plugins: {
                         legend: { display: false },
                         title: { display: false },
@@ -357,8 +374,22 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
                     },
                 },
             });
+        }
+
+        // Continue with next batch if there are more charts
+        if (endIndex < indicators.length) {
+            requestAnimationFrame(function() {
+                renderChartsBatch(indicators, endIndex, batchSize);
+            });
+        }
+    }
+
+    // Start rendering charts in batches of 3 for better performance
+    if (pageIndicators.length > 0) {
+        requestAnimationFrame(function() {
+            renderChartsBatch(pageIndicators, 0, 3);
         });
-    }, 100);
+    }
 }
 
 function searchPaginationNext() {
@@ -493,14 +524,19 @@ function renderTopicChartsWithPagination(topicId, categories, cardColor, topicTi
         totalPages: totalPages
     };
 
-    // Render charts for current page
-    setTimeout(function() {
-        pageIndicators.forEach(function (ind) {
+    // Render charts asynchronously using requestAnimationFrame for better performance
+    function renderTopicChartsBatch(indicators, startIndex, batchSize) {
+        var endIndex = Math.min(startIndex + batchSize, indicators.length);
+        
+        for (var i = startIndex; i < endIndex; i++) {
+            var ind = indicators[i];
             var ctx = document.getElementById("chart-" + ind.id);
-            if (!ctx) return;
+            if (!ctx) continue;
 
             var labels = ind.data_points?.map((dp) => dp.year_GC) || [];
             var values = ind.data_points?.map((dp) => dp.value) || [];
+
+            if (labels.length === 0 || values.length === 0) continue;
 
             new Chart(ctx, {
                 type: "line",
@@ -522,6 +558,9 @@ function renderTopicChartsWithPagination(topicId, categories, cardColor, topicTi
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animation for faster rendering
+                    },
                     plugins: {
                         legend: { display: false },
                         title: { display: false },
@@ -532,8 +571,22 @@ function renderTopicChartsWithPagination(topicId, categories, cardColor, topicTi
                     },
                 },
             });
+        }
+
+        // Continue with next batch if there are more charts
+        if (endIndex < indicators.length) {
+            requestAnimationFrame(function() {
+                renderTopicChartsBatch(indicators, endIndex, batchSize);
+            });
+        }
+    }
+
+    // Start rendering charts in batches of 3 for better performance
+    if (pageIndicators.length > 0) {
+        requestAnimationFrame(function() {
+            renderTopicChartsBatch(pageIndicators, 0, 3);
         });
-    }, 100);
+    }
 }
 
 function topicPaginationNext() {
@@ -641,7 +694,12 @@ $(function () {
         var colorClass = topicColorMap[topicId] || "bg-primary-500";
         var cardColor = colorHexMap[colorClass];
 
-        $(".subcat-section").html('')
+        // Show loading state
+        var $section = $("#subcat-section-" + topicId);
+        $section.html('<div class="card mb-4"><div class="card-body text-center py-8"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-3 text-gray-600">Loading categories...</p></div></div>').show();
+        
+        // Hide other sections
+        $(".subcat-section").not($section).hide();
 
         $.get("/api/topic/" + topicId + "/", function (data) {
             var categories = Array.isArray(data?.categories) ? data.categories : [];
@@ -657,8 +715,6 @@ $(function () {
                 );
             }, 100);
         });
-
-        $("#subcat-section-" + topicId).show();
     });
 });
 
