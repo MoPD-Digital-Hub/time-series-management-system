@@ -87,6 +87,6 @@ urlpatterns = [
     path('data_table_explorer_climate/', views.data_table_explorer_climate, name='data_table_explorer_climate'),
     path('add_indicator_climate/', views.add_indicator_climate, name='add_indicator_climate'),
     
-    
+    path('admas-ai/', views.admas_ai, name='admas-ai')
     
 ]

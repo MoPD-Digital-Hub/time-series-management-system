@@ -655,3 +655,7 @@ def documents_list_climate(request):
     }
     return render(request, 'usermanagement/documents_list_climate.html', context)
 
+
+
+def admas_ai(request):
+    return render(request, 'base/admas_ai.html')
