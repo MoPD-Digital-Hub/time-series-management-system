@@ -1,0 +1,123 @@
+/* Responsive layout for search results */
+@media (max-width: 1024px) {
+    .search-results-container {
+        flex-direction: column !important;
+    }
+    .search-table-container,
+    .search-charts-container {
+        width: 100% !important;
+    }
+}
+
+/* Table styling for horizontal scrollable year columns */
+.search-table-container table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.search-table-container table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Year header columns - sticky at top, high z-index */
+.search-table-container table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #f3f4f6 !important;
+    background-clip: padding-box;
+}
+
+/* Indicator header (corner) - sticky both top and left, highest z-index */
+.search-table-container table thead th:first-child {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 1001;
+    background-color: #f3f4f6 !important;
+    background-clip: padding-box;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-table-container table tbody {
+    position: relative;
+    z-index: 1;
+}
+
+.search-table-container table tbody tr {
+    position: relative;
+    z-index: 1;
+}
+
+/* Performance data cells - low z-index so they scroll under headers */
+.search-table-container table tbody td {
+    position: relative;
+    z-index: 1;
+    background-color: white !important;
+}
+
+/* Indicator name cells - sticky left, higher z-index than data but lower than header */
+.search-table-container table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 100;
+    background-color: white !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-table-container table tbody tr:hover td:first-child {
+    background-color: #f9fafb;
+}
+
+.search-table-container table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Table scroll wrapper - adjusts height based on content */
+.search-table-container .table-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+/* Make table container adjust to content */
+.search-table-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.search-table-container table {
+    width: 100%;
+    table-layout: auto;
+    margin: 0;
+}
+
+/* Loading spinner */
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
