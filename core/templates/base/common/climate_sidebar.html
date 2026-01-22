@@ -655,32 +655,65 @@
                                     </a>
                                 </li>
 
-                                <li class="pc-item">
+                                {% comment %} <li class="pc-item">
                                     <a href="{% url 'climate_user_management_dashboard' %}" class="pc-link">
                                         <span class="pc-micon">
                                             <i class="fas fa-person"></i> <!-- Climate / Dashboard -->
                                         </span>
                                         <span class="pc-mtext">User Dashboard</span>
                                     </a>
-                                </li>
+                                </li> {% endcomment %}
 
-                                <li class="pc-item">
+                                {% comment %} <li class="pc-item">
                                         <a href="{% url 'documents_list_climate' %}" class="pc-link">
                                                 <span class="pc-micon">
                                                         <i class="fas fa-upload"></i>
                                                 </span>
-                                                <span class="pc-mtext">Add Documents</span>
+                                                <span class="pc-mtext">Resource Management</span>
                                         </a>
-                                </li>
+                                </li> {% endcomment %}
 
                                 <li class="pc-item">
                                     <a href="{% url 'climate_document' %}" class="pc-link">
                                         <span class="pc-micon">
                                             <i class="fas fa-file-alt"></i> <!-- Documents -->
                                         </span>
-                                        <span class="pc-mtext">Documents List</span>
+                                        <span class="pc-mtext">Resource Management</span>
                                     </a>
                                 </li>
+
+                               <li class="pc-item pc-hasmenu">
+                                    <a href="javascript:void(0);" class="pc-link">
+                                        <span class="pc-micon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </span>
+                                        <span class="pc-mtext">KPI Management</span>
+                                        <span class="pc-arrow">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </span>
+                                    </a>
+
+                                    <ul class="pc-submenu">
+                                        <li class="pc-item">
+                                            <a href="{% url 'list_indicators' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </span>
+                                                <span class="pc-mtext">Indicators</span>
+                                            </a>
+                                        </li>
+
+                                        <li class="pc-item">
+                                            <a href="{% url 'list_categories' %}" class="pc-link">
+                                                <span class="pc-micon">
+                                                    <i class="fas fa-tags"></i>
+                                                </span>
+                                                <span class="pc-mtext">Categories</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
 
                                 <li class="pc-item">
                                     <a href="{% url 'climate_data_explorer' %}" class="pc-link">
@@ -693,7 +726,7 @@
 
                                 {% if user.is_category_manager %}
                                 <li class="pc-item pc-caption">
-                                        <label>Category Management</label>
+                                        <label>Management</label>
                                 </li>
                                 <li class="pc-item">
                                         <a href="{% url 'users_list_climate' %}" class="pc-link">
@@ -730,38 +763,7 @@
                                 </li>
                                 {% endif %}
 
-                                 {% if user.is_importer %}
-                                <li class="pc-item pc-caption">
-                                        <label>Data Import</label>
-                                </li>
-                                <li class="pc-item">
-                                        <a href="{% url 'add_indicator_climate' %}" class="pc-link">
-                                                <span class="pc-micon">
-                                                        <i class="fas fa-plus"></i>
-                                                </span>
-                                                <span class="pc-mtext">Add indicators</span>
-                                        </a>
-                                </li>
-                                <li class="pc-item">
-                                        <a href="{% url 'data_table_explorer_climate' %}" class="pc-link">
-                                                <span class="pc-micon">
-                                                        <i class="fas fa-clipboard-check"></i>
-                                                </span>
-                                                <span class="pc-mtext">Data Table</span>
-                                        </a>
-                                </li>
-                                <li class="pc-item">
-                                        <a href="{% url 'importer_dashboard_climate' %}" class="pc-link">
-                                                <span class="pc-micon">
-                                                        <i class="fas fa-upload"></i>
-                                                </span>
-                                                <span class="pc-mtext">Add Data Submission</span>
-                                        </a>
-                                </li>
-                                 
-                                {% endif %}
-
-
+                               
                         </ul>
                 </div>
         </div>

@@ -15,10 +15,12 @@ from .models import (
     KPIRecord,
     Document,
     DocumentCategory,
-    ProjectInitiatives
+    ProjectInitiatives,
+    Content    
 )
 from UserAdmin.forms import(
-    IndicatorForm
+    IndicatorForm,
+    CategoryForm
 )
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -515,14 +517,12 @@ def submissions_list_climate(request):
         'pending_count': pending_count
     })
 
-
-
 @login_required
 def climate_document(request):
     """
-    Climate Dashboard combining analytics and document-based knowledge management.
+    Climate Dashboard – Documents + Rich Content (One Page)
     """
-    # Get or create Climate topic
+
     climate_topic, created = Topic.objects.get_or_create(
         title_ENG__iexact='Climate',
         defaults={
@@ -532,23 +532,162 @@ def climate_document(request):
             'rank': 1
         }
     )
-    
-    
-    
-    # Get document categories (not filtered by topic since DocumentCategory doesn't have topic field)
+
     document_categories = DocumentCategory.objects.all().order_by('rank', 'name_ENG')
-    
-    # Get documents for climate topic
-    documents = Document.objects.filter(topic=climate_topic).select_related('document_category', 'category').order_by('-id')
-    
- 
+
+    documents = (
+        Document.objects
+        .filter(topic=climate_topic)
+        .select_related('document_category')
+        .order_by('-id')
+    )
+
+    contents = (
+        Content.objects
+        .filter(topic=climate_topic)
+        .select_related('document_category')
+        .order_by('-created_at')
+    )
 
     context = {
         'climate_topic': climate_topic,
         'document_categories': document_categories,
         'documents': documents,
+        'contents': contents,
     }
+
     return render(request, 'base/climate_documents.html', context)
+
+
+def add_resource(request):
+    climate_topic, created = Topic.objects.get_or_create(
+        title_ENG__iexact='Climate',
+        defaults={
+            'title_ENG': 'Climate',
+            'title_AMH': 'አየር ንብከት',
+            'is_dashboard': True,
+            'rank': 1
+        }
+    )
+    if request.method == 'POST':
+        title_ENG = request.POST.get('title_ENG')
+        title_AMH = request.POST.get('title_AMH')
+        category_id = request.POST.get('document_category')
+        file_type = request.POST.get('file_type')
+        uploaded_file = request.FILES.get('file')
+
+        if not title_ENG or not category_id or not file_type or not uploaded_file:
+            messages.error(request, "Please fill in all required fields.")
+            return redirect(request.META.get('HTTP_REFERER'))
+
+        category = DocumentCategory.objects.get(id=category_id)
+
+        # Create the new Document
+        Document.objects.create(
+            title_ENG=title_ENG,
+            title_AMH=title_AMH,
+            document_category=category,
+            file_type=file_type,
+            file=uploaded_file,
+            topic = climate_topic,
+        )
+
+        messages.success(request, "Resource added successfully!")
+        return redirect(request.META.get('HTTP_REFERER'))  # Go back to same page
+
+    return redirect('climate_dashboard')  # fallback redirect
+
+@login_required
+def add_content(request):
+    climate_topic, created = Topic.objects.get_or_create(
+        title_ENG__iexact='Climate',
+        defaults={
+            'title_ENG': 'Climate',
+            'title_AMH': 'አየር ንብከት',
+            'is_dashboard': True,
+            'rank': 1
+        }
+    )
+    if request.method == 'POST':
+        title_ENG = request.POST.get('title_ENG')
+        title_AMH = request.POST.get('title_AMH', '')
+        topic_id = request.POST.get('topic')
+        document_category_id = request.POST.get('document_category')
+        body = request.POST.get('body', '')
+        status = request.POST.get('status', 'draft')
+        is_verified = request.POST.get('is_verified') == 'true'
+
+        topic = Topic.objects.get(id=topic_id) if topic_id else None
+        category = DocumentCategory.objects.get(id=document_category_id) if document_category_id else None
+
+        Content.objects.create(
+            title_ENG=title_ENG,
+            title_AMH=title_AMH,
+            document_category=category,
+            body=body,
+            status=status,
+            is_verified=is_verified,
+            topic = climate_topic
+            )
+        messages.success(request, "Content added successfully!")
+        return redirect('climate_document')
+
+
+@login_required
+def list_indicators(request):
+    climate_topic = Topic.objects.get(title_ENG__iexact='Climate')
+    indicators = Indicator.objects.filter(for_category__topic=climate_topic).distinct().order_by('rank')
+    
+    paginator = Paginator(indicators, 10)  # 10 indicators per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    form = IndicatorForm()
+
+    return render(request, 'climate/list_indicators.html', {
+        'page_obj': page_obj,
+        'form' : form
+    })
+
+
+@login_required
+def add_indicator(request):
+    climate_topic = Topic.objects.get(title_ENG__iexact='Climate')
+    categories = Category.objects.filter(topic=climate_topic, is_deleted=False).order_by('rank')
+
+    if request.method == 'POST':
+        form = IndicatorForm(request.POST, request.FILES)
+        if form.is_valid():
+            indicator = form.save(commit=False)
+            indicator.generate_code()
+            indicator.save()
+            form.save_m2m()
+            return redirect('list_indicators')
+    else:
+        form = IndicatorForm()
+
+    return render(request, 'climate/add_indicator.html', {
+        'form': form,
+        'categories': categories
+    })
+
+def edit_indicator_view(request, pk):
+    # Fetch the existing object or return 404
+    instance = get_object_or_404(Indicator, pk=pk)
+    
+    if request.method == 'POST':
+        # Bind the form to the existing instance with new POST data
+        form = IndicatorForm(request.POST, request.FILES, instance=instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Indicator {instance.code} updated successfully!")
+            return redirect('list_indicators') # Replace with your list view name
+        else:
+            messages.error(request, "Please correct the errors below.")
+    
+    # If it's a GET request (though our JS handles data injection), 
+    # we redirect back to the list as we don't want a separate edit page.
+    return redirect('list_indicators')
+
 
 @login_required
 def climate_data_explorer(request):
@@ -598,19 +737,22 @@ def data_table_explorer_climate(request):
 
 @login_required
 def add_indicator_climate(request):
-    if not request.user.is_importer:
-        messages.error(request, 'Access denied. Only data importers can submit indicators.')
-        return render(request, 'usermanagement/dashboard.html')
+    climate_topic, created = Topic.objects.get_or_create(
+        title_ENG__iexact='Climate',
+        defaults={
+            'title_ENG': 'Climate',
+            'title_AMH': 'አየር ንብከት',
+            'is_dashboard': True,
+            'rank': 1
+        }
+    )
 
-    categories = Category.objects.all().order_by('name_ENG')
+    categories = Category.objects.filter(topic = climate_topic).order_by('name_ENG')
     frequency_choices = Indicator.FREQUENCY_CHOICES
 
     # Determine the importer's assigned categories via their category manager
-    assigned_categories = []
-    manager = getattr(request.user, 'manager', None)
-    if manager is not None:
-        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
-
+    assigned_categories =categories
+    
     return render(request,'usermanagement/add_indicator_climate.html',
         {
             'categories': categories,
@@ -618,6 +760,41 @@ def add_indicator_climate(request):
             'assigned_categories': assigned_categories,
         }
     )
+
+@login_required
+def list_categories(request):
+    climate_topic = Topic.objects.get(title_ENG__iexact='Climate')
+    categories = Category.objects.filter(topic=climate_topic).distinct().order_by('rank')
+    
+    paginator = Paginator(categories, 10)  # 10 indicators per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    form = CategoryForm()
+
+    return render(request, 'climate/list_categories.html', {
+        'page_obj': page_obj,
+        'form' : form
+    })
+
+@login_required
+def add_indicator_climate(request):
+    climate_topic, created = Topic.objects.get_or_create(
+        title_ENG__iexact='Climate',
+        defaults={
+            'title_ENG': 'Climate',
+            'title_AMH': 'አየር ንብከት',
+            'is_dashboard': True,
+            'rank': 1
+        }
+    )
+
+
+    return render(request,'usermanagement/add_categories_climate.html',
+        {
+            
+        }
+    )
+
 
 
 @login_required

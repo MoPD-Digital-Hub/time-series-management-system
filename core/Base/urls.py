@@ -78,6 +78,14 @@ urlpatterns = [
 
     path('documents_list_climate/', views.documents_list_climate, name='documents_list_climate'),
     path('climate_document/' , views.climate_document , name='climate_document'),
+    path('add_resource/', views.add_resource, name='add_resource'),
+    path('add_content/', views.add_content, name='add_content'),
+
+    path('climate_indicators/', views.list_indicators, name='list_indicators'),
+    path('climate_categories/', views.list_categories, name='list_categories'),
+    
+    path('indicators/edit/<int:pk>/', views.edit_indicator_view, name='edit_indicator'),
+
     path('api/climate/documents/search/', api_views.climate_documents_search_api, name='climate-documents-search-api'),
     path('api/climate/indicators/analytics/', api_views.climate_indicators_analytics_api, name='climate-indicators-analytics-api'),
 

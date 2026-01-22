@@ -21,28 +21,133 @@
     <link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
 
     <!-- jQuery (if needed for your custom scripts) -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- CKEditor 5 CDN -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 
-<!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Your CSS -->
-<link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
-<link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/landing-modern.css' %}">
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     
 </head>
 
 <body>
-    
+    {% include "base/common/climate_sidebar.html" %}
 
-   {% include "base/common/climate_sidebar.html" %}
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Resource</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{% url 'add_resource' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="title_ENG" class="form-label">Title (ENG)</label>
+                            <input type="text" name="title_ENG" id="title_ENG" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="title_AMH" class="form-label">Title (AMH)</label>
+                            <input type="text" name="title_AMH" id="title_AMH" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="document_category" class="form-label">Category</label>
+                            <select name="document_category" id="document_category" class="form-select" required>
+                                <option value="">Select Category</option>
+                                {% for cat in document_categories %}
+                                <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="file_type" class="form-label">File Type</label>
+                            <select name="file_type" id="file_type" class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option value="document">Document</option>
+                                <option value="video">Video</option>
+                                <option value="audio">Audio</option>
+                                <option value="image">Image</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Upload File</label>
+                            <input type="file" name="file" id="file" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Resource</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Article</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{% url 'add_content' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+
+                        <!-- Title (ENG) -->
+                        <div class="mb-3">
+                            <label for="title_ENG" class="form-label">Title (ENG)</label>
+                            <input type="text" name="title_ENG" id="title_ENG" class="form-control" required>
+                        </div>
+
+                        <!-- Title (AMH) -->
+                        <div class="mb-3">
+                            <label for="title_AMH" class="form-label">Title (AMH)</label>
+                            <input type="text" name="title_AMH" id="title_AMH" class="form-control">
+                        </div>
+
+                     
+
+                        <!-- Document Category -->
+                        <div class="mb-3">
+                            <label for="document_category" class="form-label">Category</label>
+                            <select name="document_category" id="document_category" class="form-select">
+                                <option value="">Select Category</option>
+                                {% for cat in document_categories %}
+                                    <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Body (Rich Text) -->
+                            <div class="mb-3">
+                                <label for="body" class="form-label">Article Body</label>
+                                <textarea name="body" id="body" class="form-control" rows="20"></textarea>
+                            </div>
+                      
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Article</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Main Content -->
@@ -58,17 +163,28 @@
                         {{ climate_topic.description|default:"Comprehensive analytics and knowledge management for climate-related data, policies, and initiatives." }}
                     </p>
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <span style="padding: 0.5rem 1rem; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 6px; font-weight: 600;">
-                        {{ categories.count }} Categories
-                    </span>
-                    <span style="padding: 0.5rem 1rem; background: rgba(16,185,129,0.1); color: #10b981; border-radius: 6px; font-weight: 600;">
-                        {{ indicators.count }} Indicators
-                    </span>
-                    <span style="padding: 0.5rem 1rem; background: rgba(6,182,212,0.1); color: #06b6d4; border-radius: 6px; font-weight: 600;">
-                        {{ documents.count }} Documents
-                    </span>
+               <div class="row">
+                    <div class="col-6 d-grid">
+                        <button type="button"
+                            class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                            data-pc-toggle="modal"
+                            data-pc-target="#uploadModal">
+                            <i class="fas fa-upload"></i>
+                            Upload Document
+                        </button>
+                    </div>
+
+                    <div class="col-6 d-grid">
+                        <button type="button"
+                            class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                            data-pc-toggle="modal"
+                            data-pc-target="#createModal">
+                            <i class="fas fa-pen"></i>
+                            Create Article
+                        </button>
+                    </div>
                 </div>
+
             </div>
         </div>
 
@@ -81,7 +197,7 @@
                 <div class="content-card">
                     <div class="card-title">
                         <i class="fas fa-search"></i>
-                        Search Documents
+                        Search Resource
                     </div>
                     <div>
                         <input type="text" class="search-input" id="document-search-input" placeholder="Search by title, category...">
@@ -92,11 +208,11 @@
                 <div class="content-card">
                     <div class="card-title">
                         <i class="fas fa-folder"></i>
-                        Document Categories
+                        Resource Categories
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem;">
                         <button class="filter-btn document-category-tab active" data-category-id="" style="position: relative;">
-                            All Documents
+                            All Resources
                             <span style="margin-left: 0.5rem; padding: 0.125rem 0.5rem; background: rgba(59,130,246,0.2); border-radius: 12px; font-size: 0.75rem;" id="all-docs-count">{{ documents.count }}</span>
                         </button>
                         {% for doc_category in document_categories %}
@@ -107,11 +223,34 @@
                         {% endfor %}
                     </div>
 
+                    <!-- File Type Tabs -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                        <button class="filter-btn file-type-tab active" data-file-type="">
+                            <i class="fas fa-layer-group" style="margin-right: 0.25rem;"></i> All Types
+                        </button>
+                        <button class="filter-btn file-type-tab" data-file-type="document">
+                            <i class="fas fa-file-alt" style="margin-right: 0.25rem;"></i> Document
+                        </button>
+                        <button class="filter-btn file-type-tab" data-file-type="video">
+                            <i class="fas fa-video" style="margin-right: 0.25rem;"></i> Video
+                        </button>
+                        <button class="filter-btn file-type-tab" data-file-type="audio">
+                            <i class="fas fa-volume-up" style="margin-right: 0.25rem;"></i> Audio
+                        </button>
+                        <button class="filter-btn file-type-tab" data-file-type="image">
+                            <i class="fas fa-image" style="margin-right: 0.25rem;"></i> Image
+                        </button>
+                        <button class="filter-btn file-type-tab" data-file-type="other">
+                            <i class="fas fa-ellipsis-h" style="margin-right: 0.25rem;"></i> Other
+                        </button>
+                    </div>
+
+
                     <!-- Documents List -->
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                             <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600; color: #1e293b;">
-                                Document Library
+                                Resource Library
                             </h3>
                             <span style="padding: 0.25rem 0.75rem; background: rgba(59,130,246,0.1); color: #3b82f6; border-radius: 20px; font-size: 0.875rem; font-weight: 600;" id="document-count">{{ documents.count }}</span>
                         </div>
@@ -119,11 +258,21 @@
                            <div class="row g-4">
                                 {% for document in documents %}
                                 <div class="col-3 col-sm-3 col-md-3 col-lg-3">
-                                    <div class="document-item h-100" data-category-id="{{ document.document_category.id|default:'' }}">
+                                    <div class="document-item h-100" 
+                                         data-category-id="{{ document.document_category.id|default:'' }}"
+                                         data-file-type="{{ document.file_type }}">
                                         <div style="display: flex; flex-direction: column; height: 100%; justify-content: space-between;">
                                             <div>
                                                 <h4 style="margin: 0 0 0.5rem; font-size: 1rem; font-weight: 600; color: #1e293b;">
-                                                    <i class="fas fa-file-pdf" style="color: #ef4444; margin-right: 0.5rem;"></i>
+                                                    {% if document.file_type == 'video' %}
+                                                        <i class="fas fa-video text-purple" style="margin-right:0.5rem;"></i>
+                                                    {% elif document.file_type == 'audio' %}
+                                                        <i class="fas fa-volume-up text-green" style="margin-right:0.5rem;"></i>
+                                                    {% elif document.file_type == 'image' %}
+                                                        <i class="fas fa-image text-blue" style="margin-right:0.5rem;"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file-pdf text-danger" style="margin-right:0.5rem;"></i>
+                                                    {% endif %}
                                                     {{ document.title_ENG }}
                                                 </h4>
 
@@ -149,7 +298,7 @@
                                 {% empty %}
                                 <div class="col-6 text-center py-5" style="color: #94a3b8;">
                                     <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                                    <p>No documents found. Documents will appear here once uploaded.</p>
+                                    <p>No Resource found. Documents will appear here once uploaded.</p>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -158,104 +307,143 @@
                 </div>
             </div>
 
+            <!-- Published Contents Grid -->
+            <div class="content-card mt-4">
+                <div class="card-title">
+                    <i class="fas fa-file-alt"></i>
+                    Published Contents
+                </div>
+
+                {% if contents %}
+                <div class="content-grid row g-4">
+                {% for content in contents %}
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="content-card border rounded p-3 h-100 d-flex flex-column justify-content-between" 
+                        style="background: #f9fafb; overflow: hidden;">
+                        
+                        <div>
+                            <h5 class="mb-2" style="font-weight: 600; color: #1e293b; font-size: 1rem;">
+                                {{ content.title_ENG }}
+                            </h5>
+
+                            {% if content.title_AMH %}
+                            <p style="color: #64748b; font-size: 0.75rem; margin-bottom: 0.5rem;">
+                                {{ content.title_AMH }}
+                            </p>
+                            {% endif %}
+
+                            {% if content.document_category %}
+                            <span class="badge bg-primary mb-2">{{ content.document_category.name_ENG }}</span>
+                            {% endif %}
+
+                            <!-- Rich text body preview -->
+                            <div class="content-body-preview" style="max-height: 200px; overflow-y: auto; font-size: 0.85rem; color: #334155;">
+                                {{ content.body|safe }}
+                            </div>
+
+                            
+                        </div>
+
+                        <div class="mt-2 text-end">
+                            <small class="text-muted">{{ content.created_at|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+
+                {% else %}
+                <div class="text-center py-5" style="color: #94a3b8;">
+                    <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No published contents yet. Once added, they will appear here.</p>
+                </div>
+                {% endif %}
+            </div>
+
+
         </div>
     </main>
 
+    {% include 'usermanagement/common/js.html' %}
+
     <script>
-
-        // Category Filter
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const categoryId = this.dataset.categoryId;
-                
-                // Update active button
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Filter table rows
-                const rows = document.querySelectorAll('#analytics-tab .data-table tbody tr');
-                rows.forEach(row => {
-                    const categoryIds = row.dataset.categoryIds || '';
-                    if (!categoryId || categoryIds.includes(categoryId + ',')) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                
-                // Reload chart
-                loadIndicatorsChart(categoryId);
-            });
-        });
-
-        // Document Category Tabs
+        // Filters
         let currentDocumentCategory = '';
-        document.querySelectorAll('.document-category-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const categoryId = this.dataset.categoryId || '';
-                
-                // Update active tab
-                document.querySelectorAll('.document-category-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                currentDocumentCategory = categoryId;
-                filterDocuments();
-            });
-        });
+        let currentFileType = '';
 
-        // Document Search
-        const documentSearchInput = document.getElementById('document-search-input');
-        
         function filterDocuments() {
-            const searchQuery = documentSearchInput.value.toLowerCase();
-            const categoryId = currentDocumentCategory;
+            const searchQuery = document.getElementById('document-search-input').value.toLowerCase();
             const documents = document.querySelectorAll('.document-item');
             let visibleCount = 0;
-            
-            // Count documents per category
+
+            // Count per category
             const categoryCounts = {};
             documents.forEach(doc => {
                 const docCategoryId = doc.dataset.categoryId || '';
-                if (!categoryCounts[docCategoryId]) {
-                    categoryCounts[docCategoryId] = 0;
-                }
+                if (!categoryCounts[docCategoryId]) categoryCounts[docCategoryId] = 0;
                 categoryCounts[docCategoryId]++;
             });
-            
-            // Update category counts
+
             document.querySelectorAll('.doc-category-count').forEach(countEl => {
                 const catId = countEl.dataset.category;
                 countEl.textContent = categoryCounts[catId] || 0;
             });
-            
-            // Filter documents
+
             documents.forEach(doc => {
                 const docCategoryId = doc.dataset.categoryId || '';
+                const docFileType = doc.dataset.fileType || '';
                 const docTitle = doc.textContent.toLowerCase();
-                
+
                 const matchesSearch = !searchQuery || docTitle.includes(searchQuery);
-                const matchesCategory = !categoryId || docCategoryId === categoryId;
-                
-                if (matchesSearch && matchesCategory) {
+                const matchesCategory = !currentDocumentCategory || docCategoryId === currentDocumentCategory;
+                const matchesFileType = !currentFileType || docFileType === currentFileType;
+
+                if (matchesSearch && matchesCategory && matchesFileType) {
                     doc.style.display = '';
                     visibleCount++;
                 } else {
                     doc.style.display = 'none';
                 }
             });
-            
-            // Update total count
+
             document.getElementById('document-count').textContent = visibleCount;
             document.getElementById('all-docs-count').textContent = documents.length;
         }
-        
-        documentSearchInput.addEventListener('input', filterDocuments);
-        
-        // Initialize document counts on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            filterDocuments();
+
+        // Document Category Tabs
+        document.querySelectorAll('.document-category-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.document-category-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentDocumentCategory = this.dataset.categoryId || '';
+                filterDocuments();
+            });
         });
 
-  </script>
+        // File Type Tabs
+        document.querySelectorAll('.file-type-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.file-type-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentFileType = this.dataset.fileType || '';
+                filterDocuments();
+            });
+        });
+
+        // Search input
+        document.getElementById('document-search-input').addEventListener('input', filterDocuments);
+
+        // Initialize counts
+        document.addEventListener('DOMContentLoaded', filterDocuments);
+
+    document.addEventListener("DOMContentLoaded", function() {
+        ClassicEditor
+            .create(document.querySelector('#body'))
+            .catch(error => {
+                console.error(error);
+            });
+    });
+</script>
+
 </body>
 </html>

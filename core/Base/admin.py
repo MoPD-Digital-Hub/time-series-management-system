@@ -169,4 +169,5 @@ admin.site.register(Month)
 admin.site.register(Video)
 admin.site.register(ProjectInitiatives)
 admin.site.register(SubProject)
+admin.site.register(Content)
 
