@@ -254,9 +254,16 @@ def unassigned_categories_api(request):
 
 @api_view(['POST'])
 def create_importer_api(request):
-    """Allow a category manager to create an importer (is_importer=True) under their management."""
-    if not request.user.is_authenticated or not request.user.is_category_manager:
-        return Response({'error': 'Access denied. Only category managers can create importers.'}, status=status.HTTP_403_FORBIDDEN)
+    """Allow a category manager to create an importer, or admin to create a category manager."""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Allow admins to create category managers, or category managers to create importers
+    is_admin = request.user.is_staff
+    is_manager = request.user.is_category_manager
+    
+    if not (is_admin or is_manager):
+        return Response({'error': 'Access denied. Only admins or category managers can create users.'}, status=status.HTTP_403_FORBIDDEN)
 
     # support both JSON and multipart/form-data (photo upload)
     email = (request.data.get('email') or '').strip().lower()
@@ -287,8 +294,21 @@ def create_importer_api(request):
 
     try:
         user = UM_CustomUser.objects.create_user(email=email, username=username, first_name=first_name, last_name=last_name, password=password)
-        user.is_importer = True
-        user.manager = request.user
+        
+        # If admin is creating, make it a category manager; if manager is creating, make it an importer
+        if is_admin:
+            user.is_category_manager = True
+        else:
+            user.is_importer = True
+            user.manager = request.user
+        
+        # Ensure user is active (from is_active field in form if provided, otherwise default to True)
+        is_active = request.data.get('is_active')
+        if is_active is not None:
+            user.is_active = str(is_active).lower() in ('true', '1', 'yes')
+        else:
+            user.is_active = True  # Default to active for new users
+        
         if photo:
             user.photo = photo
         user.save()
@@ -298,13 +318,15 @@ def create_importer_api(request):
         for cat_id in assigned_categories:
             try:
                 cat_id = int(cat_id)
-                if CategoryAssignment.objects.filter(manager=request.user, category_id=cat_id).exists():
+                # Admins can assign any category; managers can only assign their own categories
+                if is_admin or CategoryAssignment.objects.filter(manager=request.user, category_id=cat_id).exists():
                     CategoryAssignment.objects.get_or_create(manager=user, category_id=cat_id)
                     created_assignments.append(cat_id)
             except (ValueError, TypeError, Category.DoesNotExist):
                 continue
 
-        resp = {'message': 'Importer created', 'id': user.id, 'email': user.email}
+        user_type = 'Category Manager' if is_admin else 'Importer'
+        resp = {'message': f'{user_type} created', 'id': user.id, 'email': user.email}
         if password:
             resp['password'] = password
         resp['assigned_categories'] = created_assignments
@@ -319,8 +341,8 @@ def update_user_api(request, pk):
     """Update user information and category assignments."""
     user = get_object_or_404(CustomUser, pk=pk)
     
-    # Permission check: superuser can edit anyone, manager can edit their importers
-    if not request.user.is_superuser:
+    # Permission check: superuser/admin can edit anyone, manager can edit their importers
+    if not request.user.is_superuser and not request.user.is_staff:
         if not (request.user.is_category_manager and user.manager == request.user):
             return Response({'error': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -351,7 +373,7 @@ def update_user_api(request, pk):
     # For simplicity, we clear and recreate or just sync.
     # We only allow syncing categories that the CURRENT manager (request.user) has access to.
     manager_accessible_cats = []
-    if request.user.is_superuser:
+    if request.user.is_superuser or request.user.is_staff:
         manager_accessible_cats = list(Category.objects.filter(topic__is_initiative=False).values_list('id', flat=True))
     else:
         manager_accessible_cats = list(CategoryAssignment.objects.filter(manager=request.user, category__topic__is_initiative=False).values_list('category_id', flat=True))
