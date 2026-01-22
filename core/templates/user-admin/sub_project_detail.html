@@ -1,35 +1,15 @@
 {% load static %}
-
 <!doctype html>
 
 {% include 'base/common/head.html' %}
+
+<!-- REQUIRED Handsontable assets -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.min.css">
+<script src="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.min.js"></script>
+
 <style>
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 12px;
-    }
-
-    .dropdown-panel {
-        width: min(320px, 92vw);
-        max-height: 50vh;
-        overflow: auto;
-    }
-
-    .dropdown-panel label span {
-        white-space: normal;
-        word-break: break-word;
-    }
-
-    th.vhead {
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
-        white-space: nowrap;
-        vertical-align: bottom;
-        text-align: left;
-        font-size: 0.95em;
-        padding: 0.5rem 0.25rem;
-        height: 120px;
+    #example1 {
+        margin-top: 20px;
     }
 </style>
 
@@ -40,97 +20,93 @@
     <div class="pc-container">
         <div class="pc-content">
 
-          <input type="hidden" id="csrf_token" value="{% csrf_token %}">
+            <div class="content-wrapper row justify-content-center">
+                <div class="col-lg-11">
+                    <h1 class="m-3">{{ project.title_ENG }}</h1>
 
+                    <div id="example1"></div>
 
-          <!--Body Start-->
-          <div class="content-wrapper row justify-content-center">
-              <div class="col-lg-10">
-                <h1 class="m-3"> {{ project.title_ENG }} </h1>
-                <div id="example1" class="ht-theme-main"></div>
-                <button id="save" class="btn btn-primary mt-5">Save data</button>
-              </div>
-          </div>
-        
+                    <button id="save" class="btn btn-primary mt-4">
+                        Save data
+                    </button>
+                </div>
+            </div>
+
         </div>
-      </div>
-
-
-    
-
-
+    </div>
 
     {% include 'base/common/footer.html' %}
     {% include 'base/common/js.html' %}
-  
-  </body>
-  <script>
 
-    showToast = (title, body, cssClass) => {
-        $.toast({
-          heading: title,
-          text: body,
-          showHideTransition: 'slide',
-          icon: cssClass,
-          position: 'top-right',
-        })
-      }
-  
-
-    const container = document.querySelector('#example1');
-    const saveButton = document.querySelector('#save');
-    const data = JSON.parse('{{ projects|escapejs }}'); // Load project data from Django
-    const csrfToken = "{{ csrf_token }}";
-
-
-    const hot = new Handsontable(container, {
-        data,
-        startRows: 8,
-        startCols: 6,
-        contextMenu: true,
-        rowHeaders: true,
-        colHeaders: true,
-        height: 'auto',
-        licenseKey: 'non-commercial-and-evaluation',
-        afterChange(change, source) {
-            if (source === 'edit') {  // Auto-save on edit
-                saveData();
-            }
-        }
+<script>
+/* ---------------- Toast ---------------- */
+function showToast(title, body, cssClass) {
+    $.toast({
+        heading: title,
+        text: body,
+        showHideTransition: 'slide',
+        icon: cssClass,
+        position: 'top-right',
     });
+}
 
+/* ---------------- Data ---------------- */
+const rawData = JSON.parse('{{ projects|escapejs }}');
+console.log('RAW:', rawData);
 
-    function saveData() {
-      fetch(window.location.pathname, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': csrfToken  // Include CSRF token
-          },
-          body: JSON.stringify({ data: hot.getData() })  // Send table data
-      })
-      .then(response => {
-          if (!response.ok) {
-              return response.text();  // Return raw text in case of non-200 responses
-          }
-          return response.json();  // Otherwise, return JSON
-      })
-      .then(data => {
-          if (typeof data === 'string') {
-              console.error("Server returned an error:", data);  // Log raw response text
-          } else {
-            showToast('&#128515 Hello, User', 'Successfully saved', 'success')
-              console.log("Saved:", data);  // Handle valid JSON response
-          }
-      })
-      .catch(error => console.error("Error saving data:", error));
-    }
-  
+/* split headers + rows */
+const colHeaders = rawData.length ? rawData[0] : [];
+const tableData = rawData.length > 1 ? rawData.slice(1) : [];
 
-    // Manual save button event
-    saveButton.addEventListener('click', () => {
-        saveData();
+/* csrf */
+const csrfToken = "{{ csrf_token }}";
+
+/* ---------------- Handsontable ---------------- */
+const container = document.getElementById('example1');
+
+const hot = new Handsontable(container, {
+    data: tableData,
+    colHeaders: colHeaders,
+    rowHeaders: true,
+    contextMenu: true,
+    stretchH: 'all',
+    height: 'auto',
+    manualColumnResize: true,
+    manualRowResize: true,
+    licenseKey: 'non-commercial-and-evaluation'
+});
+
+/* ---------------- Save ---------------- */
+function saveData() {
+    const fullData = [
+        colHeaders,
+        ...hot.getData()
+    ];
+
+    fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ data: fullData })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Save failed');
+        return res.json();
+    })
+    .then(() => {
+        showToast('Success', 'Data saved successfully', 'success');
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Error', 'Failed to save data', 'error');
     });
+}
+
+/* manual save */
+document.getElementById('save').addEventListener('click', saveData);
 
 </script>
+</body>
 </html>
