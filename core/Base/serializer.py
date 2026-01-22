@@ -132,7 +132,10 @@ class TopicSerializers(serializers.ModelSerializer):
     def get_categories(self, obj):
        request = self.context.get('request')
        user = request.user
-       Categories = obj.categories.filter(category_managers__manager = user)
+       if user.is_superuser:
+            Categories = obj.categories.all()
+       else:
+            Categories = obj.categories.filter(category_managers__manager = user)
        return CategorySerializers(Categories, many=True, read_only=True).data
 
 

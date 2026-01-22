@@ -101,8 +101,13 @@ def users_list(request):
     users_page = paginator.get_page(page_number)
 
     manager_categories = []
-    if request.user.is_authenticated and request.user.is_category_manager:
-        manager_categories = [assign.category for assign in CategoryAssignment.objects.filter(manager=request.user).select_related('category')]
+    if request.user.is_authenticated:
+        if request.user.is_staff:
+            # Admins can see all categories
+            from Base.models import Category
+            manager_categories = Category.objects.all().order_by('name_ENG')
+        elif request.user.is_category_manager:
+            manager_categories = [assign.category for assign in CategoryAssignment.objects.filter(manager=request.user).select_related('category')]
 
     return render(request, 'usermanagement/users_list.html', {
         'users_page': users_page,
