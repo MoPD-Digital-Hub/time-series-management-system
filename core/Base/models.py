@@ -905,7 +905,10 @@ class SubProject(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'({self.project.title_ENG})'  + ' - ' + self.title_ENG
+        if self.project:
+            return f'({self.project.title_ENG}) - {self.title_ENG}'
+        return f'(No Project) - {self.title_ENG}'
+
     
     def save(self , *args , **kwargs ):
         if(self.content):
