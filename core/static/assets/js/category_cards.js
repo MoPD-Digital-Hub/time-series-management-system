@@ -221,7 +221,7 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
 
                 <!-- RIGHT SIDE: CHARTS -->
                 <div style="flex: 1; min-width: 0; width: 50%;" class="search-charts-container">
-                    <h6 class="font-semibold mb-3 text-gray-700">Charts (Page ${currentPage} of ${totalPages})</h6>
+            <h6 class="font-semibold mb-3 text-gray-700">Charts (Page ${currentPage} of ${totalPages})</h6>
     `;
 
     if (pageIndicators.length > 0) {
@@ -380,7 +380,7 @@ function renderSearchResultsWithPagination(allIndicators, cardColor, currentPage
         if (endIndex < indicators.length) {
             requestAnimationFrame(function() {
                 renderChartsBatch(indicators, endIndex, batchSize);
-            });
+        });
         }
     }
 
@@ -577,7 +577,7 @@ function renderTopicChartsWithPagination(topicId, categories, cardColor, topicTi
         if (endIndex < indicators.length) {
             requestAnimationFrame(function() {
                 renderTopicChartsBatch(indicators, endIndex, batchSize);
-            });
+        });
         }
     }
 

@@ -894,4 +894,24 @@ def documents_list_climate(request):
 
 
 def admas_ai(request):
-    return render(request, 'base/admas_ai.html')
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+        else:
+            assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            topics = Topic.objects.filter(
+                categories__id__in=assigned_category_ids,
+                is_initiative=False
+            ).prefetch_related(
+                Prefetch(
+                    'categories',
+                    queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                    to_attr='prefetched_categories'
+                )
+            ).distinct()
+    else:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    context = {
+        'topics': topics,
+    }
+    return render(request, 'base/admas_ai.html', context)

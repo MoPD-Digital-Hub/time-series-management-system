@@ -188,8 +188,8 @@ def category_assignments(request):
     category_managers_count = CustomUser.objects.filter(is_category_manager=True, managed_categories__isnull=False).distinct().count()
     assigned_categories_count = CategoryAssignment.objects.values('category').distinct().count()
     unassigned_categories = Category.objects.annotate(num_assignments=Count('category_managers')).filter(num_assignments=0, topic__is_initiative=False).select_related('topic').prefetch_related('indicators')
-    # Get all category managers
-    managers = CustomUser.objects.filter(is_category_manager=True).order_by('first_name', 'last_name')
+    # Get all category managers (including active and inactive) - ensure we get all managers
+    managers = CustomUser.objects.filter(is_category_manager=True).order_by('first_name', 'last_name', 'email').distinct()
     from Base.models import Topic
     topics = Topic.objects.filter(is_initiative=False)
 
