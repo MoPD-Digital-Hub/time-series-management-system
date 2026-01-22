@@ -143,6 +143,9 @@
                             <th scope="col"
                                 style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
                                 Code</th>
+                            <th scope="col"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">
+                                View</th>
                             {% for dp in datapoints %}
                             <th class="value-cell"
                                 style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">
@@ -174,6 +177,13 @@
                             <td>
                                 <div class="font-bold">{{ row.indicator.code }}</div>
                                 <div class="text-xs text-gray-700 truncate">{{ row.indicator.title_ENG }}</div>
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'indicator_view' row.indicator.id %}" 
+                                   class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition"
+                                   title="View Indicator Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                             </td>
                             {% for val in row.values %}
                             <td class="value-cell">{{ val|default:"-" }}</td>
