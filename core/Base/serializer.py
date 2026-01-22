@@ -120,14 +120,22 @@ class CategorySerializers(serializers.ModelSerializer):
         return IndicatorSerializers(verified_indicators, many=True).data
 
 class TopicSerializers(serializers.ModelSerializer):
-  background_image = serializers.ImageField(read_only=True)
-  image_icons = serializers.ImageField(read_only=True)
-  categories = CategorySerializers(many=True, read_only=True)
-  category_count = serializers.IntegerField(read_only=True)
+    background_image = serializers.ImageField(read_only=True)
+    image_icons = serializers.ImageField(read_only=True)
+    categories = serializers.SerializerMethodField()
+    category_count = serializers.IntegerField(read_only=True)
 
-  class Meta:
-    model = Topic
-    fields = '__all__'
+    class Meta:
+        model = Topic
+        fields = '__all__'
+    
+    def get_categories(self, obj):
+       request = self.context.get('request')
+       user = request.user
+       Categories = obj.categories.filter(category_managers__manager = user)
+       return CategorySerializers(Categories, many=True, read_only=True).data
+
+
 
 
 class TrendingIndicatorSerializer(serializers.ModelSerializer):

@@ -881,7 +881,9 @@ def topic_categories_api(request, topic_id):
         topic = Topic.objects.prefetch_related('categories__indicators').get(id=topic_id)
     except Topic.DoesNotExist:
         return Response({'error': 'Topic not found'}, status=404)
-    data = TopicSerializers(topic).data
+    data = TopicSerializers(topic, context = {
+        'request': request
+    }).data
     if 'categories' not in data or data['categories'] is None:
         data['categories'] = []
     return Response(data)

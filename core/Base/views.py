@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Q, Exists, OuterRef
 from rest_framework import status
+from django.db.models import Prefetch
 from .models import (
     Topic,
     Category,
@@ -14,6 +15,7 @@ from .models import (
     MonthData,
     KPIRecord 
 )
+from UserManagement.models import CategoryAssignment
 from UserAdmin.forms import(
     IndicatorForm
 )
@@ -200,7 +202,20 @@ def indicators_list(request):
 
 def indicator_view(request, indicator_id):
     indicator = get_object_or_404(Indicator, id=indicator_id, is_verified=True)
-    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    if request.user.is_authenticated and not request.user.is_superuser:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    else:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     context = {
         'indicator': indicator,
         'topics': topics,
@@ -209,7 +224,22 @@ def indicator_view(request, indicator_id):
 
 @login_required
 def index(request):
-    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        # Get topics that have categories assigned to the user
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     context = {
         'topics': topics
     }
@@ -217,6 +247,21 @@ def index(request):
 
 def data_view(request, cat_title):
     category = Category.objects.filter(name_ENG=cat_title).first()
+    if request.user.is_authenticated and not request.user.is_superuser:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    else:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    
     if category:
         indicators = Indicator.objects.filter(for_category=category, is_verified=True).annotate(
             has_annual=Exists(AnnualData.objects.filter(indicator=OuterRef('pk'), is_verified=True)),
@@ -225,7 +270,7 @@ def data_view(request, cat_title):
         )
     else:
         indicators = []
-    topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    
     # Build datapoints (unique years) from annual data for the selected indicators
     datapoints = []
     table_rows = []
@@ -270,12 +315,26 @@ def data_view(request, cat_title):
         'topics': topics,
         'datapoints': datapoints,
         'table_rows': table_rows,
+        'topics': topics,
     }
     return render(request, 'base/data_view.html', context)
 
 @login_required
 def data_explorer(request):
-    topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
     context = {
         'topics': topics,
     }
