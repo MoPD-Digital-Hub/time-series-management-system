@@ -17,10 +17,7 @@ DJANGO_ENV = config('DJANGO_ENV', default='development')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-20#%$snye!xhu@dwuzg#!=j%xg3rs4na@fa&n27g*^2eypee^$'
 
-if DJANGO_ENV == 'production':
-    DEBUG = False
-else:
-    DEBUG = True
+DEBUG = True
     
 ALLOWED_HOSTS = ['*']
 CORS_ALLOW_ALL_ORIGINS = True

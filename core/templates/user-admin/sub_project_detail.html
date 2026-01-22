@@ -1,0 +1,136 @@
+{% load static %}
+
+<!doctype html>
+
+{% include 'base/common/head.html' %}
+<style>
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+    }
+
+    .dropdown-panel {
+        width: min(320px, 92vw);
+        max-height: 50vh;
+        overflow: auto;
+    }
+
+    .dropdown-panel label span {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    th.vhead {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        vertical-align: bottom;
+        text-align: left;
+        font-size: 0.95em;
+        padding: 0.5rem 0.25rem;
+        height: 120px;
+    }
+</style>
+
+<body>
+    {% include 'base/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+
+          <input type="hidden" id="csrf_token" value="{% csrf_token %}">
+
+
+          <!--Body Start-->
+          <div class="content-wrapper row justify-content-center">
+              <div class="col-lg-10">
+                <h1 class="m-3"> {{ project.title_ENG }} </h1>
+                <div id="example1" class="ht-theme-main"></div>
+                <button id="save" class="btn btn-primary mt-5">Save data</button>
+              </div>
+          </div>
+        
+        </div>
+      </div>
+
+
+    
+
+
+
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+  
+  </body>
+  <script>
+
+    showToast = (title, body, cssClass) => {
+        $.toast({
+          heading: title,
+          text: body,
+          showHideTransition: 'slide',
+          icon: cssClass,
+          position: 'top-right',
+        })
+      }
+  
+
+    const container = document.querySelector('#example1');
+    const saveButton = document.querySelector('#save');
+    const data = JSON.parse('{{ projects|escapejs }}'); // Load project data from Django
+    const csrfToken = "{{ csrf_token }}";
+
+
+    const hot = new Handsontable(container, {
+        data,
+        startRows: 8,
+        startCols: 6,
+        contextMenu: true,
+        rowHeaders: true,
+        colHeaders: true,
+        height: 'auto',
+        licenseKey: 'non-commercial-and-evaluation',
+        afterChange(change, source) {
+            if (source === 'edit') {  // Auto-save on edit
+                saveData();
+            }
+        }
+    });
+
+
+    function saveData() {
+      fetch(window.location.pathname, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken  // Include CSRF token
+          },
+          body: JSON.stringify({ data: hot.getData() })  // Send table data
+      })
+      .then(response => {
+          if (!response.ok) {
+              return response.text();  // Return raw text in case of non-200 responses
+          }
+          return response.json();  // Otherwise, return JSON
+      })
+      .then(data => {
+          if (typeof data === 'string') {
+              console.error("Server returned an error:", data);  // Log raw response text
+          } else {
+            showToast('&#128515 Hello, User', 'Successfully saved', 'success')
+              console.log("Saved:", data);  // Handle valid JSON response
+          }
+      })
+      .catch(error => console.error("Error saving data:", error));
+    }
+  
+
+    // Manual save button event
+    saveButton.addEventListener('click', () => {
+        saveData();
+    });
+
+</script>
+</html>
