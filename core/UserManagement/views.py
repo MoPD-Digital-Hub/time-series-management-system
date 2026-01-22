@@ -211,6 +211,8 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             auth_login(request, user)
+            if user.climate_user:
+                return redirect('climate_dashboard')
             if next_url:
                 return redirect(next_url)
             return redirect('user_management_dashboard')
@@ -229,7 +231,7 @@ def logout_view(request):
 def importer_dashboard(request):
     if not request.user.is_importer:
         messages.error(request, 'Access denied. Only data importers can access this page.')
-        return render(request, 'usermanagement/access_denied.html')
+        return render(request, 'usermanagement/climate_access_denied.html')
     
     # Get categories managed by the importer's manager
     assigned_categories = []

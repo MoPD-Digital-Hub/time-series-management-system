@@ -1,7 +1,6 @@
 {% load static %}
 
   <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
-  
     <!-- [Page Specific JS] end --><!-- Required Js -->
     <script src="{% static 'assets/js/plugins/simplebar.min.js' %}"></script>
     <script src="{% static 'assets/js/plugins/popper.min.js' %}"></script>
@@ -13,6 +12,7 @@
     <script src="{% static 'assets/js/theme.js' %}"></script>
     <script src="{% static 'assets/js/multi-lang.js' %}"></script>
     <script src="{% static 'assets/js/script.js' %}"></script>
+
     <script>layout_change('false');</script>
     <script>layout_theme_contrast_change('false');</script>
     <script>change_box_container('false');</script>
@@ -20,3 +20,14 @@
     <script>layout_rtl_change('false');</script>
     <script>preset_change('preset-1');</script>
     <script>main_layout_change('vertical');</script>
+
+
+    <script>
+      $(document).ready(() => {
+        
+        $(document).on('click', '.btn-ai', function (e) {
+          const modal = new bootstrap.Modal($('#aiModal')[0]);
+          modal.show();
+        })
+      })
+    </script>

@@ -1,0 +1,112 @@
+{% load static %}
+<!doctype html>
+
+{% include 'base/common/head.html' %}
+
+<!-- REQUIRED Handsontable assets -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.min.css">
+<script src="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.min.js"></script>
+
+<style>
+    #example1 {
+        margin-top: 20px;
+    }
+</style>
+
+<body>
+    {% include 'base/common/nav.html' %}
+    {% include 'base/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <div class="content-wrapper row justify-content-center">
+                <div class="col-lg-11">
+                    <h1 class="m-3">{{ project.title_ENG }}</h1>
+
+                    <div id="example1"></div>
+
+                    <button id="save" class="btn btn-primary mt-4">
+                        Save data
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include 'base/common/footer.html' %}
+    {% include 'base/common/js.html' %}
+
+<script>
+/* ---------------- Toast ---------------- */
+function showToast(title, body, cssClass) {
+    $.toast({
+        heading: title,
+        text: body,
+        showHideTransition: 'slide',
+        icon: cssClass,
+        position: 'top-right',
+    });
+}
+
+/* ---------------- Data ---------------- */
+const rawData = JSON.parse('{{ projects|escapejs }}');
+console.log('RAW:', rawData);
+
+/* split headers + rows */
+const colHeaders = rawData.length ? rawData[0] : [];
+const tableData = rawData.length > 1 ? rawData.slice(1) : [];
+
+/* csrf */
+const csrfToken = "{{ csrf_token }}";
+
+/* ---------------- Handsontable ---------------- */
+const container = document.getElementById('example1');
+
+const hot = new Handsontable(container, {
+    data: tableData,
+    colHeaders: colHeaders,
+    rowHeaders: true,
+    contextMenu: true,
+    stretchH: 'all',
+    height: 'auto',
+    manualColumnResize: true,
+    manualRowResize: true,
+    licenseKey: 'non-commercial-and-evaluation'
+});
+
+/* ---------------- Save ---------------- */
+function saveData() {
+    const fullData = [
+        colHeaders,
+        ...hot.getData()
+    ];
+
+    fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ data: fullData })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Save failed');
+        return res.json();
+    })
+    .then(() => {
+        showToast('Success', 'Data saved successfully', 'success');
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Error', 'Failed to save data', 'error');
+    });
+}
+
+/* manual save */
+document.getElementById('save').addEventListener('click', saveData);
+
+</script>
+</body>
+</html>

@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'mobile',
     'mediaManager',
     'corsheaders',
+    'ckeditor',
+    'ckeditor_uploader',
 ]
 
 MIDDLEWARE = [
@@ -155,6 +157,9 @@ EMAIL_HOST_PASSWORD = 'iyaucxzlhpofybhb'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
+
+
+CKEDITOR_UPLOAD_PATH = "ckeditor/"
 # ####log
 # # settings.py
 # LOGGING = {

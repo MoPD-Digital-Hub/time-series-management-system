@@ -632,6 +632,33 @@ body:is([data-pc-theme="dark"] *){
   --tw-text-opacity: 1;
   color: rgb(191 191 191 / var(--tw-text-opacity));
 }
+
+.floting-button {
+  position: fixed;
+  bottom: 50px;
+  right: 30px;
+  z-index: 1030;
+}
+.floting-button .btn,
+.floting-button .introjs-tooltip .introjs-button,
+.introjs-tooltip .floting-button .introjs-button {
+  animation: pulse 2s infinite;
+}
+@media (max-width: 575.98px) {
+  .floting-button .btn,
+  .floting-button .introjs-tooltip .introjs-button,
+  .introjs-tooltip .floting-button .introjs-button {
+    --bs-btn-padding-y: 0.8rem;
+    --bs-btn-padding-x: 0.8rem;
+    --bs-btn-border-radius: 50px;
+  }
+  .floting-button .btn span,
+  .floting-button .introjs-tooltip .introjs-button span,
+  .introjs-tooltip .floting-button .introjs-button span {
+    display: none;
+  }
+}
+
 b, strong{
   font-weight: 600;
 }
@@ -13394,3 +13421,4 @@ table.\!dataTable thead tr >.dtfc-fixed-start:is([data-pc-theme="dark"] *),table
         .pc-sidebar .pc-navbar {
             min-height: fit-content;
         }
+

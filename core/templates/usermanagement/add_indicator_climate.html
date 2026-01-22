@@ -1,0 +1,234 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+
+<body>
+    {% include "base/common/climate_sidebar.html" %}
+         {% include 'base/common/header.html' %}
+    <div class="pc-container">
+        <div class="pc-content">
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Add Indicator</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Create a new indicator and submit it for approval.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form id="add-indicator-form">
+                        <div class="mb-4">
+                            <label class="form-label">Title (English)</label>
+                            <input type="text" name="title_eng" id="title_eng" class="form-control" required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Title (Amharic)</label>
+                            <input type="text" name="title_amh" id="title_amh" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Code (optional)</label>
+                            <input type="text" name="code" id="code" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Measurement Units</label>
+                            <input type="text" name="measurement_units" id="measurement_units" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Frequency</label>
+                            <select name="frequency" id="frequency" class="form-control">
+                                <option value="">-- Select Frequency --</option>
+                                {% for val, display in frequency_choices %}
+                                <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Source</label>
+                            <input type="text" name="source" id="source" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Data Type</label>
+                            <input type="text" name="data_type" id="data_type" class="form-control"
+                                placeholder="e.g. Percentage, Number, etc." />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Responsible Entity</label>
+                            <input type="text" name="responsible_entity" id="responsible_entity" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">Tags (Comma separated)</label>
+                            <input type="text" name="tags" id="tags" class="form-control"
+                                placeholder="tag1, tag2, tag3" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">SDG Link (URL)</label>
+                            <input type="url" name="sdg_link" id="sdg_link" class="form-control" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-blue-600 font-bold">KPI Characteristics</label>
+                            <textarea name="kpi_characteristics" id="kpi_characteristics" class="form-control" rows="3"
+                                placeholder="Explain the key performance indicator characteristics"></textarea>
+                        </div>
+
+
+                        <div class="mb-4">
+                            <label class="form-label">Methodology</label>
+                            <textarea name="methodology" id="methodology" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            {% if assigned_categories %}
+                            <label class="form-label">Category</label>
+                            {% if assigned_categories|length > 1 %}
+                            <select id="assigned_category_id" class="form-select" required>
+                                <option value="">-- Select Category --</option>
+                                {% for cat in assigned_categories %}
+                                <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            {% with assigned_category=assigned_categories.0 %}
+                            <div class="form-control bg-gray-100">{{ assigned_category.name_ENG }} {% if assigned_category.name_AMH %} / {{ assigned_category.name_AMH }}{% endif %}</div>
+                            <input type="hidden" id="assigned_category_id" value="{{ assigned_category.id }}" />
+                            {% endwith %}
+                            {% endif %}
+                            {% else %}
+                            <label class="form-label">Category</label>
+                            <div class="text-sm text-red-600">You do not have an assigned category. Please request to be
+                                assigned by your category manager before submitting indicators.</div>
+                            <input type="hidden" id="assigned_category_id" value="" />
+                            {% endif %}
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="submit" id="submit-indicator-btn" class="btn btn-primary">Submit
+                                Indicator</button>
+                            
+                        </div>
+                    </form>
+
+                    <div id="add-indicator-alert" class="mt-4"></div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.getElementById('add-indicator-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const title_eng = document.getElementById('title_eng').value.trim();
+            const title_amh = document.getElementById('title_amh').value.trim();
+            const code = document.getElementById('code') ? document.getElementById('code').value.trim() : '';
+            const description = document.getElementById('description') ? document.getElementById('description').value.trim() : '';
+            const measurement_units = document.getElementById('measurement_units') ? document.getElementById('measurement_units').value.trim() : '';
+            const frequency = document.getElementById('frequency') ? document.getElementById('frequency').value : '';
+            const source = document.getElementById('source') ? document.getElementById('source').value.trim() : '';
+            const methodology = document.getElementById('methodology') ? document.getElementById('methodology').value.trim() : '';
+
+            // New fields
+            const data_type = document.getElementById('data_type') ? document.getElementById('data_type').value.trim() : '';
+            const responsible_entity = document.getElementById('responsible_entity') ? document.getElementById('responsible_entity').value.trim() : '';
+            const tags = document.getElementById('tags') ? document.getElementById('tags').value.trim() : '';
+            const sdg_link = document.getElementById('sdg_link') ? document.getElementById('sdg_link').value.trim() : '';
+            const kpi_characteristics = document.getElementById('kpi_characteristics') ? document.getElementById('kpi_characteristics').value.trim() : '';
+
+            const assignedCategoryId = document.getElementById('assigned_category_id') ? document.getElementById('assigned_category_id').value : '';
+
+            const alertEl = document.getElementById('add-indicator-alert');
+            alertEl.innerHTML = '';
+
+            if (!title_eng) {
+                alertEl.innerHTML = '<div class="text-red-600">Title (English) is required.</div>';
+                return;
+            }
+
+            if (!assignedCategoryId) {
+                alertEl.innerHTML = '<div class="text-red-600">You must be assigned a category by your category manager before submitting indicators.</div>';
+                return;
+            }
+
+            const payload = {
+                title_eng,
+                title_amh,
+                code,
+                description,
+                measurement_units,
+                frequency,
+                source,
+                methodology,
+                data_type,
+                responsible_entity,
+                tags,
+                sdg_link,
+                kpi_characteristics,
+                category_ids: [assignedCategoryId]
+            };
+
+            fetch('{% url "submit_indicator_api" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            }).then(async resp => {
+                let data;
+                try { data = await resp.json(); } catch (e) { data = { error: 'Invalid response from server' }; }
+                if (!resp.ok) {
+                    alertEl.innerHTML = '<div class="text-red-600">' + (data.error || 'Error') + '</div>';
+                    return;
+                }
+                if (data.error) {
+                    alertEl.innerHTML = '<div class="text-red-600">' + (data.error || 'Error') + '</div>';
+                } else {
+                    alertEl.innerHTML = '<div class="text-green-600">Indicator submitted successfully.</div>';
+                    setTimeout(() => { window.location.href = '{% url "submissions_list" %}?type=indicator'; }, 1000);
+                }
+            }).catch(err => {
+                alertEl.innerHTML = '<div class="text-red-600">' + (err.message || 'Request failed') + '</div>';
+            });
+        });
+    </script>
+
+</body>
+
+</html>

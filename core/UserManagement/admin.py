@@ -37,6 +37,7 @@ class CustomUserAdmin(BaseUserAdmin):
                 'is_importer',
                 'groups',
                 'user_permissions',
+                'climate_user'
             )
         }),
         ('Important Dates', {

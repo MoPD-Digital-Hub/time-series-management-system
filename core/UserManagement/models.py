@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
     is_dashboard = models.BooleanField(default=False)
     is_category_manager = models.BooleanField(default=False, verbose_name="Category Manager")
     is_importer = models.BooleanField(default=False, verbose_name="Data Importer")
+    climate_user = models.BooleanField(default=False, verbose_name="Climate User")
 
     manager = models.ForeignKey(
         'self',

@@ -29,6 +29,7 @@ from .forms import(
     TopicForm,
     CategoryForm,
     IndicatorForm,
+    CategoryForm,
     DocumentForm,
     ProjectInitiativesForm,
     SubProjectForm

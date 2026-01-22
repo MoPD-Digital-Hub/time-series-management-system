@@ -1,0 +1,209 @@
+{% load static %}
+
+<!doctype html>
+{% include 'base/common/head.html' %}
+
+<body>
+   {% include "base/common/climate_sidebar.html" %}
+         {% include 'base/common/header.html' %}
+
+    </div><!-- [ Header ] end -->
+    <!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Indicator Submissions</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">Review and manage indicator submissions</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'submissions_list_climate' %}?type=data" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-upload mr-2"></i>Data Submissions
+                    </a>
+                    {% if request.user.is_importer %}
+                    <a href="{% url 'add_indicator_climate' %}" class="btn btn-primary">
+                        <i class="fas fa-plus mr-2"></i>Add Indicator
+                    </a>
+                    {% endif %}
+                    {% if submissions_page and status_filter == 'pending' %}
+                    <button class="btn btn-success" onclick="approveAllSubmissions('indicator')">
+                        <i class="fas fa-check-double mr-2"></i>Approve All
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="card mb-6">
+                <div class="card-body">
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'submissions_list_climate' %}?type=indicator" data-status=""
+                            class="px-4 py-2 rounded-lg font-medium {% if not status_filter %}bg-primary-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                            All Submissions
+                        </a>
+                        <a href="{% url 'submissions_list_climate' %}?type=indicator&status=pending" data-status="pending"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'pending' %}bg-yellow-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                            <i class="fas fa-clock mr-1"></i>Pending ({{ pending_count|default:0 }})
+                        </a>
+                        <a href="{% url 'submissions_list_climate' %}?type=indicator&status=approved" data-status="approved"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'approved' %}bg-green-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                            <i class="fas fa-check mr-1"></i>Approved
+                        </a>
+                        <a href="{% url 'submissions_list_climate' %}?type=indicator&status=declined" data-status="declined"
+                            class="px-4 py-2 rounded-lg font-medium {% if status_filter == 'declined' %}bg-red-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                            <i class="fas fa-times mr-1"></i>Declined
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submissions Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Indicator</th>
+                                    <th>Frequency</th>
+                                    <th>Units</th>
+                                    <th>Metadata</th>
+                                    <th>Submitted By</th>
+                                    <th>Status</th>
+                                    <th>Submitted At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="submissions-tbody">
+                                {% for submission in submissions_page %}
+                                <tr data-submission-id="{{ submission.id }}">
+                                    <td>
+                                        <div>
+                                            <div class="font-semibold">{{ submission.indicator.title_ENG }}</div>
+                                            {% if submission.indicator.title_amh %}
+                                            <div class="text-sm text-gray-500">{{ submission.indicator.title_amh }}
+                                            </div>
+                                            {% endif %}
+                                            {% if submission.indicator.code %}
+                                            <div class="text-xs font-mono bg-gray-100 inline-block px-1 rounded mt-1">{{
+                                                submission.indicator.code }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>{{ submission.indicator.get_frequency_display|default:"-" }}</td>
+                                    <td>{{ submission.indicator.measurement_units|default:"-" }}</td>
+                                    <td>
+                                        <div class="max-w-xs">
+                                            <div class="text-xs text-gray-500 font-bold uppercase">Description</div>
+                                            <div class="text-xs line-clamp-2 mb-1">{{
+                                                submission.indicator.description|default:"No description" }}</div>
+                                            <div class="text-xs text-gray-500 font-bold uppercase">Source</div>
+                                            <div class="text-xs truncate">{{ submission.indicator.source|default:"-" }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <div class="font-medium">{{
+                                                submission.submitted_by.get_full_name|default:submission.submitted_by.username
+                                                }}</div>
+                                            <div class="text-sm text-gray-500">{{ submission.submitted_by.email }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge {% if submission.status == 'pending' %}bg-warning{% elif submission.status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                            <i
+                                                class="fas {% if submission.status == 'pending' %}fa-clock{% elif submission.status == 'approved' %}fa-check{% else %}fa-times{% endif %} mr-1"></i>
+                                            {{ submission.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ submission.submitted_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <div class="flex gap-2">
+                                            {% if submission.status == 'pending' %}
+                                            <button class="btn btn-sm btn-success"
+                                                onclick="approveSubmission({{ submission.id }})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger"
+                                                onclick="declineSubmission({{ submission.id }})">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr id="loading-row">
+                                    <td colspan="8" class="text-center text-gray-500 py-8">Loading...</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if submissions_page.has_other_pages %}
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="text-sm text-gray-700 dark:text-gray-300">
+                            Showing {{ submissions_page.start_index }} to {{ submissions_page.end_index }} of {{
+                            submissions_page.paginator.count }} results
+                        </div>
+                        <nav class="flex gap-2">
+                            {% if submissions_page.has_previous %}
+                            <a href="?page=1&type=indicator{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">First</a>
+                            <a href="?page={{ submissions_page.previous_page_number }}&type=indicator{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Previous</a>
+                            {% endif %}
+
+                            <span class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded">
+                                Page {{ submissions_page.number }} of {{ submissions_page.paginator.num_pages }}
+                            </span>
+
+                            {% if submissions_page.has_next %}
+                            <a href="?page={{ submissions_page.next_page_number }}&type=indicator{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Next</a>
+                            <a href="?page={{ submissions_page.paginator.num_pages }}&type=indicator{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                                class="btn btn-sm btn-outline-primary">Last</a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    </div>
+    </div>
+    </div><!-- [ Main Content ] end -->
+
+    {% include 'usermanagement/common/footer.html' %}
+    {% include 'usermanagement/common/js.html' %}
+    <script src="{% static 'assets/js/indicator_submissions.js' %}"></script>
+    <script>
+        setTimeout(() => {
+            const loadingRow = document.getElementById('loading-row');
+            if (loadingRow) {
+                loadingRow.innerHTML = `
+                <td colspan="7" class="text-center text-gray-500 py-8">
+                    {% if status_filter %}
+                        No {{ status_filter }} submissions found.
+                    {% else %}
+                        No indicator submissions found.
+                    {% endif %}
+                </td>
+            `;
+            }
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

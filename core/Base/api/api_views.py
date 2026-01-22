@@ -13,7 +13,7 @@ from ..serializer import (
 )
 from ..serializer import TopicSerializers, TrendingIndicatorSerializer,IndicatorQuarterlySerializer
 from django.db.models import F, Prefetch
-from ..models import AnnualData, MonthData, QuarterData, DataPoint, TrendingIndicator, Category, Quarter, Month, KPIRecord
+from ..models import AnnualData, MonthData, QuarterData, DataPoint, TrendingIndicator, Category, Quarter, Month, KPIRecord, Document, DocumentCategory, Topic
 from rest_framework import status
 from django.db.models import Q
 import json
@@ -986,3 +986,124 @@ def acknowledge_seen_api(request):
         KPIRecord.objects.filter(id__in=kpi_ids).update(is_seen=True)
 
     return Response({'status': 'success'})
+
+
+@api_view(['GET'])
+def climate_documents_search_api(request):
+    """
+    Search documents for climate topic with filtering by category and search query.
+    """
+    search_query = request.GET.get('q', '').strip()
+    category_id = request.GET.get('category_id', None)
+    topic_id = request.GET.get('topic_id', None)
+    
+    # Get climate topic
+    if topic_id:
+        topic = Topic.objects.filter(id=topic_id).first()
+    else:
+        topic = Topic.objects.filter(title_ENG__iexact='Climate').first()
+    
+    if not topic:
+        return Response({
+            'result': 'SUCCESS',
+            'message': 'Climate topic not found',
+            'data': []
+        }, status=status.HTTP_200_OK)
+    
+    # Base queryset
+    documents = Document.objects.filter(topic=topic).select_related('document_category')
+    
+    # Apply category filter
+    if category_id:
+        try:
+            category_id = int(category_id)
+            documents = documents.filter(document_category_id=category_id)
+        except (ValueError, TypeError):
+            pass
+    
+    # Apply search query
+    if search_query:
+        documents = documents.filter(
+            Q(title_ENG__icontains=search_query) |
+            Q(title_AMH__icontains=search_query) |
+            Q(document_category__name_ENG__icontains=search_query) |
+            Q(document_category__name_AMH__icontains=search_query)
+        )
+    
+    # Serialize documents
+    documents_data = []
+    for doc in documents.order_by('-id'):
+        documents_data.append({
+            'id': doc.id,
+            'title_ENG': doc.title_ENG,
+            'title_AMH': doc.title_AMH or '',
+            'document_category': {
+                'id': doc.document_category.id if doc.document_category else None,
+                'name_ENG': doc.document_category.name_ENG if doc.document_category else '',
+                'name_AMH': doc.document_category.name_AMH if doc.document_category else '',
+            } if doc.document_category else None,
+            'file_url': doc.file.url if doc.file else '',
+            'file_name': doc.file.name.split('/')[-1] if doc.file else '',
+        })
+    
+    return Response({
+        'result': 'SUCCESS',
+        'message': f'Found {len(documents_data)} documents',
+        'data': documents_data
+    }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def climate_indicators_analytics_api(request):
+    topic_id = request.GET.get('topic_id')
+    category_id = request.GET.get('category_id')
+    indicator_id = request.GET.get('indicator_id')
+    
+    # Get climate topic
+    topic = Topic.objects.filter(id=topic_id).first() if topic_id else Topic.objects.filter(title_ENG__iexact='Climate').first()
+    if not topic:
+        return Response({'result': 'SUCCESS', 'data': []})
+    
+    # Get indicators
+    indicators = Indicator.objects.filter(
+        for_category__topic=topic,
+        is_verified=True,
+        is_dashboard_visible=True
+    ).distinct()
+    
+    if category_id:
+        indicators = indicators.filter(for_category_id=category_id)
+    if indicator_id:
+        indicators = indicators.filter(id=indicator_id)
+    
+    recent_years = DataPoint.objects.filter(
+        annualdata__indicator__for_category__topic=topic
+    ).distinct().order_by('-year_EC')[:5]
+
+    
+    result = []
+    for ind in indicators:
+        annual_data_qs = AnnualData.objects.filter(indicator=ind, for_datapoint__in=recent_years).order_by('for_datapoint__year_EC')
+        annual_data = [
+            {
+                'year_ec': ad.for_datapoint.year_EC,
+                'year_gc': ad.for_datapoint.year_GC,
+                'performance': float(ad.performance) if ad.performance else None,
+                'target': float(ad.target) if ad.target else None
+            } for ad in annual_data_qs
+        ]
+        latest = annual_data[-1] if annual_data else {}
+        result.append({
+            'indicator': {
+                'id': ind.id,
+                'title_ENG': ind.title_ENG,
+                'code': ind.code or '',
+            },
+            'annual_data': annual_data,
+            'latest_performance': latest.get('performance'),
+            'latest_target': latest.get('target')
+        })
+    
+    return Response({
+        'result': 'SUCCESS',
+        'data': result
+    })

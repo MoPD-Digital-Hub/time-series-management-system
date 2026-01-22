@@ -7,6 +7,8 @@ from UserManagement.models import ResponsibleEntity
 from ethiopian_date_converter.ethiopian_date_convertor import to_ethiopian, to_gregorian, EthDate
 from datetime import date
 
+from ckeditor.fields import RichTextField
+
 
 class Topic(models.Model):
     title_ENG = models.CharField(max_length=300, unique = True)
@@ -31,16 +33,81 @@ class Topic(models.Model):
     class Meta:
         ordering = ['rank'] 
 
+class DocumentCategory(models.Model):
+    """
+    Separate category model for documents, independent from Indicator categories.
+    """
+    name_ENG = models.CharField(max_length=300, unique=True)
+    name_AMH = models.CharField(max_length=300, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    rank = models.IntegerField(null=True, blank=True, default=0)
+
+    class Meta:
+        verbose_name = "Document Category"
+        verbose_name_plural = "Document Categories"
+        ordering = ['rank', 'name_ENG']
+
+    def __str__(self):
+        return self.name_ENG
+
 class Document(models.Model):
+    FILE_TYPES = (
+        ('document', 'Document'),
+        ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('image', 'Image'),
+        ('other', 'Other'),
+    )
     # Responsible to store file documents
     title_ENG = models.CharField(max_length=300, unique = True)
     title_AMH = models.CharField(max_length=300, null = True)
     topic = models.ForeignKey(Topic, null=True, blank=True, on_delete=models.SET_NULL)
-    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL, related_name='documents')
+    category = models.ForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL)
+    document_category = models.ForeignKey(DocumentCategory, null=True, blank=True, on_delete=models.SET_NULL, related_name='documents')
     file= models.FileField(upload_to='documents/')
+    file_type = models.CharField(
+        max_length=20,
+        choices=FILE_TYPES,
+        default='document'
+    )
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
 
     def __str__(self):
         return self.title_ENG
+
+
+
+class Content(models.Model):
+    title_ENG = models.CharField(max_length=300)
+    title_AMH = models.CharField(max_length=300, null=True, blank=True)
+
+    topic = models.ForeignKey(
+        Topic, null=True, blank=True, on_delete=models.SET_NULL
+    )
+
+    document_category = models.ForeignKey(
+        DocumentCategory, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='contents'
+    )
+
+    body = RichTextField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ('draft', 'Draft'),
+            ('published', 'Published'),
+        ),
+        default='draft'
+    )
+
+    is_verified = models.BooleanField(default=True, verbose_name="Verified")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title_ENG
+
 
 class Category(models.Model):
     name_ENG = models.CharField(max_length=300, unique = True)
@@ -689,7 +756,6 @@ class AnnualData(models.Model):
                 return None
         return None
 
-
 class KPIRecord(models.Model):
     """
     Stores KPI performance and target data for a specific organization and date.
@@ -810,7 +876,6 @@ class KPIRecord(models.Model):
     def __str__(self):
         return f"{self.indicator} ({self.date}) - Target: {self.target}, Perf: {self.performance}"
     
-
 class ProjectInitiatives(models.Model):
     title_ENG = models.CharField(max_length=50)
     title_AMH = models.CharField(max_length=50)
@@ -840,7 +905,10 @@ class SubProject(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'({self.project.title_ENG})'  + ' - ' + self.title_ENG
+        if self.project:
+            return f'({self.project.title_ENG}) - {self.title_ENG}'
+        return f'(No Project) - {self.title_ENG}'
+
     
     def save(self , *args , **kwargs ):
         if(self.content):
