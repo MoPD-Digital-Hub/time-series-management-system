@@ -198,15 +198,12 @@
 
 
   $("#ind-select-all").on("change", function () {
-    $("#ind-list .ind-checkbox").filter(function () {
-      // get the 'style' attribute string directly
-      const styleAttr = $(this).closest("label").attr("style") || "";
-      // exclude if it contains 'display:none'
-      return !styleAttr.includes("display: none");
-    }).prop("checked", this.checked);
+  // Only check checkboxes that are visible
+  $("#ind-list .ind-checkbox:visible").prop("checked", this.checked);
+  
+  collectSelection(); // call your function to handle the selection
+});
 
-    collectSelection();
-  });
 
 
 
