@@ -191,18 +191,14 @@
       .prop("checked", this.checked)
       .trigger("change");
   });
+
+
   $("#ind-select-all").on("change", function () {
-    $("#ind-list .ind-checkbox").prop("checked", this.checked);
-    collectSelection();
+    // Only check checkboxes that are visible
+    $("#ind-list .ind-checkbox:visible").prop("checked", this.checked);
+    
+    collectSelection(); // call your function to handle the selection
   });
-
-
-  $("#ind-select-all").on("change", function () {
-  // Only check checkboxes that are visible
-  $("#ind-list .ind-checkbox:visible").prop("checked", this.checked);
-  
-  collectSelection(); // call your function to handle the selection
-});
 
 
 
