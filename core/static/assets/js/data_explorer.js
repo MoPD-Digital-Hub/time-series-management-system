@@ -62,8 +62,11 @@
     });
 
     $('#ind-select-all').on('change', function () {
-        $('#ind-list .ind-checkbox:visible').prop('checked', this.checked);
+        $('#ind-list .ind-checkbox')
+            .not('[style*="display: none"]')
+            .prop('checked', this.checked);
     });
+
 
 
 
