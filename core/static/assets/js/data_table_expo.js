@@ -199,11 +199,15 @@
 
   $("#ind-select-all").on("change", function () {
     $("#ind-list .ind-checkbox").filter(function () {
-      return $(this).closest("label")[0].style.display !== "none";
+      // get the 'style' attribute string directly
+      const styleAttr = $(this).closest("label").attr("style") || "";
+      // exclude if it contains 'display:none'
+      return !styleAttr.includes("display: none");
     }).prop("checked", this.checked);
 
     collectSelection();
   });
+
 
 
 
