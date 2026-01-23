@@ -191,14 +191,20 @@
       .prop("checked", this.checked)
       .trigger("change");
   });
-  
+  $("#ind-select-all").on("change", function () {
+    $("#ind-list .ind-checkbox").prop("checked", this.checked);
+    collectSelection();
+  });
+
+
   $("#ind-select-all").on("change", function () {
     $("#ind-list .ind-checkbox").filter(function () {
-      return this.style.display !== "none";
+      return $(this).closest("label")[0].style.display !== "none";
     }).prop("checked", this.checked);
 
     collectSelection();
   });
+
 
 
   // --- Hierarchy filter functions
