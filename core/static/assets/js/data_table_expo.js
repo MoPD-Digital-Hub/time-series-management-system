@@ -194,11 +194,14 @@
 
 
   $("#ind-select-all").on("change", function () {
-    // Only check checkboxes that are visible
-    $("#ind-list .ind-checkbox:visible").prop("checked", this.checked);
-    
-    collectSelection(); // call your function to handle the selection
+    // Only check checkboxes whose parent label is visible
+    $("#ind-list .ind-checkbox").filter(function () {
+      return $(this).closest("label").is(":visible");
+    }).prop("checked", this.checked);
+
+    collectSelection();
   });
+
 
 
 
