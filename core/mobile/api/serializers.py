@@ -33,7 +33,7 @@ class IndicatorFiedlSerializer(serializers.ModelSerializer):
 
 class AnnualDataPreviousSerializer(serializers.ModelSerializer):
     previous_year_performance_data = serializers.SerializerMethodField()
-    performance = serializers.SerializerMethodField()
+
 
     class Meta:
         model = AnnualData
@@ -42,8 +42,6 @@ class AnnualDataPreviousSerializer(serializers.ModelSerializer):
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
     
-    def get_performance(self, obj):
-        return round(obj.performance, 2) if obj.performance is not None else None
     
 
 class QuarterDataPreviousSerializer(serializers.ModelSerializer):
@@ -88,12 +86,18 @@ class TopicSerializer(serializers.ModelSerializer):
     
 class AnnualDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
+    performance = serializers.SerializerMethodField()
+    
     class Meta:
         model = AnnualData
         fields = ('for_datapoint', 'target' ,'performance')
 
     def get_for_datapoint(self, obj):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+    
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+    
 
 
 
