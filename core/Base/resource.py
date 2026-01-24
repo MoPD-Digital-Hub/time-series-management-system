@@ -54,25 +54,37 @@ class IndicatorResource(resources.ModelResource):
         widget=ForeignKeyWidget(Indicator, field='id'),
         saves_null_values=True,
     )
+
     class Meta:
         model = Indicator
-        import_id_fields = ('id',)             
-        skip_unchanged = False                 
-        report_skipped = True          
-    
+        import_id_fields = ('id',)  # match by ID if exists
+        skip_unchanged = True       # skip rows that didn't change
+        report_skipped = True
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Optional: clean row data before import
+        """
+        if row.get('for_category'):
+            row['for_category'] = row['for_category'].replace(';', ',')  # normalize separators
+
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+        """
+        Ensure all imported rows have unique codes
+        """
         if dry_run:
-            return  
+            return
 
         imported_instances = [row_result.instance for row_result in result.rows if row_result.instance]
 
         for instance in imported_instances:
             try:
-                instance.generate_code()
-                instance.save(update_fields=['code'])
+                # Only generate code if empty
+                if not instance.code:
+                    instance.generate_code()
+                    instance.save(update_fields=['code'])
             except Exception as e:
                 print(f"Error generating code for {instance.id}: {e}")
-
 
 class DataPointResource(resources.ModelResource):
 
