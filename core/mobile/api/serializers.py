@@ -96,12 +96,16 @@ class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
     previous_year_performance_data = serializers.SerializerMethodField()
+    performance = serializers.SerializerMethodField()
+
     class Meta:
         model = QuarterData
         fields = '__all__'
 
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+    
     def get_previous_year_performance_data(self, obj):
-        
         return obj.get_previous_year_performance()
     
     def get_for_datapoint(self, obj):
