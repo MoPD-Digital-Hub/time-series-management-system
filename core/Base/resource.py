@@ -39,7 +39,6 @@ class CategoryResource(resources.ModelResource):
 class TagResource(resources.ModelResource):
     class Meta:
         model = Tag
-
 class IndicatorResource(resources.ModelResource):
     for_category = fields.Field(
         column_name='for_category',
@@ -47,7 +46,7 @@ class IndicatorResource(resources.ModelResource):
         widget=ManyToManyWidget(Category, field='name_ENG', separator=','),
         saves_null_values=True,
     )
-    
+
     parent = fields.Field(
         column_name='parent',
         attribute='parent',
@@ -57,34 +56,29 @@ class IndicatorResource(resources.ModelResource):
 
     class Meta:
         model = Indicator
-        import_id_fields = ('id',)  # match by ID if exists
-        skip_unchanged = True       # skip rows that didn't change
+        import_id_fields = ('id',)
+        skip_unchanged = True
         report_skipped = True
 
-    def before_import_row(self, row, **kwargs):
+    def before_save_instance(self, instance, using_transactions, dry_run):
         """
-        Optional: clean row data before import
-        """
-        if row.get('for_category'):
-            row['for_category'] = row['for_category'].replace(';', ',')  # normalize separators
-
-    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
-        """
-        Ensure all imported rows have unique codes
+        Ensure each instance has a unique code BEFORE inserting.
         """
         if dry_run:
             return
 
-        imported_instances = [row_result.instance for row_result in result.rows if row_result.instance]
+        if not instance.code:
+            # Use ID if it exists, else temporary code
+            base_code = f"IND_TEMP"
+            counter = 1
+            unique_code = base_code
 
-        for instance in imported_instances:
-            try:
-                # Only generate code if empty
-                if not instance.code:
-                    instance.generate_code()
-                    instance.save(update_fields=['code'])
-            except Exception as e:
-                print(f"Error generating code for {instance.id}: {e}")
+            # Loop until code is unique in DB
+            while Indicator.objects.filter(code=unique_code).exists():
+                unique_code = f"{base_code}_{counter}"
+                counter += 1
+
+            instance.code = unique_code
 
 class DataPointResource(resources.ModelResource):
 
