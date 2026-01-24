@@ -199,54 +199,53 @@ class Indicator(models.Model):
         ordering = ['id'] 
 
     
-    def generate_code(self):
-        # Top-level indicator
-        if not self.code and self.parent is None: 
-            categories = list(self.for_category.all().order_by('code')) if self.for_category.exists() else []
-            if categories:
-                prefix = "-".join([cat.code.upper() for cat in categories])
-                existing_codes = Indicator.objects.filter(
-                    code__startswith=f"{prefix}-", parent__isnull=True
-                ).values_list('code', flat=True)
+    def generate_code(self, category_queryset=None):
+            if self.code:
+                return
 
-                max_suffix = 0
-                for code in existing_codes:
+            # 1. Get categories from either the DB or the passed queryset (for imports)
+            cats = category_queryset if category_queryset else self.for_category.all()
+            categories = list(cats.order_by('code'))
+            
+            if categories:
+                prefix = "-".join([cat.code.upper() for cat in categories if cat.code])
+            else:
+                prefix = "UNC" # Uncategorized fallback
+
+            # 2. Logic for Top-level indicator
+            if self.parent is None:
+                # We use a loop to ensure uniqueness even if multiple imports happen fast
+                new_suffix = 1
+                while True:
+                    candidate_code = f"{prefix}-{new_suffix:02d}"
+                    if not Indicator.objects.filter(code=candidate_code).exists():
+                        self.code = candidate_code
+                        break
+                    new_suffix += 1
+                    
+            # 3. Child indicator
+            elif self.parent and self.parent.code:
+                parent_code = self.parent.code
+                siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
+                child_numbers = [0]
+                
+                for s in siblings:
                     try:
-                        suffix = int(code.split("-")[-1])
-                        if suffix > max_suffix:
-                            max_suffix = suffix
-                    except (IndexError, ValueError):
+                        suffix = s.code.split('.')[-1]
+                        if suffix.isdigit():
+                            child_numbers.append(int(suffix))
+                    except (ValueError, IndexError):
                         continue
 
-                new_suffix = max_suffix + 1
-                self.code = f"{prefix}-{new_suffix:02d}"
-        # Child indicator
-        elif self.parent and self.parent.code:
-            parent_code = self.parent.code
-            siblings = Indicator.objects.filter(parent=self.parent).exclude(pk=self.pk)
-            child_numbers = []
-
-            for s in siblings:
-                try:
-                    suffix = s.code.replace(f"{parent_code}.", "")
-                    parts = suffix.split(".")
-                    if parts and parts[0].isdigit():
-                        child_numbers.append(int(parts[0]))
-                except (AttributeError, ValueError):
-                    continue
-
-            next_number = (max(child_numbers) if child_numbers else 0) + 1
-            self.code = f"{parent_code}.{next_number}"
-
-    # def save(self , *args , **kwargs ):
-    #     super(Indicator, self).save(*args, **kwargs)
-    #     if not self.code:
-    #         self.generate_code()
-    #         self.save()
-    
-    def __str__(self):
-        return f"{self.title_ENG} ({self.code})"
-    
+                self.code = f"{parent_code}.{max(child_numbers) + 1}"# def save(self , *args , **kwargs ):
+            #     super(Indicator, self).save(*args, **kwargs)
+            #     if not self.code:
+            #         self.generate_code()
+            #         self.save()
+            
+            def __str__(self):
+                return f"{self.title_ENG} ({self.code})"
+            
 class DataPoint(models.Model):
     year_EC = models.IntegerField(unique=True)
     year_GC = models.CharField(max_length=10,unique = True, null=True, blank=True)

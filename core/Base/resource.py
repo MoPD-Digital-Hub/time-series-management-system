@@ -59,19 +59,30 @@ class IndicatorResource(resources.ModelResource):
         import_id_fields = ('id',)             
         skip_unchanged = False                 
         report_skipped = True          
-    
-    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
-        if dry_run:
-            return  
 
-        imported_instances = [row_result.instance for row_result in result.rows if row_result.instance]
+    def save_instance(self, instance, using_transactions=True, dry_run=False):
+        """
+        We override save_instance because M2M relations (categories) 
+        are usually handled AFTER save, but we need them BEFORE save
+        to generate the unique code.
+        """
+        if not dry_run:
+            # Generate code using the data from the import row
+            # Note: We generate the code here or in after_import_row
+            pass
+        super().save_instance(instance, using_transactions, dry_run)
 
-        for instance in imported_instances:
-            try:
-                instance.generate_code()
-                instance.save(update_fields=['code'])
-            except Exception as e:
-                print(f"Error generating code for {instance.id}: {e}")
+    def after_import_row(self, row, row_result, **kwargs):
+        """
+        This is the safest place. The instance is saved, but we can 
+        now access categories and update the code.
+        """
+        instance = row_result.instance
+        if instance and not instance.code:
+            # Re-generate code now that M2M is established
+            instance.generate_code()
+            # Use update to avoid triggering signals recursively
+            Indicator.objects.filter(id=instance.id).update(code=instance.code)
 
 
 class DataPointResource(resources.ModelResource):
