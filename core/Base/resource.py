@@ -41,6 +41,9 @@ class TagResource(resources.ModelResource):
         model = Tag
 
 
+from import_export import resources, fields
+from import_export.widgets import ManyToManyWidget, ForeignKeyWidget
+from .models import Indicator, Category
 
 class IndicatorResource(resources.ModelResource):
     for_category = fields.Field(
@@ -50,43 +53,37 @@ class IndicatorResource(resources.ModelResource):
         saves_null_values=True,
     )
 
-    # Temporary CSV column for parent reference (original CSV ID)
+    # We use a temporary field to hold the CSV parent ID
     parent_csv_id = fields.Field(
         column_name='parent',  # original CSV column
         attribute='parent',
-        widget=ForeignKeyWidget(Indicator, field='code'),  # will map using generated code
+        widget=ForeignKeyWidget(Indicator, field='code'),  # map via generated code
         saves_null_values=True,
     )
 
     class Meta:
         model = Indicator
-        import_id_fields = ('code',)  # code is unique identifier
+        import_id_fields = ('code',)  # use code as unique identifier
         skip_unchanged = False
         report_skipped = True
 
     def before_import_row(self, row, **kwargs):
-        """
-        Generate code for the row before saving, so we can use it for parent mapping.
-        """
+        # Generate code if empty
         if not row.get('code'):
-            # generate temporary code
-            # you can use your existing generate_code logic
-            # here we just create a placeholder like IND-<id>
+            # You can replace this with your real generate_code logic
             row['code'] = f"IND-{row['id']}"
 
     def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
-        """
-        After import, fix parent relationships using CSV IDs mapped to generated codes.
-        """
         if dry_run:
             return
 
-        # Build a map of CSV id → generated code
+        # Build map: CSV ID -> generated code
         id_to_code = {row['id']: row['code'] for row in dataset.dict}
 
+        # Fix parent references
         for row_result in result.rows:
             instance = row_result.object
-            if instance and row_result.import_type in ('new', 'update'):
+            if instance:
                 parent_csv_id = row_result.original.get('parent')
                 if parent_csv_id:
                     parent_code = id_to_code.get(parent_csv_id)
@@ -97,6 +94,7 @@ class IndicatorResource(resources.ModelResource):
                             instance.save(update_fields=['parent'])
                         except Indicator.DoesNotExist:
                             print(f"Parent with code {parent_code} not found for {instance.code}")
+
 
 class DataPointResource(resources.ModelResource):
 
