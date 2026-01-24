@@ -53,27 +53,25 @@ class IndicatorResource(resources.ModelResource):
         attribute='parent',
         widget=ForeignKeyWidget(Indicator, field='id'),
         saves_null_values=True,
-    )      
-
+    )
     class Meta:
         model = Indicator
-        import_id_fields = ('id',)
-        # We exclude code from the initial save to prevent unique constraint 
-        # errors before our custom logic runs
-        exclude = ('code',)
+        import_id_fields = ('id',)             
+        skip_unchanged = False                 
+        report_skipped = True          
+    
+    def after_import(self, dataset, result, using_transactions, dry_run, **kwargs):
+        if dry_run:
+            return  
 
-    def after_save_instance(self, instance, using_transactions, dry_run, **kwargs):
-        """
-        Using **kwargs here prevents the 'unexpected keyword argument' error.
-        We generate the code AFTER the instance is saved so we have an ID.
-        """
-        if not dry_run:
-            # Re-fetch categories because they are now linked in the DB
-            # or use the data from the imported row if necessary.
-            if not instance.code:
+        imported_instances = [row_result.instance for row_result in result.rows if row_result.instance]
+
+        for instance in imported_instances:
+            try:
                 instance.generate_code()
-                # Use .update() to bypass signals and save only the code
-                Indicator.objects.filter(id=instance.id).update(code=instance.code)
+                instance.save(update_fields=['code'])
+            except Exception as e:
+                print(f"Error generating code for {instance.id}: {e}")
 
 
 class DataPointResource(resources.ModelResource):
