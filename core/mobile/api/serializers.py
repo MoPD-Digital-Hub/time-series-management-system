@@ -723,7 +723,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
         if month:
             qs = qs.filter(for_month__month_ENG=month)
 
-        qs = qs.order_by('-for_datapoint__id')[:12]
+        qs = qs.order_by('-for_datapoint__id')
         month_list = list(qs)[::-1]
 
         return MonthDataSerializer(month_list, many=True).data
