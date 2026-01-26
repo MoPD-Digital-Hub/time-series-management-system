@@ -213,51 +213,78 @@ def indicators(request):
 
     return render(request, 'data_management/indicators.html', context)
 
-
 @login_required
 def data_entry(request):
     user = request.user
+
+    # ----------------------------
+    # Topic & Category (GET)
+    # ----------------------------
     topic_id = request.GET.get('topic')
     category_id = request.GET.get('category')
-    indicator_ids = request.GET.getlist('indicators')
 
-    # STEP 1: Topics assigned to the user (via Category Assignments)
-    if hasattr(user, 'is_category_manager') or hasattr(user, 'is_importer'):
-        user_category_ids = CategoryAssignment.objects.filter(manager=user).values_list('category', flat=True)
-        topics_qs = Topic.objects.filter(categories__id__in=user_category_ids).distinct()
+    # ----------------------------
+    # Indicators (POST → SESSION)
+    # ----------------------------
+    if request.method == 'POST':
+        indicator_ids = request.POST.getlist('indicators')
+        request.session['selected_indicators'] = indicator_ids
+    else:
+        indicator_ids = request.session.get('selected_indicators', [])
+
+    # ----------------------------
+    # STEP 1: User scope
+    # ----------------------------
+    if user.is_category_manager or user.is_importer:
+        user_category_ids = CategoryAssignment.objects.filter(
+            manager=user
+        ).values_list('category', flat=True)
+
+        topics_qs = Topic.objects.filter(
+            categories__id__in=user_category_ids
+        ).distinct()
+
         base_categories = Category.objects.filter(id__in=user_category_ids)
     else:
         topics_qs = Topic.objects.all()
         base_categories = Category.objects.all()
 
-    # STEP 2: Categories filtered by selected Topic
+    # ----------------------------
+    # STEP 2: Filter categories
+    # ----------------------------
     categories_qs = base_categories
     if topic_id:
         categories_qs = categories_qs.filter(topic_id=topic_id)
 
-    # STEP 3: Indicators filtered by selected Category
-    # Note: If no category is selected, it shows indicators for all categories in the filtered list
+    # ----------------------------
+    # STEP 3: Indicators list (dropdown)
+    # ----------------------------
     indicators_list_qs = Indicator.objects.filter(
         for_category__in=categories_qs,
         is_verified=True
-    ).distinct()[:300]  # 🔥 hard limit
+    ).distinct()[:300]
 
-
-    # STEP 4: Final query for the table (Applying selected indicators)
+    # ----------------------------
+    # STEP 4: Indicators table
+    # ----------------------------
     indicators_qs = indicators_list_qs
     if indicator_ids:
         indicators_qs = indicators_qs.filter(id__in=indicator_ids)
 
-    # Time dimensions (same as before)
+    # ----------------------------
+    # Time dimensions
+    # ----------------------------
     all_years = DataPoint.objects.all().order_by('-year_EC')
     years_annual = all_years[:20]
     years_quarterly = all_years[:10]
     years_monthly = all_years[:5]
-    
 
-    # --------------------------------------------------
-    # STEP 6: Data maps (performance optimized)
-    # --------------------------------------------------
+    quarters = Quarter.objects.all().order_by('number')
+    months = Month.objects.all().order_by('number')
+
+    # ----------------------------
+    # Data maps (FAST)
+    # ----------------------------
     annual_map = {}
     for row in AnnualData.objects.filter(indicator__in=indicators_qs):
         annual_map.setdefault(row.indicator_id, {})[row.for_datapoint_id] = row.performance
@@ -272,26 +299,25 @@ def data_entry(request):
         month_map.setdefault(row.indicator_id, {}) \
                  .setdefault(row.for_datapoint_id, {})[row.for_month_id] = row.performance
 
-
     context = {
         'topics': topics_qs,
         'categories': categories_qs,
-        'indicators_list': indicators_list_qs, # For the dropdown
-        'indicators': indicators_qs,          # For the table
+        'indicators_list': indicators_list_qs,
+        'indicators': indicators_qs,
         'years_annual': years_annual,
         'years_quarterly': years_quarterly,
         'years_monthly': years_monthly,
-        'quarters': Quarter.objects.all().order_by('number'),
-        'months': Month.objects.all().order_by('number'),
+        'quarters': quarters,
+        'months': months,
         'annual_map': annual_map,
         'quarter_map': quarter_map,
         'month_map': month_map,
         'selected_topic': int(topic_id) if topic_id else None,
         'selected_category': int(category_id) if category_id else None,
-        'selected_indicators': list(map(int, indicator_ids)) if indicator_ids else [],
+        'selected_indicators': list(map(int, indicator_ids)),
     }
-    return render(request, 'data_management/data_entry.html', context)
 
+    return render(request, 'data_management/data_entry.html', context)
 
 
 

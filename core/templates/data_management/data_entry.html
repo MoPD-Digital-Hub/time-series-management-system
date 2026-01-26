@@ -60,23 +60,33 @@
             <!-- Filters -->
             <div class="card mb-4 shadow-sm border-0">
                 <div class="card-body">
-                    <form method="GET" class="row g-3 align-items-end" id="filterForm">
+                    <form method="POST" class="row g-3 align-items-end">
+                        {% csrf_token %}
+
+                        <!-- Preserve topic & category -->
+                        <input type="hidden" name="topic" value="{{ selected_topic }}">
+                        <input type="hidden" name="category" value="{{ selected_category }}">
+
                         <div class="col-md-3">
                             <label class="form-label fw-bold">1. Strategic Topic</label>
-                            <select name="topic" class="js-choice" id="topicSelect">
+                            <select id="topicSelect" class="js-choice">
                                 <option value="">All Topics</option>
                                 {% for t in topics %}
-                                    <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>{{ t.title_ENG }}</option>
+                                    <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>
+                                        {{ t.title_ENG }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label fw-bold">2. Category</label>
-                            <select name="category" class="js-choice" id="categorySelect">
+                            <select id="categorySelect" class="js-choice">
                                 <option value="">All Categories</option>
                                 {% for c in categories %}
-                                    <option value="{{ c.id }}" {% if selected_category == c.id %}selected{% endif %}>{{ c.name_ENG }}</option>
+                                    <option value="{{ c.id }}" {% if selected_category == c.id %}selected{% endif %}>
+                                        {{ c.name_ENG }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -84,9 +94,9 @@
                         <div class="col-md-4">
                             <div class="d-flex justify-content-between">
                                 <label class="form-label fw-bold">3. Indicators</label>
-                                <a href="javascript:void(0)" class="small text-decoration-none" id="selectAllIndicators">Select All</a>
+                                <a href="#" id="selectAllIndicators" class="small">Select All</a>
                             </div>
-                            <select name="indicators" class="js-choice" id="indicatorSelect" multiple>
+                            <select name="indicators" id="indicatorSelect" class="js-choice" multiple>
                                 {% for ind in indicators_list %}
                                     <option value="{{ ind.id }}" {% if ind.id in selected_indicators %}selected{% endif %}>
                                         {{ ind.title_ENG }}
@@ -96,11 +106,12 @@
                         </div>
 
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100 shadow-sm">
-                                <i class="fas fa-filter me-2"></i>Apply Filter
+                            <button type="submit" class="btn btn-primary w-100">
+                                Apply Filter
                             </button>
                         </div>
                     </form>
+
                 </div>
             </div>
 
@@ -280,33 +291,36 @@
     const categoryEl = document.getElementById('categorySelect');
     const indicatorEl = document.getElementById('indicatorSelect');
 
-    const topicChoice = new Choices(topicEl, { searchEnabled: true, itemSelectText: '' });
-    const categoryChoice = new Choices(categoryEl, { searchEnabled: true, itemSelectText: '' });
-    const indicatorChoice = new Choices(indicatorEl, { 
-        searchEnabled: true, 
+    const indicatorChoice = new Choices(indicatorEl, {
+        searchEnabled: true,
         removeItemButton: true,
-        itemSelectText: '' 
+        itemSelectText: ''
     });
 
-    // Cascading effect: Reload when Topic or Category changes to update subsequent lists
-    topicEl.addEventListener('change', function() {
+    new Choices(topicEl, { searchEnabled: true });
+    new Choices(categoryEl, { searchEnabled: true });
+
+    // Topic change → GET reload
+    topicEl.addEventListener('change', function () {
         const url = new URL(window.location);
         url.searchParams.set('topic', this.value);
-        window.location.href = url.href;
+        url.searchParams.delete('category');
+        window.location.href = url;
     });
 
-
-    categoryEl.addEventListener('change', function() {
+    // Category change → GET reload
+    categoryEl.addEventListener('change', function () {
         const url = new URL(window.location);
         url.searchParams.set('category', this.value);
-        window.location.href = url.href;
+        window.location.href = url;
     });
 
-
-    // Select All Logic
-    document.getElementById('selectAllIndicators').addEventListener('click', function() {
-        const allValues = Array.from(indicatorEl.options).map(opt => opt.value);
-        indicatorChoice.setValue(allValues);
+    // Select All
+    document.getElementById('selectAllIndicators').addEventListener('click', function (e) {
+        e.preventDefault();
+        indicatorChoice.setValue(
+            Array.from(indicatorEl.options).map(o => o.value)
+        );
     });
 });
 
