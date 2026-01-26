@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        :root {
+            --mopd-success: #28c76f;
+            --mopd-bg: #f8fafd;
+            --mopd-primary: #3f8cff;
+        }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        /* Card Styling */
+        .card { border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.04); background: #ffffff; }
+        
+        /* Form Labeling & Icons */
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #444; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px; }
+        .form-label i { color: var(--mopd-primary); }
+        
+        /* Input Controls */
+        .form-control, .form-select { 
+            border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1rem; 
+            transition: all 0.2s ease; background-color: #fcfdfe;
+        }
+        .form-control:focus { 
+            border-color: var(--mopd-primary); background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(63, 140, 255, 0.1); 
+        }
+
+        /* File Upload Box */
+        .file-preview-card {
+            border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px;
+            background: #f8fafc; transition: 0.3s; margin-top: 10px;
+        }
+        .file-preview-card:hover { border-color: var(--mopd-primary); }
+        .file-icon-box { width: 45px; height: 45px; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+        /* Status Switch */
+        .switch-wrapper {
+            background: #f1f5f9; border-radius: 12px; padding: 15px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .form-check-input { width: 2.4em; height: 1.2em; cursor: pointer; }
+        .form-check-input:checked { background-color: var(--mopd-success); border-color: var(--mopd-success); }
+
+        /* Section Titles */
+        .form-section-header { 
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; 
+            letter-spacing: 1px; color: var(--mopd-primary); 
+            margin: 2rem 0 1.2rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;
+        }
+        .form-section-header:first-of-type { margin-top: 0; }
+
+        .btn-save { padding: 10px 25px; border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(40, 199, 111, 0.2); }
+        .btn-back { padding: 10px 25px; border-radius: 10px; font-weight: 600; color: #64748b; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+
+
+{% include 'data_management/common/messages.html' %}
+<div class="pc-container">
+    <div class="pc-content">
+        
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Edit Document</h3>
+                <p class="text-muted small mb-0"><i class="ti ti-file-pencil"></i> Update document metadata and resource files.</p>
+            </div>
+            <a href="{% url 'data_documents' %}" class="btn btn-back btn-light bg-white border shadow-sm">
+                <i class="ti ti-chevron-left"></i> Cancel
+            </a>
+        </div>
+
+        <div class="card shadow-sm shadow-lg">
+            <div class="card-body p-lg-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="form-section-header">Resource Identification</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language"></i> {{ form.title_ENG.label }}</label>
+                            {{ form.title_ENG }}
+                            <div class="text-danger small">{{ form.title_ENG.errors }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language-hiragana"></i> {{ form.title_AMH.label }}</label>
+                            {{ form.title_AMH }}
+                            <div class="text-danger small">{{ form.title_AMH.errors }}</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-header">Classification & Tags</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="ti ti-layout-grid"></i> {{ form.topic.label }}</label>
+                            {{ form.topic }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="ti ti-category"></i> {{ form.category.label }}</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="ti ti-file-search"></i> {{ form.document_category.label }}</label>
+                            {{ form.document_category }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="ti ti-file-code"></i> {{ form.file_type.label }}</label>
+                            {{ form.file_type }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-header">Asset Management</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-7">
+                            <label class="form-label"><i class="ti ti-cloud-upload"></i> {{ form.file.label }}</label>
+                            {{ form.file }}
+                            
+                            {% if form.instance.file %}
+                            <div class="file-preview-card d-flex align-items-center">
+                                <div class="file-icon-box text-primary me-3">
+                                    <i class="ti ti-file-download fs-3"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted d-block">Currently attached:</small>
+                                    <a href="{{ form.instance.file.url }}" target="_blank" class="fw-bold text-decoration-none">
+                                        {{ form.instance.file.name|truncatechars:40 }} <i class="ti ti-external-link"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-5 border-light">
+
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <a href="{% url 'data_documents' %}" class="btn btn-back">Discard Changes</a>
+                        <button type="submit" class="btn btn-success btn-save">
+                            <i class="ti ti-device-floppy me-2"></i> Save Changes
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Automatically inject Bootstrap classes into Django form widgets
+        const textInputs = document.querySelectorAll('input[type="text"], input[type="email"], select, textarea');
+        textInputs.forEach(el => el.classList.add('form-control'));
+
+        const selectInputs = document.querySelectorAll('select');
+        selectInputs.forEach(el => el.classList.add('form-select'));
+
+        const checkInputs = document.querySelectorAll('input[type="checkbox"]');
+        checkInputs.forEach(el => el.classList.add('form-check-input'));
+        
+        // Custom File Input styling hint
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.classList.add('form-control');
+    });
+</script>
+</body>
+</html>

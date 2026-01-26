@@ -15,6 +15,7 @@ urlpatterns = [
     path('dashboard/',include('DashBoard.urls')),
     path('api/mobile/', include('mobile.urls')),
     path('user-management/',include('UserManagement.urls')),
+    path('data-management/',include('DataManagement.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

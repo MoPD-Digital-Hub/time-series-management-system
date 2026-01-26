@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        :root { --mopd-blue: #3f8cff; --mopd-bg: #f4f7fa; }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        .card { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .stat-card { border-left: 5px solid var(--mopd-blue); }
+        
+        /* User Table Styling */
+        .user-row { transition: 0.2s; cursor: pointer; }
+        .user-row:hover { background-color: #f8fbff !important; }
+        .avatar-circle {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: rgba(63, 140, 255, 0.1); color: var(--mopd-blue);
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
+        }
+        
+        /* Category Pills */
+        .cat-badge {
+            background: #edf2f7; color: #4a5568; padding: 3px 10px;
+            border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+            display: inline-block; margin: 2px;
+        }
+        
+        /* Sidebar Tree */
+        .topic-node { font-weight: 700; font-size: 0.85rem; color: #2d3748; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .category-node { font-size: 0.8rem; color: #718096; padding: 4px 0 4px 25px; border-left: 1px dashed #cbd5e0; margin-left: 12px; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+<div class="pc-container">
+    <div class="pc-content">
+
+        <div class="row align-items-center mb-4">
+            <div class="col-md-7">
+                <h3 class="fw-bold text-dark">User Management</h3>
+                <p class="text-muted small mb-0">Hierarchy Level: <strong>{{ role_label }}</strong></p>
+            </div>
+            <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'user_add' %}" class="btn btn-primary shadow-sm px-4">
+                    <i class="ti ti-user-plus me-2"></i> Add New {{ role_label|slice:":-1" }}
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card p-3 h-100">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Active Staff</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ stats.total_users }}</h3>
+                </div>
+            </div>
+            {% if request.user.is_superuser %}
+            <div class="col-md-3">
+                <div class="card p-3 h-100 border-left border-success" style="border-left: 5px solid #28c76f;">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Managers</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ stats.managers }}</h3>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-md-3">
+                <div class="card p-3 h-100 border-left border-success" style="border-left: 5px solid #28c76f;">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.65rem;">Managed Categories</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ stats.my_cats }}</h3>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold">Staff Directory</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr style="font-size: 0.75rem; text-transform: uppercase; color: #718096;">
+                                    <th class="ps-4">Profile</th>
+                                    <th>Access Coverage</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-end pe-4">Manage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr class="user-row">
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3">
+                                                {{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark" style="font-size: 0.9rem;">{{ u.get_full_name }}</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">{{ u.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap">
+                                            {% for assignment in u.managed_categories.all %}
+                                                <span class="cat-badge">{{ assignment.category.name_ENG }}</span>
+                                            {% empty %}
+                                                <span class="text-muted italic small">No categories assigned</span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if u.is_active %}
+                                            <span class="badge rounded-pill bg-light-success text-success px-3">Active</span>
+                                        {% else %}
+                                            <span class="badge rounded-pill bg-light-secondary text-muted px-3">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'user_edit' u.id %}" class="btn btn-sm btn-white border shadow-sm">
+                                            <i class="ti ti-edit text-primary"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4">
+                    <h6 class="fw-bold mb-3"><i class="ti ti-binary-tree me-2"></i>Organization Tree</h6>
+                    <div class="overflow-auto" style="max-height: 500px;">
+                        {% for topic in all_topics %}
+                        <div class="mb-3">
+                            <div class="topic-node d-flex justify-content-between">
+                                <span>{{ topic.title_ENG }}</span>
+                                <span class="badge bg-light text-dark">{{ topic.categories.count }}</span>
+                            </div>
+                            {% for cat in topic.categories.all %}
+                                <div class="category-node">
+                                    <i class="ti ti-corner-down-right me-1"></i> {{ cat.name_ENG }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+</body>
+</html>

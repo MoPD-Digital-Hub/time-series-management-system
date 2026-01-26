@@ -1,0 +1,94 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+{% include 'data_management/common/messages.html' %}
+<div class="pc-container">
+  <div class="pc-content">
+    <h3 class="mb-4">Documents</h3>
+
+    <!-- ================= TOP FILTER ================= -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <select class="form-select" id="topicFilter">
+          <option value="">All Topics</option>
+          {% for t in topics %}
+          <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>{{ t.title_ENG }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-8 text-end">
+        <a href="{% url 'add_document' %}" class="btn btn-primary">Add Document</a>
+      </div>
+    </div>
+
+    <!-- ================= DOCUMENTS TABLE ================= -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="documentsTable">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Title (ENG)</th>
+                <th>Title (AMH)</th>
+                <th>Topic</th>
+                <th>Category</th>
+                <th>Document Category</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>File</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in documents %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ doc.title_ENG }}</td>
+                <td>{{ doc.title_AMH }}</td>
+                <td>{% if doc.topic %}{{ doc.topic.title_ENG }}{% else %}-{% endif %}</td>
+                <td>{% if doc.category %}{{ doc.category.name_ENG }}{% else %}-{% endif %}</td>
+                <td>{% if doc.document_category %}{{ doc.document_category.name_ENG }}{% else %}-{% endif %}</td>
+                <td>{{ doc.file_type }}</td>
+                <td>
+                  {% if doc.is_verified %}
+                  <span class="badge bg-success">Verified</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if doc.file %}
+                  <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                  {% else %}-{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'edit_document' doc.id %}" class="btn btn-sm btn-info">Edit</a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="10" class="text-center">No documents found</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script>
+  // Filter by topic
+  document.getElementById('topicFilter').addEventListener('change', function() {
+    var topic_id = this.value;
+    window.location.href = "?topic=" + topic_id;
+  });
+</script>
+</body>

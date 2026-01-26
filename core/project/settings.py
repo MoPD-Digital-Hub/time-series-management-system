@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'UserManagement',
     'DataPortal',
     'DashBoard',
+    'DataManagement',
     'mobile',
     'mediaManager',
     'corsheaders',

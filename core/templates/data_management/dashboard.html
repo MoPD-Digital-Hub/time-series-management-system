@@ -1,0 +1,292 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        :root {
+            --mopd-blue: #3f8cff;
+            --mopd-green: #28c76f;
+            --mopd-purple: #8e44ad;
+            --mopd-red: #ea5455;
+            --mopd-bg: #f8fafc;
+        }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        /* Card Styling */
+        .card { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); overflow: hidden; transition: 0.3s ease; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+        
+        /* Stats Styling */
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .stat-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+        
+        /* Chart Containers */
+        .chart-box { position: relative; height: 320px; width: 100%; }
+        
+        /* Data Tree Styling */
+        .tree-container { max-height: 480px; overflow-y: auto; scrollbar-width: thin; }
+        .topic-pill { 
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; 
+            padding: 10px 15px; margin-bottom: 8px; transition: 0.2s;
+        }
+        .topic-pill:hover { border-color: var(--mopd-blue); background: #f0f7ff; }
+        .cat-item { font-size: 0.8rem; color: #64748b; padding: 6px 0 6px 30px; border-left: 2px solid #f1f5f9; margin-left: 10px; }
+
+        /* Quick Actions */
+        .btn-action { 
+            padding: 12px; border-radius: 12px; border: 1px solid #f1f5f9; 
+            background: #fff; display: flex; align-items: center; gap: 12px;
+            text-decoration: none; color: #334155; font-weight: 600; font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .btn-action:hover { background: var(--mopd-blue); color: #fff; border-color: var(--mopd-blue); }
+
+        .progress { height: 8px; border-radius: 10px; background: #f1f5f9; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+<div class="pc-container">
+    <div class="pc-content">
+        
+        <div class="row align-items-center mb-4">
+            <div class="col-md-8">
+                <span class="badge bg-light-primary text-primary mb-2 px-3 py-2">System Live</span>
+                <h3 class="fw-bold text-dark">MoPD Analytics Hub</h3>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-light-primary text-primary"><i class="ti ti-chart-dots"></i></div>
+                <div class="ms-3">
+                    <div class="stat-title">Total Indicators</div>
+                    <h3 class="mb-0 fw-bold">{{ total_indicators }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-light-success text-success"><i class="ti ti-shield-check"></i></div>
+                <div class="ms-3">
+                    <div class="stat-title">Verification Rate</div>
+                    <h3 class="mb-0 fw-bold">{{ verification_rate }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-light-purple text-purple" style="background: rgba(142, 68, 173, 0.1); color: #8e44ad;"><i class="ti ti-files"></i></div>
+                <div class="ms-3">
+                    <div class="stat-title">Shared Documents</div>
+                    <h3 class="mb-0 fw-bold">{{ total_documents }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card p-3">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-light-info text-info" style="background: rgba(63, 210, 255, 0.1); color: #00bcd4;"><i class="ti ti-users"></i></div>
+                <div class="ms-3">
+                    <div class="stat-title">Active Staff</div>
+                    <h3 class="mb-0 fw-bold">{{ total_users }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4">
+                <div class="card p-4 h-90">
+                    <h6 class="fw-bold mb-4">Data Source Distribution</h6>
+                    <div class="chart-box">
+                        <canvas id="compositionChart"></canvas>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4 h-100">
+                    <h6 class="fw-bold mb-3">Structural Overview</h6>
+                    <div class="tree-container pe-2">
+                        {% for topic in all_topics %}
+                        <div class="topic-pill shadow-none">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold small text-dark"><i class="ti ti-folder-filled text-warning me-1"></i> {{ topic.title_ENG }}</span>
+                                <span class="badge bg-light text-muted rounded-pill" style="font-size: 0.6rem;">{{ topic.categories.count }}</span>
+                            </div>
+                            {% for cat in topic.categories.all %}
+                                <div class="cat-item"><i class="ti ti-point me-1"></i> {{ cat.name_ENG }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4 mb-4">
+                    <h6 class="fw-bold mb-3">Quick Navigation</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="{% url 'data_indicators' %}" class="btn-action">
+                            <i class="ti ti-list-details text-primary"></i> Indicators List
+                        </a>
+                        <a href="{% url 'user_management_dashboard' %}" class="btn-action">
+                            <i class="ti ti-users text-success"></i> User Permissions
+                        </a>
+                        <a href="{% url 'data_documents' %}" class="btn-action">
+                            <i class="ti ti-files text-warning"></i> Shared Documents
+                        </a>
+                    </div>
+                </div>
+                <div class="card p-4">
+                    <h6 class="fw-bold mb-3">Monthly Entry Trend</h6>
+                    <div style="height: 150px;">
+                        <canvas id="monthlyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Recent Indicator Activity</h5>
+                        <a href="{% url 'data_indicators' %}" class="btn btn-sm btn-light text-primary fw-bold">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-muted small">
+                                    <th class="ps-4">Indicator Title</th>
+                                    <th>Category</th>
+                                    <th>Added</th>
+                                    <th class="text-end pe-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ind in latest_indicators %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ ind.title_ENG }}</div>
+                                    </td>
+                                    <td><span class="text-muted small">{{ ind.category.name_ENG }}</span></td>
+                                    <td><span class="small text-muted"><i class="ti ti-calendar-event"></i> {{ ind.created_at|date:"M d" }}</span></td>
+                                    <td class="text-end pe-4">
+                                        {% if ind.is_verified %}
+                                            <span class="badge bg-light-success text-success px-3">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-light-warning text-warning px-3">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card p-4 h-100">
+                    <h6 class="fw-bold mb-4">Indicator Focus Areas</h6>
+                    <h3 class="fw-bold mb-4 float-right">Top 10 Categories</h3>
+                    <div class="chart-box">
+                        <canvas id="categoryFocusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 1. Composition Chart (Donut)
+    new Chart(document.getElementById('compositionChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Annual', 'Quarter', 'Month'],
+            datasets: [{
+                data: {{ composition|safe }},
+                backgroundColor: ['#3f8cff', '#28c76f', '#f58231'],
+                hoverOffset: 10,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }
+        }
+    });
+
+    // 2. Monthly Sparkline
+    new Chart(document.getElementById('monthlyTrendChart'), {
+        type: 'line',
+        data: {
+            labels: {{ months|safe }},
+            datasets: [{
+                data: {{ monthly_data|safe }},
+                borderColor: '#3f8cff',
+                backgroundColor: 'rgba(63, 140, 255, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
+        }
+    });
+
+    // 3. Category Focus (Radar or PolarArea looks professional here)
+    new Chart(document.getElementById('categoryFocusChart'), {
+    type: 'bar',  // <-- changed from 'polarArea' to 'pie'
+    data: {
+        labels: {{ cat_names|safe }},
+        datasets: [{
+            data: {{ cat_counts|safe }},
+            backgroundColor: [
+                'rgba(63, 140, 255, 0.6)',
+            ],
+            borderColor: [
+                'rgba(63, 140, 255, 1)',
+            ],
+            borderWidth: 1
+        }]
+    },
+    
+});
+
+</script>
+</body>
+</html>

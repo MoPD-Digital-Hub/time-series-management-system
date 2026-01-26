@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    
+    <style>
+        :root { --mopd-primary: #3f8cff; --mopd-bg: #f4f7fa; }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        /* Form Styling */
+        .card { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #4b5563; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px; }
+        .form-control, .form-select { 
+            border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.6rem 1rem; 
+            transition: all 0.2s ease; font-size: 0.9rem;
+        }
+        .form-control:focus { border-color: var(--mopd-primary); box-shadow: 0 0 0 4px rgba(63, 140, 255, 0.1); }
+        
+        /* Section Dividers */
+        .form-section-title { 
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase; 
+            letter-spacing: 1px; color: var(--mopd-primary); 
+            margin: 2rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #f0f0f0;
+        }
+        .form-section-title:first-child { margin-top: 0; }
+
+        /* Custom Checkbox */
+        .form-check-input:checked { background-color: var(--mopd-primary); border-color: var(--mopd-primary); }
+        
+        /* Image Upload Area */
+        .image-upload-wrapper { 
+            border: 2px dashed #e5e7eb; border-radius: 12px; padding: 20px; 
+            text-align: center; background: #f9fafb; cursor: pointer; transition: 0.2s;
+        }
+        .image-upload-wrapper:hover { border-color: var(--mopd-primary); background: #f0f7ff; }
+
+        /* Choices.js Customization */
+        .choices__inner { border-radius: 10px !important; border: 1px solid #e5e7eb !important; background-color: white !important; padding: 5px !important; }
+        .choices__pill { background-color: var(--mopd-primary) !important; border: none !important; border-radius: 6px !important; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+
+
+{% include 'data_management/common/messages.html' %}
+
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">{{ title }}</h3>
+                <p class="text-muted small mb-0"><i class="ti ti-info-circle"></i> Complete the details below to register a new indicator.</p>
+            </div>
+            <a href="{% url 'data_indicators' %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="ti ti-arrow-left"></i> Back to List
+            </a>
+        </div>
+
+        <div class="card shadow-lg">
+            <div class="card-body p-lg-5">
+                <form method="POST" enctype="multipart/form-data" id="indicatorForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section-title">1. Basic Identification</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language"></i> Title (English)</label>
+                            {{ form.title_ENG }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language-hiragana"></i> Title (Amharic)</label>
+                            {{ form.title_AMH }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-hash"></i> Rank / Order</label>
+                            {{ form.rank }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-hierarchy-2"></i> Parent Indicator (Optional)</label>
+                            {{ form.parent }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">2. Classification & Categorization</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="ti ti-category"></i> Assigned Categories</label>
+                            <div class="choices-wrapper">
+                                {{ form.for_category }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-ruler-2"></i> Units</label>
+                            {{ form.measurement_units }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-calendar-time"></i> Frequency</label>
+                            {{ form.frequency }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-database"></i> Data Type</label>
+                            {{ form.data_type }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">3. Analytics & Methodology</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label"><i class="ti ti-bolt"></i> KPI Characteristics</label>
+                            {{ form.kpi_characteristics }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Visibility Settings</label>
+                            <div class="form-check form-switch p-3 border rounded-3 bg-light">
+                                {{ form.is_dashboard_visible }}
+                                <label class="form-check-label ms-2" for="{{ form.is_dashboard_visible.id_for_label }}">Show on Dashboard</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="ti ti-notes"></i> Detailed Description</label>
+                            {{ form.description }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-link"></i> Source of Data</label>
+                            {{ form.source }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-flask"></i> Methodology</label>
+                            {{ form.methodology }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">4. Media Attachment</div>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-12">
+                            <div class="image-upload-wrapper" onclick="document.getElementById('{{ form.image.id_for_label }}').click()">
+                                <i class="ti ti-photo-plus fs-1 text-muted"></i>
+                                <p class="mb-0 mt-2 text-muted small">Click to upload indicator reference image or icon</p>
+                                <div class="d-none">{{ form.image }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 pt-4 border-top">
+                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">
+                            <i class="ti ti-device-floppy me-2"></i> {{ submit_text }}
+                        </button>
+                        <a href="{% url 'data_indicators' %}" class="btn btn-light px-5 py-2 fw-bold text-muted">Cancel</a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Styling the inputs via JS for Bootstrap consistency
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"], select, textarea');
+    inputs.forEach(el => {
+        if (!el.classList.contains('form-check-input')) {
+            el.classList.add('form-control');
+        }
+    });
+
+    const selects = document.querySelectorAll('select');
+    selects.forEach(el => {
+        el.classList.add('form-select');
+    });
+
+    // Choices.js Init
+    const elements = document.querySelectorAll('.js-choice, select[multiple]');
+    elements.forEach(function(el) {
+        new Choices(el, { 
+            searchEnabled: true, 
+            itemSelectText: '', 
+            removeItemButton: true, 
+            shouldSort: false,
+            placeholderValue: 'Select options...'
+        });
+    });
+
+    // Simple File Upload Preview
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const fileName = this.files[0].name;
+            document.querySelector('.image-upload-wrapper p').innerText = "Selected: " + fileName;
+        });
+    }
+});
+</script>
+</body>
+</html>

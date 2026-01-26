@@ -1,0 +1,162 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
+<style>
+    .indicator-card {
+        border-radius: 12px;
+        border: 1px solid #eef2f6;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #f8fafc;
+    }
+
+    .choices__inner {
+        background-color: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 8px !important;
+        min-height: 42px !important;
+        padding: 5px 10px !important;
+    }
+
+    .filter-label {
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+</style>
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+
+    {% include 'data_management/common/messages.html' %}
+    <div class="pc-container">
+        <div class="pc-content">
+
+            <!-- Header & Add Button -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Indicator Registry</h3>
+                    <p class="text-muted small">Search and manage performance metrics.</p>
+                </div>
+                <a href="{% url 'add_indicator_page' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Indicator
+                </a>
+            </div>
+
+            <!-- Filter Form -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <form method="GET" id="filterForm" class="row g-4">
+                        <div class="col-md-6">
+                            <label class="filter-label">Filter by Strategic Topic</label>
+                            <select name="topic" class="form-control js-choice" onchange="this.form.submit()">
+                                <option value="">Select Topic...</option>
+                                {% for t in topics %}
+                                <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>{{ t.title_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="filter-label">Filter by Sector Category</label>
+                            <select name="category" class="form-control js-choice" onchange="this.form.submit()">
+                                <option value="">Select Category...</option>
+                                {% for c in categories %}
+                                <option value="{{ c.id }}" {% if selected_category == c.id %}selected{% endif %}>{{ c.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Indicators Table -->
+            <div class="indicator-card bg-white shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4" style="width: 120px;">Code</th>
+                                <th>Indicator Title</th>
+                                <th>Unit</th>
+                                <th>Category</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ind in indicators %}
+                            <tr>
+                                <td class="ps-4">
+                                    <code class="text-primary fw-bold">{{ ind.code|default:"--" }}</code>
+                                </td>
+                                <td class="fw-bold text-dark">
+                                    {% if ind.parent %}
+                                        <small class="text-muted d-block">
+                                        Parent: {{ ind.parent.title_ENG }}
+                                        </small>
+                                    {% endif %}
+                                    {{ ind.title_ENG }}
+                                </td>
+                                <td><span class="text-muted small">{{ ind.measurement_units }}</span></td>
+                                <td>
+                                    {% for i in ind.for_category.all %}
+                                         <span class="badge bg-light-secondary text-dark">{{ i.name_ENG }}</span>    
+                                    {% endfor %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <!-- Edit Redirect -->
+                                        <a href="{% url 'edit_indicator_page' ind.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <!-- Data Entry -->
+                                        <a href="{% url 'data_entry' %}?indicators={{ ind.id }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-database me-1"></i> Data
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <p class="text-muted mb-0">No records found for the selected criteria.</p>
+                                    <a href="?" class="btn btn-link btn-sm mt-2">Reset Filters</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.js-choice');
+            elements.forEach(function(el) {
+                new Choices(el, {
+                    searchEnabled: true,
+                    itemSelectText: '',
+                    removeItemButton: true,
+                    shouldSort: false,
+                    classNames: {
+                        containerInner: 'choices__inner shadow-none',
+                    }
+                });
+            });
+        });
+    </script>
+</body>

@@ -9,6 +9,11 @@ from datetime import date
 
 from ckeditor.fields import RichTextField
 
+class Tag(models.Model):
+    title = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.title
 
 class Topic(models.Model):
     title_ENG = models.CharField(max_length=300, unique = True)
@@ -127,11 +132,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name_ENG
 
-class Tag(models.Model):
-    title = models.CharField(max_length=30)
-
-    def __str__(self):
-        return self.title
 
 class Indicator(models.Model):
     KPI_CHARACTERISTIC_CHOICES = [

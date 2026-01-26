@@ -1,0 +1,159 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+
+<style>
+    /* Table Styling */
+    .table-container {
+        background: #fff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    
+    .custom-table {
+        margin-bottom: 0;
+        vertical-align: middle;
+    }
+
+    .custom-table thead th {
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        border-top: none;
+        padding: 15px;
+    }
+
+    .custom-table tbody td {
+        padding: 18px 15px;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Category Pill */
+    .topic-badge-sm {
+        background: #eef2ff;
+        color: #4f46e5;
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+    }
+
+    .row-hover:hover {
+        background-color: #fcfcfd;
+        transition: 0.2s ease;
+    }
+
+    /* Filter Styling */
+    .filter-section {
+        background: #fff;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .form-select-custom {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+</style>
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+
+    <div class="pc-container">
+        <div class="pc-content">
+            
+            <div class="d-md-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h2 class="fw-bold text-dark mb-1">Category Registry</h2>
+                    <p class="text-muted mb-0">Manage and monitor sectors under your jurisdiction.</p>
+                </div>
+                
+                <div class="d-flex gap-3 mt-3 mt-md-0">
+                    <form method="GET" action="" class="d-flex align-items-center gap-2">
+                        <label class="small fw-bold text-muted text-nowrap">Filter by Topic:</label>
+                        <select name="topic" class="form-select form-select-custom" onchange="this.form.submit()">
+                            <option value="">All Strategic Topics</option>
+                            {% for topic in topics %}
+                            <option value="{{ topic.id }}" {% if selected_topic == topic.id %}selected{% endif %}>
+                                {{ topic.title_ENG }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if selected_topic %}
+                            <a href="?" class="btn btn-link btn-sm text-danger">Clear</a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table custom-table">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Topic Assignment</th>
+                                <th>Indicator Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in categories %}
+                            <tr class="row-hover">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-subtle text-primary rounded p-2 me-3">
+                                            <i class="fas fa-folder"></i>
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold d-block">{{ cat.name_ENG }}</span>
+                                            <span class="text-muted small">{{ cat.code|default:"No Code" }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="topic-badge-sm">
+                                        <i class="fas fa-link me-1"></i> {{ cat.topic.title_ENG }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ cat.indicators.count }} Indicators</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <a href="{% url "data_indicators" %}?category={{ cat.id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            View Indicators
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fas fa-search fa-3x mb-3"></i>
+                                    <p>No categories found matching your current filter.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+    
+</body>
+</html>
+
+

@@ -1,0 +1,247 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+ <!-- jQuery first -->
+    <script src="{% static 'assets/js/jquery.min.js' %}"></script>
+
+    <!-- Bootstrap Bundle -->
+    <script src="{% static 'assets/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- Theme scripts -->
+    <script src="{% static 'assets/js/theme.js' %}"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    <script src="{% static 'assets/js/component.js' %}"></script>
+
+
+    
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+
+<div class="pc-container">
+<div class="pc-content">
+
+<h3 class="mb-4">Verification Dashboard</h3>
+
+<!-- ================= TAB PILLS ================= -->
+<ul class="nav nav-pills mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#indicators">
+            Indicators ({{ indicators|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#annual">
+            Annual ({{ annual_data|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#quarter">
+            Quarter ({{ quarter_data|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="pill" data-bs-target="#month">
+            Month ({{ month_data|length }})
+        </button>
+    </li>
+</ul>
+
+<!-- ================= TAB CONTENT ================= -->
+<div class="tab-content">
+
+<!-- ================================================== -->
+<!-- ================= INDICATORS ===================== -->
+<!-- ================================================== -->
+<div class="tab-pane fade show active" id="indicators">
+<form method="post" action="{% url 'bulk_verify' 'indicator' %}">
+{% csrf_token %}
+
+<table class="table table-bordered table-hover">
+<thead class="table-light">
+<tr>
+    <th width="40">
+        <input type="checkbox" onclick="toggleAll(this,'indicator-check')">
+    </th>
+    <th>Indicator</th>
+    <th>Code</th>
+    <th>Frequency</th>
+    <th>Category</th>
+</tr>
+</thead>
+<tbody>
+{% for i in indicators %}
+<tr>
+    <td>
+        <input type="checkbox" name="ids" value="{{ i.id }}" class="indicator-check">
+    </td>
+    <td>{{ i.title_ENG }}</td>
+    <td>{{ i.code }}</td>
+    <td>{{ i.frequency }}</td>
+    <td>
+        {% for c in i.for_category.all %}
+            <span class="badge bg-secondary">{{ c.name_ENG }}</span>
+        {% endfor %}
+    </td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center">No unverified indicators</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<button class="btn btn-success">
+    Verify Selected Indicators
+</button>
+</form>
+</div>
+
+<!-- ================================================== -->
+<!-- ================= ANNUAL ========================= -->
+<!-- ================================================== -->
+<div class="tab-pane fade" id="annual">
+<form method="post" action="{% url 'bulk_verify' 'annual' %}">
+{% csrf_token %}
+
+<table class="table table-bordered table-hover">
+<thead class="table-light">
+<tr>
+    <th width="40">
+        <input type="checkbox" onclick="toggleAll(this,'annual-check')">
+    </th>
+    <th>Indicator</th>
+    <th>Year</th>
+    <th>Performance</th>
+    <th>Submitted By</th>
+</tr>
+</thead>
+<tbody>
+{% for d in annual_data %}
+<tr>
+    <td>
+        <input type="checkbox" name="ids" value="{{ d.id }}" class="annual-check">
+    </td>
+    <td>{{ d.indicator.title_ENG }}</td>
+    <td>{{ d.for_datapoint.year_EC }}</td>
+    <td>{{ d.performance }}</td>
+    <td>{{ d.submitted_by }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center">No unverified data</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<button class="btn btn-success">
+    Verify Selected Annual Data
+</button>
+</form>
+</div>
+
+<!-- ================================================== -->
+<!-- ================= QUARTER ======================== -->
+<!-- ================================================== -->
+<div class="tab-pane fade" id="quarter">
+<form method="post" action="{% url 'bulk_verify' 'quarter' %}">
+{% csrf_token %}
+
+<table class="table table-bordered table-hover">
+<thead class="table-light">
+<tr>
+    <th width="40">
+        <input type="checkbox" onclick="toggleAll(this,'quarter-check')">
+    </th>
+    <th>Indicator</th>
+    <th>Quarter</th>
+    <th>Year</th>
+    <th>Performance</th>
+    <th>Submitted By</th>
+</tr>
+</thead>
+<tbody>
+{% for d in quarter_data %}
+<tr>
+    <td>
+        <input type="checkbox" name="ids" value="{{ d.id }}" class="quarter-check">
+    </td>
+    <td>{{ d.indicator.title_ENG }}</td>
+    <td>{{ d.for_quarter.title_AMH }}</td>
+    <td>{{ d.for_datapoint.year_EC }}</td>
+    <td>{{ d.performance }}</td>
+    <td>{{ d.submitted_by }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center">No unverified data</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<button class="btn btn-success">
+    Verify Selected Quarter Data
+</button>
+</form>
+</div>
+
+<!-- ================================================== -->
+<!-- ================= MONTH ========================== -->
+<!-- ================================================== -->
+<div class="tab-pane fade" id="month">
+<form method="post" action="{% url 'bulk_verify' 'month' %}">
+{% csrf_token %}
+
+<table class="table table-bordered table-hover">
+<thead class="table-light">
+<tr>
+    <th width="40">
+        <input type="checkbox" onclick="toggleAll(this,'month-check')">
+    </th>
+    <th>Indicator</th>
+    <th>Month</th>
+    <th>Year</th>
+    <th>Performance</th>
+    <th>Submitted By</th>
+</tr>
+</thead>
+<tbody>
+{% for d in month_data %}
+<tr>
+    <td>
+        <input type="checkbox" name="ids" value="{{ d.id }}" class="month-check">
+    </td>
+    <td>{{ d.indicator.title_ENG }}</td>
+    <td>{{ d.for_month.month_AMH }}</td>
+    <td>{{ d.for_datapoint.year_EC }}</td>
+    <td>{{ d.performance }}</td>
+    <td>{{ d.submitted_by }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center">No unverified data</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<button class="btn btn-success">
+    Verify Selected Month Data
+</button>
+</form>
+</div>
+
+</div>
+</div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+
+<!-- Select All Checkbox Script -->
+<script>
+    function toggleAll(source, className) {
+        const boxes = document.getElementsByClassName(className);
+        for (let i = 0; i < boxes.length; i++) {
+            boxes[i].checked = source.checked;
+        }
+    }
+</script>
+</body>

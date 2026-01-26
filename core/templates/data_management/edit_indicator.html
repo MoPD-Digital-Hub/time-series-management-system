@@ -1,0 +1,216 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    
+    <style>
+        :root {
+            --mopd-primary: #3f8cff;
+            --mopd-bg: #f8fafd;
+        }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        /* Card & Layout */
+        .card { border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.04); background: #ffffff; }
+        .form-section-header { 
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.8rem; font-weight: 700; text-transform: uppercase; 
+            color: var(--mopd-primary); margin: 2rem 0 1.5rem 0; letter-spacing: 0.5px;
+        }
+        .form-section-header:first-of-type { margin-top: 0; }
+        .form-section-header::after { content: ""; flex: 1; height: 1px; background: #eee; }
+
+        /* Input Styling */
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #444; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px; }
+        .form-control, .form-select { 
+            border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1rem; 
+            transition: all 0.2s ease; background-color: #fcfdfe;
+        }
+        .form-control:focus { 
+            border-color: var(--mopd-primary); background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(63, 140, 255, 0.1); 
+        }
+
+        /* Choices.js Custom Overrides */
+        .choices__inner { border-radius: 10px !important; border: 1px solid #e2e8f0 !important; background: #fcfdfe !important; min-height: 48px !important; }
+        .choices__pill { background: var(--mopd-primary) !important; border: none !important; border-radius: 6px !important; font-weight: 500 !important; }
+
+        /* Custom Switch */
+        .form-check-input { width: 2.5em; height: 1.25em; cursor: pointer; }
+        .form-check-input:checked { background-color: var(--mopd-primary); border-color: var(--mopd-primary); }
+        .switch-card { background: #f1f5f9; border-radius: 12px; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
+
+        /* Image Upload Box */
+        .upload-zone {
+            border: 2px dashed #cbd5e1; border-radius: 12px; padding: 25px;
+            text-align: center; background: #f8fafc; cursor: pointer; transition: 0.3s;
+        }
+        .upload-zone:hover { border-color: var(--mopd-primary); background: #f0f7ff; }
+        
+        .btn-submit { padding: 12px 30px; border-radius: 10px; font-weight: 600; }
+        .btn-cancel { padding: 12px 30px; border-radius: 10px; font-weight: 600; color: #64748b; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+
+
+{% include 'data_management/common/messages.html' %}
+<div class="pc-container">
+    <div class="pc-content">
+
+        <div class="mb-4">
+            <h3 class="fw-bold text-dark mb-1">{{ title }}</h3>
+            <p class="text-muted small"><i class="ti ti-info-square-rounded"></i> {{ subtitle }}</p>
+        </div>
+
+        <div class="card shadow-lg">
+            <div class="card-body p-lg-5">
+                <form method="POST" enctype="multipart/form-data" id="mainForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section-header"><i class="ti ti-id"></i> Primary Information</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language"></i> Title (English)</label>
+                            {{ form.title_ENG }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-language-hiragana"></i> Title (Amharic)</label>
+                            {{ form.title_AMH }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-sort-ascending-numbers"></i> Rank / Sort Order</label>
+                            {{ form.rank }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-git-merge"></i> Parent Indicator</label>
+                            {{ form.parent }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-header"><i class="ti ti-settings-automation"></i> Categorization & Logic</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="ti ti-tags"></i> Assign Categories</label>
+                            {{ form.for_category }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-measuring-tape"></i> Measurement Units</label>
+                            {{ form.measurement_units }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-calendar-event"></i> Reporting Frequency</label>
+                            {{ form.frequency }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-variable"></i> Data Value Type</label>
+                            {{ form.data_type }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-header"><i class="ti ti-presentation-analytics"></i> Analytics Details</div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label"><i class="ti ti-target-arrow"></i> KPI Characteristics</label>
+                            {{ form.kpi_characteristics }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Visibility</label>
+                            <div class="switch-card">
+                                <span class="small fw-medium text-dark">Visible on Dashboard</span>
+                                <div class="form-check form-switch m-0">
+                                    {{ form.is_dashboard_visible }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="ti ti-align-left"></i> Comprehensive Description</label>
+                            {{ form.description }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-world-search"></i> Data Source</label>
+                            {{ form.source }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="ti ti-flask-2"></i> Calculation Methodology</label>
+                            {{ form.methodology }}
+                        </div>
+                    </div>
+
+                    <div class="form-section-header"><i class="ti ti-photo"></i> Attachments</div>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-12">
+                            <div class="upload-zone" onclick="document.getElementById('{{ form.image.id_for_label }}').click()">
+                                <i class="ti ti-cloud-upload fs-1 text-primary"></i>
+                                <h6 class="mt-2 fw-bold">Click to upload indicator image</h6>
+                                <p class="text-muted small mb-0">Drag and drop files here or click to browse</p>
+                                <div class="d-none">{{ form.image }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-end gap-2 pt-4 border-top">
+                        <a href="{% url 'data_indicators' %}" class="btn btn-cancel">Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-submit shadow-sm">
+                            <i class="ti ti-device-floppy me-2"></i> {{ submit_text }}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Automatically apply Bootstrap classes to Django fields
+    const inputs = document.querySelectorAll('input:not([type="checkbox"]):not([type="file"]), select, textarea');
+    inputs.forEach(el => el.classList.add('form-control'));
+    
+    const selects = document.querySelectorAll('select');
+    selects.forEach(el => el.classList.add('form-select'));
+
+    const checks = document.querySelectorAll('input[type="checkbox"]');
+    checks.forEach(el => el.classList.add('form-check-input'));
+
+    // 2. Initialize Choices.js
+    const elements = document.querySelectorAll('.js-choice, select[multiple], #id_for_category');
+    elements.forEach(function(el) {
+        new Choices(el, { 
+            searchEnabled: true, 
+            itemSelectText: '', 
+            removeItemButton: true, 
+            shouldSort: false,
+            placeholder: true,
+            placeholderValue: 'Select categorization...'
+        });
+    });
+
+    // 3. File upload preview text
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const label = document.querySelector('.upload-zone h6');
+                label.innerText = "Selected: " + this.files[0].name;
+                label.classList.add('text-primary');
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>

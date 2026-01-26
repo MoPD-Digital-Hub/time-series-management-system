@@ -1,0 +1,390 @@
+{% load static %}
+{% load custom_filters %}
+{% include 'base/common/head.html' %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<style>
+    /* Table & Scroll Styles */
+    .table-responsive { 
+        max-height: 70vh; 
+        overflow: auto; 
+        border: 1px solid #dee2e6;
+    }
+
+    /* Sticky Indicators Column */
+    .sticky-col { 
+        position: sticky; 
+        left: 0; 
+        background-color: #ffffff !important; 
+        z-index: 10; 
+        min-width: 280px; 
+        border-right: 2px solid #6c757d !important;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    /* Sticky Headers */
+    .table thead th { 
+        position: sticky; 
+        top: 0; 
+        background: #f8f9fa; 
+        z-index: 11;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .table thead th.sticky-col { z-index: 12; }
+
+    .data-input {
+        width: 90px; 
+        border: 1px solid #ced4da; 
+        padding: 4px;
+        text-align: center; 
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+</style>
+
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+
+
+
+{% include 'data_management/common/messages.html' %}
+    <div class="pc-container">
+        <div class="pc-content">
+             <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+                 <div id="toastContainer"></div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-end" id="filterForm">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">1. Strategic Topic</label>
+                            <select name="topic" class="js-choice" id="topicSelect">
+                                <option value="">All Topics</option>
+                                {% for t in topics %}
+                                    <option value="{{ t.id }}" {% if selected_topic == t.id %}selected{% endif %}>{{ t.title_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">2. Category</label>
+                            <select name="category" class="js-choice" id="categorySelect">
+                                <option value="">All Categories</option>
+                                {% for c in categories %}
+                                    <option value="{{ c.id }}" {% if selected_category == c.id %}selected{% endif %}>{{ c.name_ENG }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label fw-bold">3. Indicators</label>
+                                <a href="javascript:void(0)" class="small text-decoration-none" id="selectAllIndicators">Select All</a>
+                            </div>
+                            <select name="indicators" class="js-choice" id="indicatorSelect" multiple>
+                                {% for ind in indicators_list %}
+                                    <option value="{{ ind.id }}" {% if ind.id in selected_indicators %}selected{% endif %}>
+                                        {{ ind.title_ENG }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                                <i class="fas fa-filter me-2"></i>Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Data Tabs -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <ul class="nav nav-tabs" id="dataEntryTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="annual-tab" data-bs-toggle="tab" data-bs-target="#annual-pane" type="button" role="tab" aria-controls="annual-pane" aria-selected="true">
+                                Annual (20 Years)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quarterly-tab" data-bs-toggle="tab" data-bs-target="#quarterly-pane" type="button" role="tab" aria-controls="quarterly-pane" aria-selected="false">
+                                Quarterly (10 Years)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly-pane" type="button" role="tab" aria-controls="monthly-pane" aria-selected="false">
+                                Monthly (5 Years)
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body">
+                    <div class="tab-content" id="dataEntryTabsContent">
+
+                        <!-- Annual Tab -->
+                        <div class="tab-pane fade show active" id="annual-pane" role="tabpanel" aria-labelledby="annual-tab">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button class="btn btn-success btn-sm" onclick="bulkSave('annual')">Save All Annual</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="sticky-col">Indicator Title</th>
+                                            {% for yr in years_annual %}
+                                                <th class="text-center">{{ yr.year_EC }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ind in indicators %}
+                                            <tr>
+                                                <td class="fw-bold text-dark sticky-col fw-bold text-wrap">
+                                                    {% if ind.parent %}
+                                                        <small class="text-muted d-block">
+                                                        Parent: {{ ind.parent.title_ENG }}
+                                                        </small>
+                                                    {% endif %}
+                                                    {{ ind.title_ENG }}
+                                                </td>
+                                                {% for yr in years_annual %}
+                                                    <td class="text-center">
+                                                        <input type="number" step="any" class="data-input" 
+                                                            data-indicator="{{ ind.id }}" data-year="{{ yr.id }}" data-type="annual"
+                                                            value="{% with val=annual_map|get_item:ind.id|get_item:yr.id %}{{ val|default:'' }}{% endwith %}"
+                                                            onchange="saveData(this)">
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Quarterly Tab -->
+                        <div class="tab-pane fade" id="quarterly-pane" role="tabpanel" aria-labelledby="quarterly-tab">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button class="btn btn-success btn-sm" onclick="bulkSave('quarterly')">Save All Quarterly</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="sticky-col">Indicator Title</th>
+                                            {% for yr in years_quarterly %}
+                                                {% for q in quarters %}
+                                                    <th class="text-center">{{ yr.year_EC }} <span class="badge bg-info text-dark">{{ q.title_ENG }}</span></th>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ind in indicators %}
+                                            <tr>
+                                                <td class="fw-bold text-dark sticky-col fw-bold text-wrap">
+                                                    {% if ind.parent %}
+                                                        <small class="text-muted d-block">
+                                                        Parent: {{ ind.parent.title_ENG }}
+                                                        </small>
+                                                    {% endif %}
+                                                    {{ ind.title_ENG }}
+                                                </td>
+                                                {% for yr in years_quarterly %}
+                                                    {% for q in quarters %}
+                                                        <td class="text-center">
+                                                            <input type="number" step="any" class="data-input"
+                                                                data-indicator="{{ ind.id }}" data-year="{{ yr.id }}" data-quarter="{{ q.id }}" data-type="quarter"
+                                                                value="{% with yr_map=quarter_map|get_item:ind.id %}{% with q_map=yr_map|get_item:yr.id %}{{ q_map|get_item:q.id|default:'' }}{% endwith %}{% endwith %}"
+                                                                onchange="saveData(this)">
+                                                        </td>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Tab -->
+                        <div class="tab-pane fade" id="monthly-pane" role="tabpanel" aria-labelledby="monthly-tab">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button class="btn btn-success btn-sm" onclick="bulkSave('monthly')">Save All Monthly</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="sticky-col">Indicator Title</th>
+                                            {% for yr in years_monthly %}
+                                                {% for m in months %}
+                                                    <th class="text-center">
+                                                        <div class="small fw-bold">{{ yr.year_EC }}</div>
+                                                        <div class="text-muted" style="font-size: 0.7rem;">{{ m.month_AMH }}</div>
+                                                    </th>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ind in indicators %}
+                                            <tr>
+                                                 <td class="fw-bold text-dark sticky-col fw-bold text-wrap">
+                                                    {% if ind.parent %}
+                                                        <small class="text-muted d-block">
+                                                        Parent: {{ ind.parent.title_ENG }}
+                                                        </small>
+                                                    {% endif %}
+                                                    {{ ind.title_ENG }}
+                                                </td>
+                                                {% for yr in years_monthly %}
+                                                    {% for m in months %}
+                                                        <td class="text-center">
+                                                            <input type="number" step="any" class="data-input"
+                                                                data-indicator="{{ ind.id }}" data-year="{{ yr.id }}" data-month="{{ m.id }}" data-type="month"
+                                                                value="{% with yr_map=month_map|get_item:ind.id %}{% with m_map=yr_map|get_item:yr.id %}{{ m_map|get_item:m.id|default:'' }}{% endwith %}{% endwith %}"
+                                                                onchange="saveData(this)">
+                                                        </td>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Choices.js
+    const topicEl = document.getElementById('topicSelect');
+    const categoryEl = document.getElementById('categorySelect');
+    const indicatorEl = document.getElementById('indicatorSelect');
+
+    const topicChoice = new Choices(topicEl, { searchEnabled: true, itemSelectText: '' });
+    const categoryChoice = new Choices(categoryEl, { searchEnabled: true, itemSelectText: '' });
+    const indicatorChoice = new Choices(indicatorEl, { 
+        searchEnabled: true, 
+        removeItemButton: true,
+        itemSelectText: '' 
+    });
+
+    // Cascading effect: Reload when Topic or Category changes to update subsequent lists
+    topicEl.addEventListener('change', function() {
+        // Clear category and indicators when topic changes
+        const url = new URL(window.location);
+        url.searchParams.set('topic', this.value);
+        url.searchParams.delete('category');
+        url.searchParams.delete('indicators');
+        window.location.href = url.href;
+    });
+
+    categoryEl.addEventListener('change', function() {
+        const url = new URL(window.location);
+        url.searchParams.set('category', this.value);
+        url.searchParams.delete('indicators');
+        window.location.href = url.href;
+    });
+
+    // Select All Logic
+    document.getElementById('selectAllIndicators').addEventListener('click', function() {
+        const allValues = Array.from(indicatorEl.options).map(opt => opt.value);
+        indicatorChoice.setValue(allValues);
+    });
+});
+
+function bulkSave(tabType) {
+    let selector;
+    if (tabType === 'annual') selector = '#annual-pane .data-input';
+    if (tabType === 'quarterly') selector = '#quarterly-pane .data-input';
+    if (tabType === 'monthly') selector = '#monthly-pane .data-input';
+
+    const inputs = document.querySelectorAll(selector);
+    const data = [];
+
+    inputs.forEach(input => {
+        let value = input.value.trim();
+
+        // 🔥 FIX: empty string → null
+        value = value === "" ? null : parseFloat(value);
+
+        data.push({
+            indicator_id: input.dataset.indicator,
+            year_id: input.dataset.year,
+            quarter_id: input.dataset.quarter || null,
+            month_id: input.dataset.month || null,
+            value: value,
+            type: input.dataset.type
+        });
+    });
+
+    fetch('/data-management/api/save-indicator-data-bulk/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ data })
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.success) {
+            showToast(`✅ ${res.message}`, 'success');
+        } else {
+            showToast(`❌ ${res.message}`, 'danger');
+        }
+    })
+    .catch(err => {
+        showToast('❌ Server error while saving', 'danger');
+        console.error(err);
+    });
+}
+
+
+    // Toast function
+    function showToast(message, type='success') {
+        const toastContainer = document.getElementById('toastContainer');
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+        toast.role = 'alert';
+        toast.ariaLive = 'assertive';
+        toast.ariaAtomic = 'true';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.remove();
+        }, 3000);
+    }
+    </script>
+</body>
+
+
+

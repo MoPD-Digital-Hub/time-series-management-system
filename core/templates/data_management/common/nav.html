@@ -1,0 +1,199 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+/* -------------------------------
+   Sidebar Layout
+--------------------------------- */
+.pc-sidebar {
+    background: #ffffff;
+    border-right: 1px solid #f1f5f9;
+}
+
+.pc-navbar {
+    padding: 0 12px;
+}
+
+/* -------------------------------
+   Captions (Modern & Subtle)
+--------------------------------- */
+.pc-navbar .pc-caption {
+    padding: 28px 16px 10px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+
+/* -------------------------------
+   Navigation Links
+--------------------------------- */
+.pc-navbar .pc-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #64748b;
+    text-decoration: none !important;
+}
+
+.pc-navbar .pc-mtext {
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: color 0.3s;
+}
+
+/* -------------------------------
+   Icon & "Glow" Container
+--------------------------------- */
+.pc-navbar .pc-micon {
+    margin-right: 12px;
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+/* -------------------------------
+   Interactive States
+--------------------------------- */
+.pc-navbar .pc-link:hover {
+    background-color: #f8fafc;
+    color: #3b82f6;
+}
+
+/* The Active State (Current Page) */
+.pc-navbar .pc-item.active .pc-link {
+    background: #eff6ff;
+    color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.pc-navbar .pc-item.active .pc-micon {
+    color: #2563eb;
+    transform: scale(1.1);
+}
+
+/* -------------------------------
+   The Floating User Card
+--------------------------------- */
+.pc-user-card {
+    background: #f8fafc;
+    border: none;
+    margin: 0 12px 20px;
+    border-radius: 16px;
+    transition: background 0.3s;
+}
+
+.pc-user-card:hover {
+    background: #f1f5f9;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: block;
+}
+
+.user-role {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 600;
+}
+</style>
+<nav class="pc-sidebar">
+    <div class="navbar-wrapper">
+        <div class="m-header flex items-center py-8 px-8">
+            <a href="{% url 'dashboard_index' %}" class="b-brand">
+                <img  src="{% static 'assets/images/logo-light.png' %}" class="img-fluid logo-lg"
+                                        alt="logo" data-light="{% static 'assets/images/logo-light.png' %}"
+                                        data-dark="{% static 'assets/images/logo-dark.png' %}">
+            </a>
+        </div>
+        
+        <div class="navbar-content" style="display:flex; flex-direction:column; height: calc(100vh - 100px);">
+            
+            <div class="card pc-user-card">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="position-relative">
+                            <img class="rounded-circle shadow-sm" src="{% static 'assets/images/profile-icon.png' %}" width="42" alt="user">
+                            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-2 border-white rounded-circle"></span>
+                        </div>
+                        <div class="ms-3">
+                            <span class="user-name">{{ user.first_name }}</span>
+                            <span class="user-role">
+                                {% if user.is_superuser %}Administrator{% else %}Manager{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="pc-navbar list-unstyled overflow-auto flex-grow-1">
+                
+                <li class="pc-item pc-caption">Platform</li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'dashboard_index' %}active{% endif %}">
+                    <a href="{% url 'dashboard_index' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-compass"></i></span>
+                        <span class="pc-mtext">Overview</span>
+                    </a>
+                </li>
+
+                <li class="pc-item pc-caption">Data Assets</li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'data_topics' %}active{% endif %}">
+                    <a href="{% url 'data_topics' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-cube"></i></span>
+                        <span class="pc-mtext">Topics</span>
+                    </a>
+                </li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'data_categories' %}active{% endif %}">
+                    <a href="{% url 'data_categories' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-tags"></i></span>
+                        <span class="pc-mtext">Categories</span>
+                    </a>
+                </li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'data_indicators' %}active{% endif %}">
+                    <a href="{% url 'data_indicators' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-chart-simple"></i></span>
+                        <span class="pc-mtext">Indicators</span>
+                    </a>
+                </li>
+
+                <li class="pc-item pc-caption">Workflow</li>
+                <li class="pc-item">
+                    <a href="{% url 'data_entry' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-square-plus"></i></span>
+                        <span class="pc-mtext">Data Entry</span>
+                    </a>
+                </li>
+                <li class="pc-item">
+                    <a href="{% url 'data_documents' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-folder-open"></i></span>
+                        <span class="pc-mtext">File Archive</span>
+                    </a>
+                </li>
+
+                {% if request.user.is_category_manager or request.user.is_superuser %}
+                <li class="pc-item pc-caption">Governance</li>
+                <li class="pc-item">
+                    <a href="{% url 'verification_dashboard' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-shield-halved"></i></span>
+                        <span class="pc-mtext">Quality Control</span>
+                    </a>
+                </li>
+                <li class="pc-item">
+                    <a href="{% url 'user_management_dashboard' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-users-gear"></i></span>
+                        <span class="pc-mtext">User Management</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
