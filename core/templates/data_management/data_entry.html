@@ -99,6 +99,11 @@
                             <select name="indicators" id="indicatorSelect" class="js-choice" multiple>
                                 {% for ind in indicators_list %}
                                     <option value="{{ ind.id }}" {% if ind.id in selected_indicators %}selected{% endif %}>
+                                        {% if ind.parent %}
+                                                        <small class="text-muted d-block">
+                                                        Parent: {{ ind.parent.title_ENG }}
+                                                        </small>
+                                                    {% endif %}
                                         {{ ind.title_ENG }}
                                     </option>
                                 {% endfor %}
