@@ -158,6 +158,7 @@
                                     <thead>
                                         <tr>
                                             <th class="sticky-col">Indicator Title</th>
+                                            <th class="sticky-col">Categories </th>
                                             {% for yr in years_annual %}
                                                 <th class="text-center">{{ yr.year_EC }}</th>
                                             {% endfor %}
@@ -172,7 +173,12 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }} - {{ ind.for_category }}
+                                                    {{ ind.title_ENG }} 
+                                                </td>
+                                                <td>
+                                                    {% for i in ind.for_category.all %}
+                                                         <span class="badge bg-light-secondary text-dark">{{ i.name_ENG }}</span>     
+                                                    {% endfor %}
                                                 </td>
                                                 {% for yr in years_annual %}
                                                     <td class="text-center">
@@ -199,6 +205,7 @@
                                     <thead>
                                         <tr>
                                             <th class="sticky-col">Indicator Title</th>
+                                            <th class="sticky-col">Categories</th>
                                             {% for yr in years_quarterly %}
                                                 {% for q in quarters %}
                                                     <th class="text-center">{{ yr.year_EC }} <span class="badge bg-info text-dark">{{ q.title_ENG }}</span></th>
@@ -215,7 +222,12 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }} - {{ ind.for_category }}
+                                                    {{ ind.title_ENG }}
+                                                </td>
+                                                <td>
+                                                    {% for i in ind.for_category.all %}
+                                                         <span class="badge bg-light-secondary text-dark">{{ i.name_ENG }}</span>     
+                                                    {% endfor %}
                                                 </td>
                                                 {% for yr in years_quarterly %}
                                                     {% for q in quarters %}
@@ -244,6 +256,7 @@
                                     <thead>
                                         <tr>
                                             <th class="sticky-col">Indicator Title</th>
+                                            <th class="sticky-col">Categories</th>
                                             {% for yr in years_monthly %}
                                                 {% for m in months %}
                                                     <th class="text-center">
@@ -263,7 +276,12 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }}    - {{ ind.for_category }}
+                                                    {{ ind.title_ENG }}
+                                                </td>
+                                                <td>
+                                                    {% for i in ind.for_category.all %}
+                                                         <span class="badge bg-light-secondary text-dark">{{ i.name_ENG }}</span>     
+                                                    {% endfor %}
                                                 </td>
                                                 {% for yr in years_monthly %}
                                                     {% for m in months %}
