@@ -103,9 +103,9 @@
                                                         <small class="text-muted d-block">
                                                          {{ ind.parent.title_ENG }}
                                                         </small>
-                                        ({{ ind.title_ENG }} - {{ ind.category.name_ENG }})
+                                        ({{ ind.title_ENG }} - {{ ind.category }})
                                         {% else %}
-                                        {{ ind.title_ENG }} - {{ ind.category.name_ENG }}
+                                        {{ ind.title_ENG }} - {{ ind.category }}
                                         {% endif %}
                                         
                                     </option>
@@ -172,7 +172,7 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }}
+                                                    {{ ind.title_ENG }} - {{ ind.category }}
                                                 </td>
                                                 {% for yr in years_annual %}
                                                     <td class="text-center">
@@ -215,7 +215,7 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }}
+                                                    {{ ind.title_ENG }} - {{ ind.category }}
                                                 </td>
                                                 {% for yr in years_quarterly %}
                                                     {% for q in quarters %}
@@ -263,7 +263,7 @@
                                                         Parent: {{ ind.parent.title_ENG }}
                                                         </small>
                                                     {% endif %}
-                                                    {{ ind.title_ENG }}
+                                                    {{ ind.title_ENG }}    - {{ ind.category }}
                                                 </td>
                                                 {% for yr in years_monthly %}
                                                     {% for m in months %}
