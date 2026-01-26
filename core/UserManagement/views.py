@@ -75,7 +75,13 @@ def user_management_dashboard(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
@@ -132,7 +138,13 @@ def users_list(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
@@ -212,7 +224,13 @@ def submissions_list(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
@@ -300,7 +318,13 @@ def importer_dashboard(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
@@ -370,7 +394,13 @@ def add_indicator(request):
         if request.user.is_superuser:
             topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
         else:
-            assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            # For importers, get categories through their manager
+            if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+                target_manager = request.user.manager
+            else:
+                target_manager = request.user
+            
+            assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
             topics = Topic.objects.filter(
                 categories__id__in=assigned_category_ids,
                 is_initiative=False
@@ -398,7 +428,13 @@ def add_indicator(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
@@ -441,7 +477,13 @@ def data_table_explorer(request):
     if request.user.is_superuser:
         topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
     else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        # For importers, get categories through their manager
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
             categories__id__in=assigned_category_ids,
             is_initiative=False
