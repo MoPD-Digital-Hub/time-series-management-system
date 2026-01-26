@@ -710,21 +710,21 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
 
         qs = obj.month_data.all()
 
-        if year and month:
-            qs = qs.filter(
-                for_datapoint__year_EC=year,
-                for_month__month_ENG=month
-            )
-            return MonthDataSerializer(qs[:1], many=True).data
+        # if year and month:
+        #     qs = qs.filter(
+        #         for_datapoint__year_EC=year,
+        #         for_month__month_ENG=month
+        #     )
+        #     return MonthDataSerializer(qs[:1], many=True).data
 
-        if year:
-            qs = qs.filter(for_datapoint__year_EC=year)
+        # if year:
+        #     qs = qs.filter(for_datapoint__year_EC=year)
 
-        if month:
-            qs = qs.filter(for_month__month_ENG=month)
+        # if month:
+        #     qs = qs.filter(for_month__month_ENG=month)
 
-        qs = qs.order_by('-for_datapoint__year_EC')
-        month_list = list(qs)[::-1]
+        qs = qs.order_by('for_datapoint__year_EC')
+        month_list = list(qs)
 
         return MonthDataSerializer(month_list, many=True).data
 
