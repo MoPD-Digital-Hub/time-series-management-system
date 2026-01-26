@@ -237,7 +237,11 @@ def data_entry(request):
 
     # STEP 3: Indicators filtered by selected Category
     # Note: If no category is selected, it shows indicators for all categories in the filtered list
-    indicators_list_qs = Indicator.objects.filter(for_category__in=categories_qs, is_verified=True).distinct()
+    indicators_list_qs = Indicator.objects.filter(
+        for_category__in=categories_qs,
+        is_verified=True
+    ).distinct()[:300]  # 🔥 hard limit
+
 
     # STEP 4: Final query for the table (Applying selected indicators)
     indicators_qs = indicators_list_qs
@@ -250,8 +254,6 @@ def data_entry(request):
     years_quarterly = all_years[:10]
     years_monthly = all_years[:5]
     
-    quarters = Quarter.objects.all().order_by('number')
-    months = Month.objects.all().order_by('number')
 
     # --------------------------------------------------
     # STEP 6: Data maps (performance optimized)

@@ -290,20 +290,18 @@
 
     // Cascading effect: Reload when Topic or Category changes to update subsequent lists
     topicEl.addEventListener('change', function() {
-        // Clear category and indicators when topic changes
         const url = new URL(window.location);
         url.searchParams.set('topic', this.value);
-        url.searchParams.delete('category');
-        url.searchParams.delete('indicators');
         window.location.href = url.href;
     });
+
 
     categoryEl.addEventListener('change', function() {
         const url = new URL(window.location);
         url.searchParams.set('category', this.value);
-        url.searchParams.delete('indicators');
         window.location.href = url.href;
     });
+
 
     // Select All Logic
     document.getElementById('selectAllIndicators').addEventListener('click', function() {
