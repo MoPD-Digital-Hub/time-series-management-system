@@ -103,9 +103,9 @@
                                                         <small class="text-muted d-block">
                                                          {{ ind.parent.title_ENG }}
                                                         </small>
-                                        ({{ ind.title_ENG }})
+                                        ({{ ind.title_ENG }} - {{ ind.category.name_ENG }})
                                         {% else %}
-                                        {{ ind.title_ENG }}
+                                        {{ ind.title_ENG }} - {{ ind.category.name_ENG }}
                                         {% endif %}
                                         
                                     </option>
