@@ -127,7 +127,13 @@
         $('#ind-list .ind-checkbox:checked').each(function () {
             selections.indicators.push({
                 id: $(this).data('id'),
-                title: $(this).data('title')
+                title: $(this).data('title'),
+                code: $(this).data('code') || '',
+                topic: $(this).data('topic-name') || '-',
+                category: $(this).data('cat-name') || '-',
+                unit: $(this).data('unit') || '-',
+                freq: $(this).data('freq') || '-',
+                desc: $(this).data('desc') || '-'
             });
         });
     }
@@ -183,94 +189,326 @@
         })
             .done(function (resp) {
                 var results = resp.results || [];
-                var head = '<tr><th>Year (EC)</th><th>Year (GC)</th>';
-                if (currentMode === 'quarterly') head = '<tr><th>Year (EC)</th><th>Year (GC)</th><th>Quarter</th>';
-                if (currentMode === 'monthly') head = '<tr><th>Year (EC)</th><th>Year (GC)</th><th>Month</th>';
-                if (currentMode === 'weekly') head = '<tr><th>Year (EC)</th><th>Year (GC)</th><th>Week</th>';
-                if (currentMode === 'daily') head = '<tr><th>Year (EC)</th><th>Year (GC)</th><th>Gregorian Date</th><th>Ethiopian Date</th>';
-                selections.indicators.forEach(i => head += `<th>${i.title}</th>`);
-                head += '</tr>';
-
+                var head = '';
                 var rowsHtml = '';
+                var sortedYears = [];
+                var timePeriods = [];
 
                 if (currentMode === 'annual') {
-                    var rowMap = {};
-                    results.forEach(r => {
-                        (r.all_annual || []).forEach(a => {
-                            var key = `${a.year_ec}|${a.year_gc}`;
-                            if (!rowMap[key]) rowMap[key] = { year_ec: a.year_ec, year_gc: a.year_gc, values: {} };
-                            rowMap[key].values[r.title] = a.value;
-                        });
+                    // Collect all unique years for annual mode
+                    var allYears = new Set();
+                    var yearDataMap = {};
+                    var indicatorInfo = {};
+                    
+                    // Create a map of indicator titles to their metadata from selections
+                    var selectionMap = {};
+                    selections.indicators.forEach(function(ind) {
+                        selectionMap[ind.title] = ind;
                     });
-                    Object.values(rowMap).forEach(r => {
-                        rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td>`;
-                        selections.indicators.forEach(i => rowsHtml += `<td>${fmt(r.values[i.title])}</td>`);
+                    
+                    results.forEach(function(r) {
+                        var sel = selectionMap[r.title] || {};
+                        indicatorInfo[r.title] = {
+                            id: r.id,
+                            code: r.code || sel.code || '',
+                            title: r.title || r.title_ENG || sel.title,
+                            topic: r.topic || sel.topic || '-',
+                            category: r.category || sel.category || '-',
+                            unit: r.measurement_units || sel.unit || '-',
+                            freq: r.frequency || sel.freq || '-',
+                            desc: r.description || sel.desc || '-'
+                        };
+                        
+                        if (r.all_annual) {
+                            r.all_annual.forEach(function(a) {
+                                var yearKey = a.year_ec;
+                                allYears.add(yearKey);
+                                if (!yearDataMap[yearKey]) yearDataMap[yearKey] = {};
+                                yearDataMap[yearKey][r.title] = a.value;
+                            });
+                        }
+                    });
+                    
+                    // Build header with vertical text like data_view.html
+                    head = '<tr>';
+                    head += '<th scope="col" class="sticky-col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; min-width: 150px; max-width: 150px; width: 150px;">Code</th>';
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">View</th>';
+                    
+                    // Add year columns (sorted descending)
+                    sortedYears = Array.from(allYears).sort(function(a, b) { return b - a; });
+                    sortedYears.forEach(function(year) {
+                        head += '<th class="value-cell" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">' + year + ' EC</th>';
+                    });
+                    
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Topic</th>';
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Category</th>';
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Unit</th>';
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Freq</th>';
+                    head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
+                    head += '</tr>';
+
+                    // Build rows - one row per indicator
+                    selections.indicators.forEach(function(ind) {
+                        var info = indicatorInfo[ind.title] || {};
+                        rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
+                        rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                        rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+                        
+                        // Add year values
+                        sortedYears.forEach(function(year) {
+                            var value = yearDataMap[year] && yearDataMap[year][ind.title] !== undefined ? yearDataMap[year][ind.title] : null;
+                            rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
+                        });
+                        
+                        rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
+                        rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
+                        rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
+                        rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
+                        rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
                         rowsHtml += '</tr>';
                     });
-                }
-                else if (currentMode === 'quarterly') {
-                    var rowMap = {};
-                    results.forEach(r => {
-                        (r.quarterly || []).forEach(q => {
-                            var key = `${q.year_ec}|${q.year_gc}|${q.quarter_number}`;
-                            if (!rowMap[key]) rowMap[key] = { year_ec: q.year_ec, year_gc: q.year_gc, quarter: q.quarter || 'Q' + q.quarter_number, values: {} };
-                            rowMap[key].values[r.title] = q.value;
+                } else {
+                    // For non-annual modes, restructure to match annual mode format
+                    var selectionMap = {};
+                    selections.indicators.forEach(function(ind) {
+                        selectionMap[ind.title] = ind;
+                    });
+                    
+                    var indicatorInfo = {};
+                    results.forEach(function(r) {
+                        var sel = selectionMap[r.title] || {};
+                        indicatorInfo[r.title] = {
+                            id: r.id,
+                            code: r.code || sel.code || '',
+                            title: r.title || r.title_ENG || sel.title,
+                            topic: r.topic || sel.topic || '-',
+                            category: r.category || sel.category || '-',
+                            unit: r.measurement_units || sel.unit || '-',
+                            freq: r.frequency || sel.freq || '-',
+                            desc: r.description || sel.desc || '-'
+                        };
+                    });
+                    
+                    timePeriods = [];
+                    var timeDataMap = {};
+                    
+                    if (currentMode === 'quarterly') {
+                        results.forEach(function(r) {
+                            (r.quarterly || []).forEach(function(q) {
+                                var periodKey = q.year_ec + '|' + q.year_gc + '|' + (q.quarter || 'Q' + q.quarter_number);
+                                if (timePeriods.indexOf(periodKey) === -1) {
+                                    timePeriods.push(periodKey);
+                                }
+                                if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
+                                timeDataMap[periodKey][r.title] = q.value;
+                            });
                         });
-                    });
-                    Object.values(rowMap).forEach(r => {
-                        rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.quarter)}</td>`;
-                        selections.indicators.forEach(i => rowsHtml += `<td>${fmt(r.values[i.title])}</td>`);
-                        rowsHtml += '</tr>';
-                    });
-                }
-                else if (currentMode === 'monthly') {
-                    var rowMap = {};
-                    results.forEach(r => {
-                        (r.monthly || []).forEach(m => {
-                            var key = `${m.year_ec}|${m.year_gc}|${m.month_number}`;
-                            if (!rowMap[key]) rowMap[key] = { year_ec: m.year_ec, year_gc: m.year_gc, month: m.month_amh + ' (' + m.month + ')', values: {} };
-                            rowMap[key].values[r.title] = m.value;
+                        // Sort by year descending, then quarter
+                        timePeriods.sort(function(a, b) {
+                            var aParts = a.split('|');
+                            var bParts = b.split('|');
+                            if (aParts[0] !== bParts[0]) return bParts[0] - aParts[0];
+                            return aParts[2].localeCompare(bParts[2]);
                         });
-                    });
-                    Object.values(rowMap).forEach(r => {
-                        rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.month)}</td>`;
-                        selections.indicators.forEach(i => rowsHtml += `<td>${fmt(r.values[i.title])}</td>`);
-                        rowsHtml += '</tr>';
-                    });
-                }
-                else if (currentMode === 'weekly') {
-                    var rowMap = {};
-                    results.forEach(r => {
-                        (r.weekly || []).forEach(w => {
-                            var key = `${w.year_ec || ''}|${w.year_gc || ''}|${w.date}`;
-                            if (!rowMap[key]) rowMap[key] = { year_ec: w.year_ec, year_gc: w.year_gc, week: w.week_label || ('Week' + (w.week || '')), values: {} };
-                            rowMap[key].values[r.title] = w.value;
+                        
+                        head = '<tr>';
+                        head += '<th scope="col" class="sticky-col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; min-width: 150px; max-width: 150px; width: 150px;">Code</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">View</th>';
+                        timePeriods.forEach(function(period) {
+                            var parts = period.split('|');
+                            head += '<th class="value-cell" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">' + parts[0] + ' EC ' + parts[2] + '</th>';
                         });
-                    });
-                    Object.values(rowMap).forEach(r => {
-                        rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.week)}</td>`;
-                        selections.indicators.forEach(i => rowsHtml += `<td>${fmt(r.values[i.title])}</td>`);
-                        rowsHtml += '</tr>';
-                    });
-                }
-                else if (currentMode === 'daily') {
-                    var rowMap = {};
-                    results.forEach(r => {
-                        (r.daily || []).forEach(d => {
-                            var key = `${d.year_ec || ''}|${d.year_gc || ''}|${d.date}`;
-                            if (!rowMap[key]) rowMap[key] = { year_ec: d.year_ec, year_gc: d.year_gc, greg: d.greg_date_formatted || d.date, ethio: d.ethio_date || '', values: {} };
-                            rowMap[key].values[r.title] = d.value;
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Topic</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Category</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Unit</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Freq</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
+                        head += '</tr>';
+                        
+                        selections.indicators.forEach(function(ind) {
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+                            timePeriods.forEach(function(period) {
+                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
+                            });
+                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '</tr>';
                         });
-                    });
-                    Object.values(rowMap).forEach(r => {
-                        rowsHtml += `<tr><td>${fmt(r.year_ec)}</td><td>${fmt(r.year_gc)}</td><td>${fmt(r.greg)}</td><td>${fmt(r.ethio)}</td>`;
-                        selections.indicators.forEach(i => rowsHtml += `<td>${fmt(r.values[i.title])}</td>`);
-                        rowsHtml += '</tr>';
-                    });
+                    } else if (currentMode === 'monthly') {
+                        results.forEach(function(r) {
+                            (r.monthly || []).forEach(function(m) {
+                                var periodKey = m.year_ec + '|' + m.year_gc + '|' + m.month_number;
+                                if (timePeriods.indexOf(periodKey) === -1) {
+                                    timePeriods.push(periodKey);
+                                }
+                                if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
+                                timeDataMap[periodKey][r.title] = m.value;
+                            });
+                        });
+                        // Sort by year descending, then month
+                        timePeriods.sort(function(a, b) {
+                            var aParts = a.split('|');
+                            var bParts = b.split('|');
+                            if (aParts[0] !== bParts[0]) return bParts[0] - aParts[0];
+                            return bParts[2] - aParts[2];
+                        });
+                        
+                        head = '<tr>';
+                        head += '<th scope="col" class="sticky-col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; min-width: 150px; max-width: 150px; width: 150px;">Code</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">View</th>';
+                        timePeriods.forEach(function(period) {
+                            var parts = period.split('|');
+                            var monthNum = parts[2];
+                            var monthName = '';
+                            results.forEach(function(r) {
+                                (r.monthly || []).forEach(function(m) {
+                                    if (m.year_ec == parts[0] && m.month_number == monthNum) {
+                                        monthName = m.month_amh || m.month || 'M' + monthNum;
+                                    }
+                                });
+                            });
+                            head += '<th class="value-cell" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">' + parts[0] + ' EC ' + monthName + '</th>';
+                        });
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Topic</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Category</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Unit</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Freq</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
+                        head += '</tr>';
+                        
+                        selections.indicators.forEach(function(ind) {
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+                            timePeriods.forEach(function(period) {
+                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
+                            });
+                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '</tr>';
+                        });
+                    } else if (currentMode === 'weekly') {
+                        results.forEach(function(r) {
+                            (r.weekly || []).forEach(function(w) {
+                                var periodKey = (w.year_ec || '') + '|' + (w.year_gc || '') + '|' + w.date;
+                                if (timePeriods.indexOf(periodKey) === -1) {
+                                    timePeriods.push(periodKey);
+                                }
+                                if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
+                                timeDataMap[periodKey][r.title] = w.value;
+                            });
+                        });
+                        // Sort by date descending
+                        timePeriods.sort(function(a, b) {
+                            return b.localeCompare(a);
+                        });
+                        
+                        head = '<tr>';
+                        head += '<th scope="col" class="sticky-col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; min-width: 150px; max-width: 150px; width: 150px;">Code</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">View</th>';
+                        timePeriods.forEach(function(period) {
+                            var parts = period.split('|');
+                            var weekLabel = parts[2];
+                            results.forEach(function(r) {
+                                (r.weekly || []).forEach(function(w) {
+                                    if (w.date === parts[2]) {
+                                        weekLabel = w.week_label || 'Week ' + (w.week || '');
+                                    }
+                                });
+                            });
+                            head += '<th class="value-cell" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">' + weekLabel + '</th>';
+                        });
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Topic</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Category</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Unit</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Freq</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
+                        head += '</tr>';
+                        
+                        selections.indicators.forEach(function(ind) {
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+                            timePeriods.forEach(function(period) {
+                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
+                            });
+                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '</tr>';
+                        });
+                    } else if (currentMode === 'daily') {
+                        results.forEach(function(r) {
+                            (r.daily || []).forEach(function(d) {
+                                var periodKey = (d.year_ec || '') + '|' + (d.year_gc || '') + '|' + d.date;
+                                if (timePeriods.indexOf(periodKey) === -1) {
+                                    timePeriods.push(periodKey);
+                                }
+                                if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
+                                timeDataMap[periodKey][r.title] = d.value;
+                            });
+                        });
+                        // Sort by date descending
+                        timePeriods.sort(function(a, b) {
+                            return b.localeCompare(a);
+                        });
+                        
+                        head = '<tr>';
+                        head += '<th scope="col" class="sticky-col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; min-width: 150px; max-width: 150px; width: 150px;">Code</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">View</th>';
+                        timePeriods.forEach(function(period) {
+                            var parts = period.split('|');
+                            var dateLabel = parts[2];
+                            results.forEach(function(r) {
+                                (r.daily || []).forEach(function(d) {
+                                    if (d.date === parts[2]) {
+                                        dateLabel = d.greg_date_formatted || d.date;
+                                    }
+                                });
+                            });
+                            head += '<th class="value-cell" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom; white-space: nowrap;">' + dateLabel + '</th>';
+                        });
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Topic</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Category</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Unit</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Freq</th>';
+                        head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
+                        head += '</tr>';
+                        
+                        selections.indicators.forEach(function(ind) {
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+                            timePeriods.forEach(function(period) {
+                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
+                            });
+                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '</tr>';
+                        });
+                    }
                 }
 
                 $('#explorer-head').html(head);
-                insertRowsChunked('#explorer-body', rowsHtml || '<tr><td colspan="' + (2 + selections.indicators.length + (currentMode === "daily" ? 2 : currentMode === "weekly" ? 1 : currentMode === "monthly" ? 1 : currentMode === "quarterly" ? 1 : 0)) + '">No data available.</td></tr>');
+                var colCount = 2 + (currentMode === 'annual' ? sortedYears.length : timePeriods.length) + 5; // Code + View + time periods + Topic + Category + Unit + Freq + Desc
+                insertRowsChunked('#explorer-body', rowsHtml || '<tr><td colspan="' + colCount + '">No data available.</td></tr>');
             })
             .fail(function () {
                 $('#explorer-head').html('');

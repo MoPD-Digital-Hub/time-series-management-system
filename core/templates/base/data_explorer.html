@@ -21,6 +21,57 @@
         word-break: break-word;
     }
 
+    .table-responsive {
+        max-height: 80vh;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    #explorer-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #f8f9fa;
+        white-space: nowrap;
+    }
+
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: white !important;
+        z-index: 6;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        min-width: 150px;
+        max-width: 150px;
+        width: 150px;
+    }
+
+    #explorer-table thead th.sticky-col {
+        z-index: 7;
+    }
+
+    .value-cell {
+        min-width: 100px;
+        text-align: center;
+    }
+
+    .value-head {
+        min-width: 100px;
+        padding: 10px 5px !important;
+        font-size: 11px;
+        text-align: center;
+    }
+
+    .filter-section {
+        position: relative;
+        z-index: 200;
+        /* Higher than table and sticky headers */
+    }
+
+    .card-body {
+        overflow: visible !important;
+    }
+
     th.vhead {
         writing-mode: vertical-rl;
         transform: rotate(180deg);
@@ -135,7 +186,10 @@
                                         data-topic="{{ topic.id }}" data-cat="{{ cat.id }}">
                                         <input type="checkbox" class="ind-checkbox" data-id="{{ ind.id }}"
                                             data-cat="{{ cat.id }}" data-topic="{{ topic.id }}"
-                                            data-title="{{ ind.title_ENG }}">
+                                            data-title="{{ ind.title_ENG }}" data-code="{{ ind.code|default:'' }}"
+                                            data-topic-name="{{ topic.title_ENG|default:'' }}" data-cat-name="{{ cat.name_ENG|default:'' }}"
+                                            data-unit="{{ ind.measurement_units|default:'' }}" data-freq="{{ ind.frequency|default:'' }}"
+                                            data-desc="{{ ind.description|default:'' }}">
                                         <span class="whitespace-normal break-words">{{ ind.title_ENG }}</span>
                                     </label>
                                     {% endfor %}
@@ -160,9 +214,13 @@
                         <button class="btn btn-outline-primary btn-sm data-mode" data-mode="daily">Daily</button>
                     </div>
                     <div class="table-responsive">
-                        <table class="table" id="explorer-table">
-                            <thead id="explorer-head" class="align-top"></thead>
-                            <tbody id="explorer-body"></tbody>
+                        <table id="explorer-table" class="table table-striped table-hover align-middle mb-0">
+                            <thead id="explorer-head" class="table-light">
+                                <!-- Will be populated by JS -->
+                            </thead>
+                            <tbody id="explorer-body">
+                                <!-- Will be populated by JS -->
+                            </tbody>
                         </table>
                     </div>
                 </div>

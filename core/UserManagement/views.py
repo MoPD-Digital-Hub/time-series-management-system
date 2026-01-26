@@ -69,7 +69,25 @@ def admin_required(user):
 
 @login_required
 def user_management_dashboard(request):
-    return render(request, 'usermanagement/dashboard.html')
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
+    return render(request, 'usermanagement/dashboard.html', {'topics': topics})
 
 @login_required
 def users_list(request):
@@ -104,16 +122,34 @@ def users_list(request):
     if request.user.is_authenticated:
         if request.user.is_staff:
             # Admins can see all categories
-            from Base.models import Category
             manager_categories = Category.objects.all().order_by('name_ENG')
         elif request.user.is_category_manager:
             manager_categories = [assign.category for assign in CategoryAssignment.objects.filter(manager=request.user).select_related('category')]
 
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     return render(request, 'usermanagement/users_list.html', {
         'users_page': users_page,
         'search_query': search_query,
         'role_filter': role_filter,
         'manager_categories': manager_categories,
+        'topics': topics,
     })
 
 
@@ -170,11 +206,30 @@ def submissions_list(request):
     paginator = Paginator(submissions_qs, 20)
     submissions_page = paginator.get_page(page_number)
 
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     return render(request, template, {
         'submission_type': submission_type,
         'submissions_page': submissions_page,
         'status_filter': status_filter,
-        'pending_count': pending_count
+        'pending_count': pending_count,
+        'topics': topics,
     })
 
 
@@ -239,8 +294,27 @@ def importer_dashboard(request):
     if manager:
         assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
     
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     return render(request, 'usermanagement/importer_dashboard.html', {
-        'assigned_categories': assigned_categories
+        'assigned_categories': assigned_categories,
+        'topics': topics,
     })
 
 
@@ -290,7 +364,24 @@ def data_submission_preview(request, submission_id):
 def add_indicator(request):
     if not request.user.is_importer:
         messages.error(request, 'Access denied. Only data importers can submit indicators.')
-        return render(request, 'usermanagement/dashboard.html')
+        from Base.models import Topic
+        from django.db.models import Prefetch
+        
+        if request.user.is_superuser:
+            topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+        else:
+            assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+            topics = Topic.objects.filter(
+                categories__id__in=assigned_category_ids,
+                is_initiative=False
+            ).prefetch_related(
+                Prefetch(
+                    'categories',
+                    queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                    to_attr='prefetched_categories'
+                )
+            ).distinct()
+        return render(request, 'usermanagement/dashboard.html', {'topics': topics})
 
     categories = Category.objects.all().order_by('name_ENG')
     frequency_choices = Indicator.FREQUENCY_CHOICES
@@ -301,11 +392,30 @@ def add_indicator(request):
     if manager is not None:
         assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
 
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     return render(request,'usermanagement/add_indicator.html',
         {
             'categories': categories,
             'frequency_choices': frequency_choices,
             'assigned_categories': assigned_categories,
+            'topics': topics,
         }
     )
 
@@ -325,8 +435,27 @@ def data_table_explorer(request):
         else:
             categories = Category.objects.none()
 
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
     context = {
         'categories': categories,
+        'topics': topics,
     }
     return render(request, 'usermanagement/data_table_explorer.html', context)
 
@@ -335,8 +464,27 @@ def data_table_explorer(request):
 @login_required
 def review_table_data(request):
     if not (request.user.is_category_manager or request.user.is_superuser):
-         return render(request, 'usermanagement/access_denied.html') 
-    return render(request, 'usermanagement/review_table_data.html')
+         return render(request, 'usermanagement/access_denied.html')
+    
+    from Base.models import Topic
+    from django.db.models import Prefetch
+    
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
+    return render(request, 'usermanagement/review_table_data.html', {'topics': topics})
 
 
 @login_required
