@@ -103,8 +103,11 @@
                                                         <small class="text-muted d-block">
                                                          {{ ind.parent.title_ENG }}
                                                         </small>
-                                                    {% endif %}
                                         ({{ ind.title_ENG }})
+                                        {% else %}
+                                        {{ ind.title_ENG }}
+                                        {% endif %}
+                                        
                                     </option>
                                 {% endfor %}
                             </select>

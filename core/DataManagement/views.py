@@ -259,17 +259,23 @@ def data_entry(request):
     # ----------------------------
     # STEP 3: Indicators list (dropdown)
     # ----------------------------
-    indicators_list_qs = Indicator.objects.filter(
+    base_indicator_qs = Indicator.objects.filter(
         for_category__in=categories_qs,
         is_verified=True
-    ).distinct()[:300]
+    ).distinct()
 
-    # ----------------------------
-    # STEP 4: Indicators table
-    # ----------------------------
-    indicators_qs = indicators_list_qs
+    # -------------------------------
+    # STEP 4: Table indicators (apply user selection)
+    # -------------------------------
     if indicator_ids:
-        indicators_qs = indicators_qs.filter(id__in=indicator_ids)
+        indicators_qs = base_indicator_qs.filter(id__in=indicator_ids)
+    else:
+        indicators_qs = base_indicator_qs
+
+    # -------------------------------
+    # STEP 5: Indicator dropdown list (SAFE SLICE)
+    # -------------------------------
+    indicators_list_qs = base_indicator_qs[:300]
 
     # ----------------------------
     # Time dimensions
