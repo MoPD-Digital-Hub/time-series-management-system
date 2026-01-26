@@ -191,10 +191,21 @@
       .prop("checked", this.checked)
       .trigger("change");
   });
+
+
   $("#ind-select-all").on("change", function () {
-    $("#ind-list .ind-checkbox").prop("checked", this.checked);
+    // Only check checkboxes whose parent label is visible
+    $("#ind-list .ind-checkbox").filter(function () {
+      return $(this).closest("label").is(":visible");
+    }).prop("checked", this.checked);
+
     collectSelection();
   });
+
+
+
+
+
 
   // --- Hierarchy filter functions
   function updateIndicatorList() {
@@ -211,14 +222,17 @@
 
   // --- Collect selected indicators
   function collectSelection() {
-    selections.indicators = $("#ind-list .ind-checkbox:checked")
-      .map(function () {
-        return { id: $(this).data("id"), title: $(this).data("title") };
-      })
-      .get();
+    selections.indicators = $("#ind-list .ind-checkbox:checked").filter(function () {
+      // only include checkboxes whose parent label is visible
+      return $(this).closest("label").is(":visible");
+    }).map(function () {
+      return { id: $(this).data("id"), title: $(this).data("title") };
+    }).get();
+
     // whenever indicators change, reset sidebar
     resetSidebar();
   }
+
 
   // --- Trigger hierarchy updates on checkbox change
   $("#category-list .cat-checkbox").on("change", function () {

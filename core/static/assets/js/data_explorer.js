@@ -60,9 +60,12 @@
     $('#category-select-all').on('change', function () {
         $('#category-list label:visible .cat-checkbox').prop('checked', this.checked).trigger('change');
     });
+
     $('#ind-select-all').on('change', function () {
-        $('#ind-list label:visible .ind-checkbox').prop('checked', this.checked);
+        $('#ind-list .ind-checkbox:visible').prop('checked', this.checked);
     });
+
+
 
     // Cascading Filter Logic
     function updateFilters() {

@@ -33,12 +33,15 @@ class IndicatorFiedlSerializer(serializers.ModelSerializer):
 
 class AnnualDataPreviousSerializer(serializers.ModelSerializer):
     previous_year_performance_data = serializers.SerializerMethodField()
+
+
     class Meta:
         model = AnnualData
         fields = ('previous_year_performance_data',)
 
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
+    
     
 
 class QuarterDataPreviousSerializer(serializers.ModelSerializer):
@@ -83,12 +86,18 @@ class TopicSerializer(serializers.ModelSerializer):
     
 class AnnualDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
+    performance = serializers.SerializerMethodField()
+    
     class Meta:
         model = AnnualData
         fields = ('for_datapoint', 'target' ,'performance')
 
     def get_for_datapoint(self, obj):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+    
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+    
 
 
 
@@ -96,12 +105,16 @@ class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
     previous_year_performance_data = serializers.SerializerMethodField()
+    performance = serializers.SerializerMethodField()
+
     class Meta:
         model = QuarterData
         fields = '__all__'
 
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+    
     def get_previous_year_performance_data(self, obj):
-        
         return obj.get_previous_year_performance()
     
     def get_for_datapoint(self, obj):
@@ -113,6 +126,8 @@ class MonthDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     for_month = serializers.SlugRelatedField(read_only=True, slug_field='month_AMH')
     previous_year_performance_data = serializers.SerializerMethodField()
+    performance = serializers.SerializerMethodField()
+    
     
     class Meta:
         model = MonthData
@@ -123,6 +138,9 @@ class MonthDataSerializer(serializers.ModelSerializer):
     
     def get_for_datapoint(self, obj):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
+    
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
     
 
 class WeekDataSerializer(serializers.ModelSerializer):
