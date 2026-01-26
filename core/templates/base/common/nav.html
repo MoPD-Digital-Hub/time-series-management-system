@@ -137,15 +137,72 @@
                                                 <span class="pc-mtext">Data-Explorer</span>
                                         </a>
                                 </li>
-                                <li class="pc-item">
-                                        <a href="{% url 'user_management_dashboard' %}" class="pc-link">
+                                <li class="pc-item pc-hasmenu">
+                                        <a href="#" class="pc-link">
                                                 <span class="pc-micon">
-                                                        <svg class="pc-icon">
-                                                                <use xlink:href="#custom-presentation-chart"></use>
-                                                        </svg>
+                                                        <i class="fas fa-users"></i>
                                                 </span>
                                                 <span class="pc-mtext">User Management</span>
+                                                <span class="pc-arrow"><i data-feather="chevron-right"></i></span>
                                         </a>
+                                        <ul class="pc-submenu">
+                                                <li class="pc-item">
+                                                        <a href="{% url 'user_management_dashboard' %}" class="pc-link">
+                                                                Dashboard
+                                                        </a>
+                                                </li>
+                                                {% if user.is_staff %}
+                                                <li class="pc-item">
+                                                        <a href="{% url 'users_list' %}" class="pc-link">
+                                                                Manage Users
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'category_assignments' %}" class="pc-link">
+                                                                Category Assignments
+                                                        </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if user.is_category_manager %}
+                                                <li class="pc-item">
+                                                        <a href="{% url 'users_list' %}" class="pc-link">
+                                                                Manage Users
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'review_table_data' %}" class="pc-link">
+                                                                Review Table
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'submissions_list' %}?type=indicator&status=pending" class="pc-link">
+                                                                Review Indicators
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'submissions_list' %}?type=data&status=pending" class="pc-link">
+                                                                Review Data
+                                                        </a>
+                                                </li>
+                                                {% endif %}
+                                                {% if user.is_importer %}
+                                                <li class="pc-item">
+                                                        <a href="{% url 'add_indicator' %}" class="pc-link">
+                                                                Add Indicators
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'data_table_explorer' %}" class="pc-link">
+                                                                Data Table
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'importer_dashboard' %}" class="pc-link">
+                                                                Add Data Submission
+                                                        </a>
+                                                </li>
+                                                {% endif %}
+                                        </ul>
                                 </li>
                                 <li class="pc-item">
                                         <a href="{% url 'documents_list' %}" class="pc-link">
