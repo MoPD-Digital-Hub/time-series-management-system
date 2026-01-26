@@ -318,9 +318,32 @@ def indicators_bulk_api(request):
             year_ec = item.get('year_ec')
             year_gc = item.get('year_gc')
 
-            if not indicator_id or year_ec is None or value is None:
-                errors.append({'item': item, 'error': 'Missing indicator_id, year_ec, or value.'})
+            if not indicator_id or year_ec is None:
+                errors.append({'item': item, 'error': 'Missing indicator_id or year_ec.'})
                 continue
+            
+            # Validate value - must be None or a valid number
+            if value is not None:
+                # Check if value is a string that might contain multiple values
+                if isinstance(value, str):
+                    value_str = value.strip()
+                    # Check for multiple values (comma, semicolon, or space separated)
+                    if ',' in value_str or ';' in value_str or len(value_str.split()) > 1:
+                        errors.append({'item': item, 'error': f'Only one value is allowed per cell. You entered: "{value_str}"'})
+                        continue
+                    # Try to convert to float
+                    try:
+                        value = float(value_str)
+                    except (ValueError, TypeError):
+                        errors.append({'item': item, 'error': f'Invalid number format: "{value_str}". Please enter a valid number.'})
+                        continue
+                # Ensure value is a number (int or float)
+                elif not isinstance(value, (int, float)):
+                    try:
+                        value = float(value)
+                    except (ValueError, TypeError):
+                        errors.append({'item': item, 'error': f'Invalid value type. Expected a number, got: {type(value).__name__}'})
+                        continue
 
             try:
                 indicator = Indicator.objects.get(id=indicator_id)
@@ -344,8 +367,10 @@ def indicators_bulk_api(request):
                             'submitted_by': request.user,
                             'is_seen': False if not is_verified_status else True
                         }
-
                     )
+                    # Explicitly save to ensure auditlog tracks the change
+                    if not created:
+                        ad.save()
                     results.append({
                         'indicator_id': indicator_id, 
                         'year_ec': year_ec, 
@@ -374,8 +399,10 @@ def indicators_bulk_api(request):
                             'submitted_by': request.user,
                             'is_seen': False if not is_verified_status else True
                         }
-
                     )
+                    # Explicitly save to ensure auditlog tracks the change
+                    if not created:
+                        md.save()
                     results.append({
                         'indicator_id': indicator_id, 
                         'year_ec': year_ec, 
@@ -405,8 +432,10 @@ def indicators_bulk_api(request):
                             'submitted_by': request.user,
                             'is_seen': False if not is_verified_status else True
                         }
-
                     )
+                    # Explicitly save to ensure auditlog tracks the change
+                    if not created:
+                        qd.save()
                     results.append({
                         'indicator_id': indicator_id, 
                         'year_ec': year_ec, 
@@ -441,8 +470,10 @@ def indicators_bulk_api(request):
                             'submitted_by': request.user,
                             'is_seen': False if not is_verified_status else True
                         }
-
                     )
+                    # Explicitly save to ensure auditlog tracks the change
+                    if not created:
+                        kr.save()
                     results.append({
                         'indicator_id': indicator_id, 
                         'date': date_str, 
@@ -476,8 +507,10 @@ def indicators_bulk_api(request):
                             'submitted_by': request.user,
                             'is_seen': False if not is_verified_status else True
                         }
-
                     )
+                    # Explicitly save to ensure auditlog tracks the change
+                    if not created:
+                        kr.save()
                     results.append({
                         'indicator_id': indicator_id, 
                         'date': date_str, 

@@ -576,21 +576,30 @@ def approve_all_submissions_api(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def approve_submission_api(request):
     """Approve a submission (indicator or data)"""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    
     submission_type = request.data.get('type')
     submission_id = request.data.get('id')
+    
+    if not submission_type or not submission_id:
+        return Response({'error': 'Missing type or id parameter'}, status=status.HTTP_400_BAD_REQUEST)
     
     if submission_type == 'indicator':
         submission = get_object_or_404(IndicatorSubmission, id=submission_id)
     elif submission_type == 'data':
         submission = get_object_or_404(DataSubmission, id=submission_id)
     else:
-        return Response({'error': 'Invalid submission type'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid submission type. Must be "indicator" or "data".'}, status=status.HTTP_400_BAD_REQUEST)
     
+    # Update status and verification info
     submission.status = 'approved'
     submission.verified_by = request.user
     submission.verified_at = timezone.now()
+    # Save without update_fields to ensure all changes are tracked by auditlog
     submission.save()
     # If this is an indicator submission, mark the indicator as verified
     if submission_type == 'indicator' and hasattr(submission, 'indicator') and submission.indicator:
@@ -602,28 +611,31 @@ def approve_submission_api(request):
             # don't block approval if marking fails; approval already saved
             pass
     
-    if submission_type == 'indicator':
-        serializer = IndicatorSubmissionSerializer(submission)
-    else:
-        # attempt to import data into DB when a data submission is approved
-        import_result = None
-        try:
-            import_result = _import_data_submission_to_db(submission)
-        except Exception as e:
-            # don't fail the approval if import fails; include error in response
-            import_result = {'error': str(e)}
-        serializer = DataSubmissionSerializer(submission)
-    
-    out = serializer.data
-    if submission_type == 'data':
-        # keep serialized submission fields at top-level for backwards compatibility
-        # and attach import_result as an extra key
-        try:
-            out = dict(serializer.data)
-        except Exception:
+    try:
+        if submission_type == 'indicator':
+            serializer = IndicatorSubmissionSerializer(submission)
+            return Response(serializer.data)
+        else:
+            # attempt to import data into DB when a data submission is approved
+            import_result = None
+            try:
+                import_result = _import_data_submission_to_db(submission)
+            except Exception as e:
+                # don't fail the approval if import fails; include error in response
+                import_result = {'error': str(e)}
+            serializer = DataSubmissionSerializer(submission)
+            
             out = serializer.data
-        out['import_result'] = import_result
-    return Response(out)
+            # keep serialized submission fields at top-level for backwards compatibility
+            # and attach import_result as an extra key
+            try:
+                out = dict(serializer.data)
+            except Exception:
+                out = serializer.data
+            out['import_result'] = import_result
+            return Response(out)
+    except Exception as e:
+        return Response({'error': f'Failed to process approval: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def _import_data_submission_to_db(submission: DataSubmission):
@@ -1136,21 +1148,30 @@ def submit_bulk_data_api(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def decline_submission_api(request):
     """Decline a submission (indicator or data)"""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    
     submission_type = request.data.get('type')
     submission_id = request.data.get('id')
+    
+    if not submission_type or not submission_id:
+        return Response({'error': 'Missing type or id parameter'}, status=status.HTTP_400_BAD_REQUEST)
     
     if submission_type == 'indicator':
         submission = get_object_or_404(IndicatorSubmission, id=submission_id)
     elif submission_type == 'data':
         submission = get_object_or_404(DataSubmission, id=submission_id)
     else:
-        return Response({'error': 'Invalid submission type'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid submission type. Must be "indicator" or "data".'}, status=status.HTTP_400_BAD_REQUEST)
     
+    # Update status and verification info
     submission.status = 'declined'
     submission.verified_by = request.user
     submission.verified_at = timezone.now()
+    # Save without update_fields to ensure all changes are tracked by auditlog
     submission.save()
     # If this is an indicator submission, unmark the indicator as verified
     if submission_type == 'indicator' and hasattr(submission, 'indicator') and submission.indicator:
@@ -1161,12 +1182,15 @@ def decline_submission_api(request):
         except Exception:
             pass
     
-    if submission_type == 'indicator':
-        serializer = IndicatorSubmissionSerializer(submission)
-    else:
-        serializer = DataSubmissionSerializer(submission)
-    
-    return Response(serializer.data)
+    try:
+        if submission_type == 'indicator':
+            serializer = IndicatorSubmissionSerializer(submission)
+        else:
+            serializer = DataSubmissionSerializer(submission)
+        
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': f'Failed to process decline: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -2235,18 +2259,29 @@ def decline_pending_data(request):
         if not data_type or not data_id:
             return Response({'error': 'Missing type or id'}, status=400)
         
+        # Get the object first with related fields to ensure it's fully loaded
+        # This ensures auditlog can properly track the deletion
+        obj = None
         if data_type == 'annual':
-            AnnualData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(AnnualData.objects.select_related('indicator', 'for_datapoint'), id=data_id)
         elif data_type == 'quarterly':
-            QuarterData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(QuarterData.objects.select_related('indicator', 'for_datapoint', 'for_quarter'), id=data_id)
         elif data_type == 'monthly':
-            MonthData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(MonthData.objects.select_related('indicator', 'for_datapoint', 'for_month'), id=data_id)
         elif data_type in ('weekly', 'daily'):
-            KPIRecord.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(KPIRecord.objects.select_related('indicator'), id=data_id)
         else:
             return Response({'error': 'Invalid type'}, status=400)
         
-        return Response({'status': 'declined'})
+        # Store object info before deletion for logging
+        obj_repr = str(obj)
+        
+        # Delete the object individually to trigger auditlog signals
+        # The AuditlogMiddleware should capture request.user as the actor
+        if obj:
+            obj.delete()
+        
+        return Response({'status': 'declined', 'deleted': obj_repr})
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
@@ -2266,12 +2301,25 @@ def approve_all_table_data_api(request):
         
         q_filter &= Q(indicator__for_category__topic__is_initiative=False)
 
-        AnnualData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
-        QuarterData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
-        MonthData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        # Use individual saves instead of .update() to ensure auditlog tracks changes
+        for obj in AnnualData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
+        for obj in QuarterData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
+        for obj in MonthData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
         # KPIRecord filter doesn't support indicator__for_category directly in the same way if indicator is null, 
         # but we follow the same pattern
-        KPIRecord.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        for obj in KPIRecord.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
 
         return Response({'status': 'success', 'message': 'All pending table data approved'})
     except Exception as e:

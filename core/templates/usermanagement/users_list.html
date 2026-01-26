@@ -2,6 +2,7 @@
 
 <!doctype html>
 {% include 'base/common/head.html' %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 
 <body>
     {% include 'usermanagement/common/nav.html' %}
@@ -165,6 +166,15 @@
                                                 title="Edit User">
                                                 <i class="fas fa-edit"></i>
                                             </button>
+                                            {% if request.user.is_staff or request.user.is_superuser %}
+                                            {% if user.is_importer or user.is_category_manager %}
+                                            <a href="{% url 'audit_log' %}?user={{ user.id }}" 
+                                               class="btn btn-sm btn-outline-info" 
+                                               title="View Audit Log">
+                                                <i class="fas fa-history"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -225,10 +235,10 @@
     <div id="add-user-modal"
         class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[2147483647] p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-gray-100 flex flex-col max-h-[85vh] transition-all"
-            style="width: 320px; max-width: calc(100% - 2rem);">
+            style="width: 1020px; max-width: calc(100% - 2rem);">
             <!-- Header -->
             <div class="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/10">
-                <h2 id="modal-title" class="text-[13px] font-bold text-slate-800 tracking-tight">User Profile</h2>
+                <h2 id="modal-title" class="text-[15px] font-bold text-slate-800 tracking-tight">User Profile</h2>
                 <button onclick="document.getElementById('add-user-modal').classList.add('hidden')"
                     class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50">
                     <i class="fas fa-times text-base"></i>
@@ -242,51 +252,51 @@
                 <div class="space-y-4">
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email</label>
+                            class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">Email</label>
                         <input id="new-user-email"
-                            class="form-control form-control-sm rounded-lg border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                            class="form-control rounded-lg border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all py-2.5"
                             type="email" placeholder="email@example.com" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">First
+                                class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">First
                                 Name</label>
-                            <input id="new-user-first" class="form-control form-control-sm rounded-lg border-slate-200"
+                            <input id="new-user-first" class="form-control rounded-lg border-slate-200 py-2.5"
                                 type="text" />
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Last
+                                class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">Last
                                 Name</label>
-                            <input id="new-user-last" class="form-control form-control-sm rounded-lg border-slate-200"
+                            <input id="new-user-last" class="form-control rounded-lg border-slate-200 py-2.5"
                                 type="text" />
                         </div>
                     </div>
 
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Password</label>
-                        <input id="new-user-password" class="form-control form-control-sm rounded-lg border-slate-200"
+                            class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">Password</label>
+                        <input id="new-user-password" class="form-control rounded-lg border-slate-200 py-2.5"
                             type="password" placeholder="••••••••" />
-                        <p class="text-[9px] text-slate-400 mt-0.5">Empty to keep current</p>
+                        <p class="text-xs text-slate-400 mt-1">Empty to keep current</p>
                     </div>
 
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Category
+                            class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">Category
                             Access</label>
                         {% if manager_categories %}
                         <select id="new-user-category"
-                            class="form-select form-select-sm rounded-lg border-slate-200 h-auto" multiple size="3">
+                            class="form-select rounded-lg border-slate-200" multiple>
                             {% for cat in manager_categories %}
                             <option value="{{ cat.id }}">{{ cat.name_ENG }}</option>
                             {% endfor %}
                         </select>
-                        <p class="text-[9px] text-slate-400 mt-1 italic">Ctrl + click for multi</p>
+                        <p class="text-xs text-slate-400 mt-1">Search and select categories</p>
                         {% else %}
-                        <div class="bg-slate-50 p-2 rounded text-[10px] text-slate-400 italic text-center">No categories
+                        <div class="bg-slate-50 p-3 rounded text-sm text-slate-400 italic text-center">No categories
                             available</div>
                         {% endif %}
                     </div>
@@ -299,9 +309,9 @@
 
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Photo</label>
+                            class="block text-sm font-bold text-slate-600 uppercase tracking-widest mb-2">Photo</label>
                         <input id="new-user-photo"
-                            class="form-control form-control-sm text-[10px] border-none bg-slate-50 py-1" type="file"
+                            class="form-control text-sm border-slate-200 bg-slate-50 py-2.5" type="file"
                             accept="image/*" />
                     </div>
                 </div>
@@ -318,6 +328,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script>
 
         function getCookie(name) {
@@ -335,6 +346,8 @@
             return cookieValue;
         }
 
+        let categoryChoices = null;
+
         document.addEventListener('DOMContentLoaded', function () {
             const openBtn = document.getElementById('open-add-user');
             const modal = document.getElementById('add-user-modal');
@@ -351,6 +364,69 @@
             const categorySelect = document.getElementById('new-user-category');
             const activeCheckbox = document.getElementById('user-is-active');
 
+            // Initialize Choices.js for category select (only when modal is opened)
+            function initCategoryChoices() {
+                const selectEl = document.getElementById('new-user-category');
+                if (!selectEl) {
+                    console.log('Category select element not found');
+                    return false;
+                }
+                
+                // Check if select has options
+                const optionCount = selectEl.options.length;
+                if (optionCount === 0) {
+                    console.log('Category select has no options');
+                    return false;
+                }
+                
+                console.log('Found select with', optionCount, 'options');
+                
+                // Destroy existing instance if it exists
+                if (categoryChoices) {
+                    try {
+                        categoryChoices.destroy();
+                        categoryChoices = null;
+                    } catch (e) {
+                        console.log('Error destroying Choices:', e);
+                    }
+                }
+                
+                // Initialize Choices.js
+                try {
+                    // Log option details for debugging
+                    console.log('Options in select:', Array.from(selectEl.options).map(opt => ({value: opt.value, text: opt.text})));
+                    
+                    categoryChoices = new Choices(selectEl, {
+                        removeItemButton: true,
+                        searchEnabled: true,
+                        shouldSort: false,
+                        itemSelectText: '',
+                        placeholder: true,
+                        placeholderValue: 'Select categories...',
+                        noResultsText: 'No categories found',
+                        noChoicesText: 'No categories available',
+                        searchPlaceholderValue: 'Search categories...',
+                        fuseOptions: {
+                            threshold: 0.3, // Lower threshold for better search results
+                        },
+                    });
+                    
+                    // Verify Choices.js loaded the options
+                    const choicesCount = categoryChoices.choices ? categoryChoices.choices.length : 0;
+                    console.log('Choices.js initialized successfully. Options loaded:', choicesCount);
+                    
+                    if (choicesCount === 0) {
+                        console.error('Choices.js initialized but no choices were loaded!');
+                        return false;
+                    }
+                    
+                    return true;
+                } catch (e) {
+                    console.error('Error initializing Choices.js:', e);
+                    return false;
+                }
+            }
+
             if (openBtn && modal) {
                 openBtn.addEventListener('click', () => {
                     // Reset for Create
@@ -365,10 +441,19 @@
                     firstInput.value = '';
                     lastInput.value = '';
                     activeCheckbox.checked = true;
-                    if (categorySelect) {
-                        Array.from(categorySelect.options).forEach(opt => opt.selected = false);
-                    }
+                    
+                    // Show modal first, then initialize/reinitialize Choices.js
                     modal.classList.remove('hidden');
+                    
+                    // Initialize/reinitialize Choices.js after modal is visible
+                    setTimeout(() => {
+                        const initialized = initCategoryChoices();
+                        if (initialized && categoryChoices) {
+                            categoryChoices.clearStore();
+                        } else {
+                            console.error('Failed to initialize Choices.js - check if select has options');
+                        }
+                    }, 150);
                 });
             }
 
@@ -390,13 +475,26 @@
                         lastInput.value = last;
                         activeCheckbox.checked = isActive;
 
-                        if (categorySelect) {
-                            Array.from(categorySelect.options).forEach(opt => {
-                                opt.selected = assignedCats.includes(String(opt.value));
-                            });
-                        }
-
+                        // Show modal first, then set choices
                         modal.classList.remove('hidden');
+                        
+                        // Initialize and set choices after modal is visible
+                        setTimeout(() => {
+                            const initialized = initCategoryChoices();
+                            if (initialized && categoryChoices) {
+                                categoryChoices.clearStore();
+                                // Set selected categories
+                                assignedCats.forEach(catId => {
+                                    try {
+                                        categoryChoices.setChoiceByValue(String(catId));
+                                    } catch (e) {
+                                        console.log('Error setting choice:', e);
+                                    }
+                                });
+                            } else {
+                                console.error('Failed to initialize Choices.js - check if select has options');
+                            }
+                        }, 150);
                     });
                 });
             }
@@ -426,11 +524,15 @@
                         formData.append('last_name', last);
                         formData.append('is_active', isActive);
 
-                        if (categorySelect) {
-                            const selectedValues = Array.from(categorySelect.selectedOptions).map(opt => opt.value);
-                            selectedValues.forEach(val => {
-                                formData.append('assigned_categories[]', val);
-                            });
+                        if (categoryChoices) {
+                            const selectedValues = categoryChoices.getValue(true);
+                            if (Array.isArray(selectedValues)) {
+                                selectedValues.forEach(val => {
+                                    formData.append('assigned_categories[]', val);
+                                });
+                            } else if (selectedValues) {
+                                formData.append('assigned_categories[]', selectedValues);
+                            }
                         }
 
                         if (password) formData.append('password', password);

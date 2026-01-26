@@ -185,4 +185,11 @@ class DataSubmission(models.Model):
         verbose_name_plural = "Data Submissions"
 
     def __str__(self):
-        return f"{self.indicator.title_ENG} - {self.submitted_by.email} ({self.status})"
+        if self.indicator:
+            indicator_name = self.indicator.title_ENG
+        elif self.data_file:
+            # For bulk submissions, use the filename
+            indicator_name = f"Bulk: {self.data_file.name.split('/')[-1]}"
+        else:
+            indicator_name = "Unknown"
+        return f"{indicator_name} - {self.submitted_by.email} ({self.status})"

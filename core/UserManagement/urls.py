@@ -60,4 +60,7 @@ urlpatterns = [
     # Document management
     path('documents/', views.documents_list, name='documents_list'),
     path('documents/<int:id>/delete/', views.delete_document, name='delete_document'),
+    
+    # Audit log (admin only)
+    path('audit-log/', views.audit_log_view, name='audit_log'),
 ]
