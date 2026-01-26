@@ -302,15 +302,18 @@ def logout_view(request):
 
 @login_required
 def importer_dashboard(request):
-    if not request.user.is_importer:
-        messages.error(request, 'Access denied. Only data importers can access this page.')
+    if not (request.user.is_importer or request.user.is_category_manager):
+        messages.error(request, 'Access denied. Only data importers and category managers can access this page.')
         return render(request, 'usermanagement/climate_access_denied.html')
     
-    # Get categories managed by the importer's manager
+    # Get categories - for importers through their manager, for category managers directly
     assigned_categories = []
-    manager = getattr(request.user, 'manager', None)
-    if manager:
-        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
+    if request.user.is_category_manager:
+        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=request.user)]
+    else:
+        manager = getattr(request.user, 'manager', None)
+        if manager:
+            assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
     
     from Base.models import Topic
     from django.db.models import Prefetch
@@ -386,8 +389,8 @@ def data_submission_preview(request, submission_id):
 
 @login_required
 def add_indicator(request):
-    if not request.user.is_importer:
-        messages.error(request, 'Access denied. Only data importers can submit indicators.')
+    if not (request.user.is_importer or request.user.is_category_manager):
+        messages.error(request, 'Access denied. Only data importers and category managers can submit indicators.')
         from Base.models import Topic
         from django.db.models import Prefetch
         
@@ -416,11 +419,14 @@ def add_indicator(request):
     categories = Category.objects.all().order_by('name_ENG')
     frequency_choices = Indicator.FREQUENCY_CHOICES
 
-    # Determine the importer's assigned categories via their category manager
+    # Determine assigned categories - for importers through their manager, for category managers directly
     assigned_categories = []
-    manager = getattr(request.user, 'manager', None)
-    if manager is not None:
-        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
+    if request.user.is_category_manager:
+        assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=request.user)]
+    else:
+        manager = getattr(request.user, 'manager', None)
+        if manager is not None:
+            assigned_categories = [a.category for a in CategoryAssignment.objects.select_related('category').filter(manager=manager)]
 
     from Base.models import Topic
     from django.db.models import Prefetch

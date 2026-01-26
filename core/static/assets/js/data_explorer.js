@@ -62,7 +62,7 @@
     });
 
     $('#ind-select-all').on('change', function () {
-        $('#ind-list .ind-checkbox:visible').prop('checked', this.checked);
+        $('#ind-list .ind-checkbox:visible').prop('checked', this.checked).trigger('change');
     });
 
 
@@ -114,26 +114,41 @@
                 $(this).show();
             } else {
                 $(this).hide();
-                if (!topicMatch || !catMatch) $(this).find('.ind-checkbox').prop('checked', false);
+                if (!topicMatch || !catMatch) {
+                    $(this).find('.ind-checkbox').prop('checked', false).trigger('change');
+                }
             }
         });
     }
 
     $('.topic-checkbox, .cat-checkbox').on('change', updateFilters);
     $('#search-topic, #search-category, #search-ind').on('input', updateFilters);
+    
+    // Update selection when indicator checkboxes change
+    $(document).on('change', '.ind-checkbox', function() {
+        collectSelection();
+        // Update "Select All" checkbox state
+        var visibleCheckboxes = $('#ind-list .ind-checkbox:visible');
+        var checkedVisible = $('#ind-list .ind-checkbox:visible:checked');
+        $('#ind-select-all').prop('checked', visibleCheckboxes.length > 0 && checkedVisible.length === visibleCheckboxes.length);
+    });
 
     function collectSelection() {
         selections.indicators = [];
-        $('#ind-list .ind-checkbox:checked').each(function () {
+        // Only collect from visible checkboxes to avoid stale data
+        $('#ind-list .ind-checkbox:checked').filter(function() {
+            return $(this).closest('label').is(':visible');
+        }).each(function () {
+            var $checkbox = $(this);
             selections.indicators.push({
-                id: $(this).data('id'),
-                title: $(this).data('title'),
-                code: $(this).data('code') || '',
-                topic: $(this).data('topic-name') || '-',
-                category: $(this).data('cat-name') || '-',
-                unit: $(this).data('unit') || '-',
-                freq: $(this).data('freq') || '-',
-                desc: $(this).data('desc') || '-'
+                id: $checkbox.data('id'),
+                title: $checkbox.data('title'),
+                code: $checkbox.data('code') || '',
+                topic: $checkbox.data('topic-name') || '-',
+                category: $checkbox.data('cat-name') || '-',
+                unit: $checkbox.data('unit') || '-',
+                freq: $checkbox.data('freq') || '-',
+                desc: $checkbox.data('desc') || '-'
             });
         });
     }
@@ -147,6 +162,7 @@
     });
 
     $('#apply-selection').on('click', function () {
+        // Ensure we have the latest selection state
         collectSelection();
         renderTable();
     });
@@ -200,15 +216,24 @@
                     var yearDataMap = {};
                     var indicatorInfo = {};
                     
-                    // Create a map of indicator titles to their metadata from selections
-                    var selectionMap = {};
+                    // Create a map of indicator IDs to their metadata from selections (use ID for reliable matching)
+                    var selectionMapById = {};
+                    var selectionMapByTitle = {};
                     selections.indicators.forEach(function(ind) {
-                        selectionMap[ind.title] = ind;
+                        if (ind.id) selectionMapById[ind.id] = ind;
+                        if (ind.title) selectionMapByTitle[ind.title] = ind;
+                    });
+                    
+                    // Filter results to only include selected indicators
+                    var selectedIds = selections.indicators.map(function(ind) { return ind.id; });
+                    results = results.filter(function(r) {
+                        return selectedIds.includes(r.id);
                     });
                     
                     results.forEach(function(r) {
-                        var sel = selectionMap[r.title] || {};
-                        indicatorInfo[r.title] = {
+                        // Match by ID first, then fall back to title
+                        var sel = selectionMapById[r.id] || selectionMapByTitle[r.title] || {};
+                        indicatorInfo[r.id] = {
                             id: r.id,
                             code: r.code || sel.code || '',
                             title: r.title || r.title_ENG || sel.title,
@@ -224,7 +249,7 @@
                                 var yearKey = a.year_ec;
                                 allYears.add(yearKey);
                                 if (!yearDataMap[yearKey]) yearDataMap[yearKey] = {};
-                                yearDataMap[yearKey][r.title] = a.value;
+                                yearDataMap[yearKey][r.id] = a.value;
                             });
                         }
                     });
@@ -247,37 +272,55 @@
                     head += '<th scope="col" style="writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; vertical-align: bottom;">Desc</th>';
                     head += '</tr>';
 
-                    // Build rows - one row per indicator
+                    // Build rows - one row per selected indicator (in selection order)
                     selections.indicators.forEach(function(ind) {
-                        var info = indicatorInfo[ind.title] || {};
-                        rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
-                        rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                        var info = indicatorInfo[ind.id] || {};
+                        // Use info from API if available, otherwise use selection data
+                        var displayCode = info.code || ind.code || '-';
+                        var displayTitle = info.title || ind.title || '-';
+                        var displayTopic = info.topic || ind.topic || '-';
+                        var displayCategory = info.category || ind.category || '-';
+                        var displayUnit = info.unit || ind.unit || '-';
+                        var displayFreq = info.freq || ind.freq || '-';
+                        var displayDesc = info.desc || ind.desc || '-';
+                        
+                        rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (displayCode || '') + '">';
+                        rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + displayCode + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + displayTitle + '</div></td>';
                         rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
                         
-                        // Add year values
+                        // Add year values - use ID for matching
                         sortedYears.forEach(function(year) {
-                            var value = yearDataMap[year] && yearDataMap[year][ind.title] !== undefined ? yearDataMap[year][ind.title] : null;
+                            var value = yearDataMap[year] && yearDataMap[year][ind.id] !== undefined ? yearDataMap[year][ind.id] : null;
                             rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
                         });
                         
-                        rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
-                        rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
-                        rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
-                        rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
-                        rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                        rowsHtml += '<td class="text-xs">' + displayTopic + '</td>';
+                        rowsHtml += '<td class="text-xs">' + displayCategory + '</td>';
+                        rowsHtml += '<td class="text-xs">' + displayUnit + '</td>';
+                        rowsHtml += '<td class="text-xs">' + displayFreq + '</td>';
+                        rowsHtml += '<td class="text-xs">' + displayDesc + '</td>';
                         rowsHtml += '</tr>';
                     });
                 } else {
                     // For non-annual modes, restructure to match annual mode format
-                    var selectionMap = {};
+                    var selectionMapById = {};
+                    var selectionMapByTitle = {};
                     selections.indicators.forEach(function(ind) {
-                        selectionMap[ind.title] = ind;
+                        if (ind.id) selectionMapById[ind.id] = ind;
+                        if (ind.title) selectionMapByTitle[ind.title] = ind;
+                    });
+                    
+                    // Filter results to only include selected indicators
+                    var selectedIds = selections.indicators.map(function(ind) { return ind.id; });
+                    results = results.filter(function(r) {
+                        return selectedIds.includes(r.id);
                     });
                     
                     var indicatorInfo = {};
                     results.forEach(function(r) {
-                        var sel = selectionMap[r.title] || {};
-                        indicatorInfo[r.title] = {
+                        // Match by ID first, then fall back to title
+                        var sel = selectionMapById[r.id] || selectionMapByTitle[r.title] || {};
+                        indicatorInfo[r.id] = {
                             id: r.id,
                             code: r.code || sel.code || '',
                             title: r.title || r.title_ENG || sel.title,
@@ -300,7 +343,7 @@
                                     timePeriods.push(periodKey);
                                 }
                                 if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
-                                timeDataMap[periodKey][r.title] = q.value;
+                                timeDataMap[periodKey][r.id] = q.value;
                             });
                         });
                         // Sort by year descending, then quarter
@@ -326,18 +369,27 @@
                         head += '</tr>';
                         
                         selections.indicators.forEach(function(ind) {
-                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
-                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            var info = indicatorInfo[ind.id] || {};
+                            var displayCode = info.code || ind.code || '-';
+                            var displayTitle = info.title || ind.title || '-';
+                            var displayTopic = info.topic || ind.topic || '-';
+                            var displayCategory = info.category || ind.category || '-';
+                            var displayUnit = info.unit || ind.unit || '-';
+                            var displayFreq = info.freq || ind.freq || '-';
+                            var displayDesc = info.desc || ind.desc || '-';
+                            
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (displayCode || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + displayCode + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + displayTitle + '</div></td>';
                             rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
                             timePeriods.forEach(function(period) {
-                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                var value = timeDataMap[period] && timeDataMap[period][ind.id] !== undefined ? timeDataMap[period][ind.id] : null;
                                 rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
                             });
-                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayTopic + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayCategory + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayUnit + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayFreq + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayDesc + '</td>';
                             rowsHtml += '</tr>';
                         });
                     } else if (currentMode === 'monthly') {
@@ -348,7 +400,7 @@
                                     timePeriods.push(periodKey);
                                 }
                                 if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
-                                timeDataMap[periodKey][r.title] = m.value;
+                                timeDataMap[periodKey][r.id] = m.value;
                             });
                         });
                         // Sort by year descending, then month
@@ -383,18 +435,27 @@
                         head += '</tr>';
                         
                         selections.indicators.forEach(function(ind) {
-                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
-                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            var info = indicatorInfo[ind.id] || {};
+                            var displayCode = info.code || ind.code || '-';
+                            var displayTitle = info.title || ind.title || '-';
+                            var displayTopic = info.topic || ind.topic || '-';
+                            var displayCategory = info.category || ind.category || '-';
+                            var displayUnit = info.unit || ind.unit || '-';
+                            var displayFreq = info.freq || ind.freq || '-';
+                            var displayDesc = info.desc || ind.desc || '-';
+                            
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (displayCode || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + displayCode + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + displayTitle + '</div></td>';
                             rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
                             timePeriods.forEach(function(period) {
-                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                var value = timeDataMap[period] && timeDataMap[period][ind.id] !== undefined ? timeDataMap[period][ind.id] : null;
                                 rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
                             });
-                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayTopic + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayCategory + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayUnit + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayFreq + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayDesc + '</td>';
                             rowsHtml += '</tr>';
                         });
                     } else if (currentMode === 'weekly') {
@@ -405,7 +466,7 @@
                                     timePeriods.push(periodKey);
                                 }
                                 if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
-                                timeDataMap[periodKey][r.title] = w.value;
+                                timeDataMap[periodKey][r.id] = w.value;
                             });
                         });
                         // Sort by date descending
@@ -436,18 +497,27 @@
                         head += '</tr>';
                         
                         selections.indicators.forEach(function(ind) {
-                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
-                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            var info = indicatorInfo[ind.id] || {};
+                            var displayCode = info.code || ind.code || '-';
+                            var displayTitle = info.title || ind.title || '-';
+                            var displayTopic = info.topic || ind.topic || '-';
+                            var displayCategory = info.category || ind.category || '-';
+                            var displayUnit = info.unit || ind.unit || '-';
+                            var displayFreq = info.freq || ind.freq || '-';
+                            var displayDesc = info.desc || ind.desc || '-';
+                            
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (displayCode || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + displayCode + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + displayTitle + '</div></td>';
                             rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
                             timePeriods.forEach(function(period) {
-                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                var value = timeDataMap[period] && timeDataMap[period][ind.id] !== undefined ? timeDataMap[period][ind.id] : null;
                                 rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
                             });
-                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayTopic + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayCategory + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayUnit + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayFreq + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayDesc + '</td>';
                             rowsHtml += '</tr>';
                         });
                     } else if (currentMode === 'daily') {
@@ -458,7 +528,7 @@
                                     timePeriods.push(periodKey);
                                 }
                                 if (!timeDataMap[periodKey]) timeDataMap[periodKey] = {};
-                                timeDataMap[periodKey][r.title] = d.value;
+                                timeDataMap[periodKey][r.id] = d.value;
                             });
                         });
                         // Sort by date descending
@@ -489,18 +559,27 @@
                         head += '</tr>';
                         
                         selections.indicators.forEach(function(ind) {
-                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
-                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
+                            var info = indicatorInfo[ind.id] || {};
+                            var displayCode = info.code || ind.code || '-';
+                            var displayTitle = info.title || ind.title || '-';
+                            var displayTopic = info.topic || ind.topic || '-';
+                            var displayCategory = info.category || ind.category || '-';
+                            var displayUnit = info.unit || ind.unit || '-';
+                            var displayFreq = info.freq || ind.freq || '-';
+                            var displayDesc = info.desc || ind.desc || '-';
+                            
+                            rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (displayCode || '') + '">';
+                            rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + displayCode + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + displayTitle + '</div></td>';
                             rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
                             timePeriods.forEach(function(period) {
-                                var value = timeDataMap[period] && timeDataMap[period][ind.title] !== undefined ? timeDataMap[period][ind.title] : null;
+                                var value = timeDataMap[period] && timeDataMap[period][ind.id] !== undefined ? timeDataMap[period][ind.id] : null;
                                 rowsHtml += '<td class="value-cell">' + fmt(value) + '</td>';
                             });
-                            rowsHtml += '<td class="text-xs">' + (ind.topic || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.category || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.unit || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.freq || '-') + '</td>';
-                            rowsHtml += '<td class="text-xs">' + (ind.desc || '-') + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayTopic + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayCategory + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayUnit + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayFreq + '</td>';
+                            rowsHtml += '<td class="text-xs">' + displayDesc + '</td>';
                             rowsHtml += '</tr>';
                         });
                     }

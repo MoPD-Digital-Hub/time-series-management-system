@@ -200,6 +200,21 @@
                                                                 Review Data
                                                         </a>
                                                 </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'add_indicator' %}" class="pc-link">
+                                                                Add Indicators
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'data_table_explorer' %}" class="pc-link">
+                                                                Data Table
+                                                        </a>
+                                                </li>
+                                                <li class="pc-item">
+                                                        <a href="{% url 'importer_dashboard' %}" class="pc-link">
+                                                                Add Data Submission
+                                                        </a>
+                                                </li>
                                                 {% endif %}
                                                 {% if user.is_importer %}
                                                 <li class="pc-item">

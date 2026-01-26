@@ -945,8 +945,11 @@ def _import_data_submission_to_db(submission: DataSubmission):
 @api_view(['POST'])
 @transaction.atomic
 def submit_bulk_data_api(request):
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit data.'}, status=status.HTTP_403_FORBIDDEN)
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit data.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
 
     data_file = request.FILES.get('data_file')
     if not data_file:
@@ -1080,21 +1083,54 @@ def submit_bulk_data_api(request):
 
         # Create a single DataSubmission record for the entire multiple-mode upload
         notes = request.data.get('notes', 'Bulk import (Multiple Mode)')
-        DataSubmission.objects.create(
-            indicator=None, # Multiple indicators in this file
-            submitted_by=request.user,
-            data_file=data_file,
-            status='pending',
-            notes=notes
-        )
-
-        return Response({
-            'message': 'Bulk submission successful! A single pending submission record has been created for manager approval.',
-            'total_indicators': len(processed_indicators),
-            'rows_validated': result['created'],
-            'rows_skipped': result['skipped'],
-            'errors': result['errors']
-        })
+        
+        # If category manager, auto-approve and import data
+        if is_category_manager:
+            submission = DataSubmission.objects.create(
+                indicator=None, # Multiple indicators in this file
+                submitted_by=request.user,
+                data_file=data_file,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now(),
+                notes=notes
+            )
+            # Import data directly since it's approved
+            try:
+                import_result = _import_data_submission_to_db(submission)
+                return Response({
+                    'message': 'Bulk submission successful and verified! Data has been imported.',
+                    'total_indicators': len(processed_indicators),
+                    'rows_validated': result['created'],
+                    'rows_skipped': result['skipped'],
+                    'errors': result['errors'],
+                    'import_result': import_result
+                })
+            except Exception as e:
+                return Response({
+                    'message': 'Bulk submission successful and verified, but import had errors',
+                    'total_indicators': len(processed_indicators),
+                    'rows_validated': result['created'],
+                    'rows_skipped': result['skipped'],
+                    'errors': result['errors'],
+                    'import_error': str(e)
+                })
+        else:
+            # For importers, create pending submission
+            DataSubmission.objects.create(
+                indicator=None, # Multiple indicators in this file
+                submitted_by=request.user,
+                data_file=data_file,
+                status='pending',
+                notes=notes
+            )
+            return Response({
+                'message': 'Bulk submission successful! A single pending submission record has been created for manager approval.',
+                'total_indicators': len(processed_indicators),
+                'rows_validated': result['created'],
+                'rows_skipped': result['skipped'],
+                'errors': result['errors']
+            })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1279,9 +1315,12 @@ def sample_template_api(request):
 @api_view(['POST'])
 def submit_indicator_api(request):
     """Submit a new indicator for approval"""
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit indicators.'}, 
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit indicators.'}, 
                        status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
 
     title_eng = request.data.get('title_eng')
     title_amh = request.data.get('title_amh')
@@ -1352,15 +1391,28 @@ def submit_indicator_api(request):
             indicator.generate_code()
             indicator.save()
 
-        # Create submission record
-        IndicatorSubmission.objects.create(
-            indicator=indicator,
-            submitted_by=request.user,
-            status='pending'
-        )
-
-        return Response({'message': 'Indicator submitted successfully', 'indicator_id': indicator.id}, 
-                       status=status.HTTP_201_CREATED)
+        # If category manager, auto-verify and approve
+        if is_category_manager:
+            indicator.is_verified = True
+            indicator.save(update_fields=['is_verified'])
+            submission = IndicatorSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now()
+            )
+            return Response({'message': 'Indicator created and verified successfully', 'indicator_id': indicator.id}, 
+                           status=status.HTTP_201_CREATED)
+        else:
+            # Create submission record for importers (pending approval)
+            IndicatorSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                status='pending'
+            )
+            return Response({'message': 'Indicator submitted successfully', 'indicator_id': indicator.id}, 
+                           status=status.HTTP_201_CREATED)
     except Category.DoesNotExist:
         return Response({'error': 'Invalid category'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -1370,9 +1422,12 @@ def submit_indicator_api(request):
 @api_view(['POST'])
 def submit_data_api(request):
     """Submit data for an existing indicator"""
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit data.'}, 
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit data.'}, 
                        status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
     
     indicator_id = request.data.get('indicator_id')
     data_file = request.FILES.get('data_file')
@@ -1460,16 +1515,41 @@ def submit_data_api(request):
             return Response({'error': 'Unsupported file type. Accepts .csv, .xls, .xlsx only.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Create submission record (file passed validations)
-        submission = DataSubmission.objects.create(
-            indicator=indicator,
-            submitted_by=request.user,
-            data_file=data_file,
-            notes=notes,
-            status='pending'
-        )
-
-        return Response({'message': 'Data submitted successfully', 'submission_id': submission.id}, status=status.HTTP_201_CREATED)
+        # If category manager, auto-approve and import data
+        if is_category_manager:
+            submission = DataSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                data_file=data_file,
+                notes=notes,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now()
+            )
+            # Import data directly since it's approved
+            try:
+                import_result = _import_data_submission_to_db(submission)
+                return Response({
+                    'message': 'Data submitted and verified successfully', 
+                    'submission_id': submission.id,
+                    'import_result': import_result
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    'message': 'Data submitted and verified, but import had errors', 
+                    'submission_id': submission.id,
+                    'import_error': str(e)
+                }, status=status.HTTP_201_CREATED)
+        else:
+            # Create submission record for importers (pending approval)
+            submission = DataSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                data_file=data_file,
+                notes=notes,
+                status='pending'
+            )
+            return Response({'message': 'Data submitted successfully', 'submission_id': submission.id}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
