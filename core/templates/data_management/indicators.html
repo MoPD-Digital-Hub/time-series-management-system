@@ -87,7 +87,9 @@
                                 <th>Indicator Title</th>
                                 <th>Unit</th>
                                 <th>Category</th>
+                                {% if request.user.is_category_manager or request.user.is_importer %}
                                 <th class="text-end pe-4">Actions</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -110,6 +112,7 @@
                                          <span class="badge bg-light-secondary text-dark">{{ i.name_ENG }}</span>    
                                     {% endfor %}
                                 </td>
+                                {% if request.user.is_category_manager or request.user.is_importer %}
                                 <td class="text-end pe-4">
                                     <div class="btn-group">
                                         <!-- Edit Redirect -->
@@ -122,6 +125,7 @@
                                         </a>
                                     </div>
                                 </td>
+                                {% endif %}
                             </tr>
                             {% empty %}
                             <tr>
