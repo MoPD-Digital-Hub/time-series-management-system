@@ -71,18 +71,21 @@ class CustomUserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
 
-        qs = qs.filter(
-            models.Q(manager__isnull=True) |
-            models.Q(manager__is_active=True)
-        )
+        # Always include superusers
+        if request.user.is_superuser:
+            return qs
 
+        # For category managers, show:
+        # 1. Importers they manage
+        # 2. Optional: maybe other non-manager users
         if request.user.is_category_manager:
             qs = qs.filter(
-                models.Q(is_importer=True) |
-                models.Q(is_category_manager=False, is_importer=False)
+                models.Q(manager=request.user) |  # Importers they manage
+                models.Q(id=request.user.id)      # Include themselves if needed
             )
 
         return qs
+
 
 # -------------------- Category Assignment Admin --------------------
 class CategoryAssignmentAdmin(admin.ModelAdmin):
