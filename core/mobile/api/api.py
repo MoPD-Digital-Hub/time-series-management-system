@@ -404,7 +404,7 @@ def categories(request, topic_id):
     except Topic.DoesNotExist:
         return Response({"result" : "FAILED", "message" : "Topic not found", "data" : None,}, status=status.HTTP_404_NOT_FOUND)
     
-    category_lists = topic.categories.all()
+    category_lists = topic.categories.filter(is_dashboard_visible = True)
     serializer = UpdatedCategorySerializer(category_lists, many = True)
 
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
@@ -417,7 +417,7 @@ def kpis(request, category_id):
     except Category.DoesNotExist:
         return Response({"result" : "FAILED", "message" : "Category not found", "data" : None,}, status=status.HTTP_404_NOT_FOUND)
     
-    kpi_lists = category.indicators.all()
+    kpi_lists = category.indicators.filter(is_dashboard_visible = True)
     serializer = IndicatorSerializer(kpi_lists, many = True)
 
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
