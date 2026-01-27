@@ -24,7 +24,7 @@ def high_frequency(request):
 
 @api_view(['GET'])
 def ai_indicator_meta_data(request):
-    kpis = Indicator.objects.all()
+    kpis = Indicator.objects.filter(is_dashboard_visible=True,)
     serializer = IndicatorMetaDataSerializer(kpis, many=True)
 
     return Response({
