@@ -129,7 +129,7 @@ def topics(request):
     # Optimization: prefetch categories to avoid N+1 queries in the template
     base_query = Topic.objects.filter().prefetch_related('categories')
 
-    if hasattr(user, 'is_category_manager') or hasattr(user, 'is_importer'):
+    if user.is_category_manager or user.is_importer:
         assigned_categories = CategoryAssignment.objects.filter(manager=user).values_list('category', flat=True)
         topics_list = base_query.filter(categories__in=assigned_categories).distinct()
     else:
@@ -144,12 +144,13 @@ def topics(request):
 @login_required
 def categories(request):
     user = request.user
-    topic_id = request.GET.get('topic')  # ✅ Filter by selected topic
+    topic_id = request.GET.get('topic')  # Filter by selected topic
+    page_number = request.GET.get('page', 1)  # Current page
 
     # Base topic query
     base_topics_qs = Topic.objects.prefetch_related('categories')
 
-    if hasattr(user, 'is_category_manager') or hasattr(user, 'is_importer'):
+    if user.is_category_manager or user.is_importer:
         assigned_category_ids = CategoryAssignment.objects.filter(
             manager=user
         ).values_list('category_id', flat=True)
@@ -173,25 +174,35 @@ def categories(request):
         if topic_id:
             categories_qs = categories_qs.filter(topic_id=topic_id)
 
+    # -----------------------------
+    # Pagination
+    # -----------------------------
+    paginator = Paginator(categories_qs, 30)  # 20 categories per page
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'topics': topics_qs,
-        'categories': categories_qs,
+        'categories': page_obj,  # pass the paginated page object
+        'paginator': paginator,
+        'page_obj': page_obj,
         'category_count': categories_qs.count(),
         'selected_topic': int(topic_id) if topic_id else None,  # for template
     }
 
     return render(request, 'data_management/categories.html', context)
 
+
 @login_required
 def indicators(request):
     user = request.user
     topic_id = request.GET.get('topic')
     category_id = request.GET.get('category')
+    page_number = request.GET.get('page', 1)  # Current page
 
     # --------------------------------------------------
     # STEP 1: Categories user is allowed to see
     # --------------------------------------------------
-    if hasattr(user, 'is_category_manager') or hasattr(user, 'is_importer'):
+    if user.is_category_manager or user.is_importer:
         assigned_category_ids = CategoryAssignment.objects.filter(
             manager=user
         ).values_list('category', flat=True)
@@ -211,7 +222,6 @@ def indicators(request):
     # STEP 3: Categories list (filtered by topic)
     # --------------------------------------------------
     categories_qs = base_categories
-
     if topic_id:
         categories_qs = categories_qs.filter(topic_id=topic_id)
 
@@ -227,12 +237,20 @@ def indicators(request):
         indicators_qs = indicators_qs.filter(for_category__id=category_id)
 
     # --------------------------------------------------
+    # STEP 5: Pagination
+    # --------------------------------------------------
+    paginator = Paginator(indicators_qs, 100)  # 20 indicators per page
+    page_obj = paginator.get_page(page_number)
+
+    # --------------------------------------------------
     # CONTEXT
     # --------------------------------------------------
     context = {
         'topics': topics_qs,
         'categories': categories_qs,
-        'indicators': indicators_qs,
+        'indicators': page_obj,  # <-- pass the page object to template
+        'paginator': paginator,
+        'page_obj': page_obj,
 
         'selected_topic': int(topic_id) if topic_id else None,
         'selected_category': int(category_id) if category_id else None,
@@ -241,6 +259,7 @@ def indicators(request):
     }
 
     return render(request, 'data_management/indicators.html', context)
+
 
 @login_required
 def indicator_view(request, indicator_id):
@@ -265,6 +284,8 @@ def indicator_view(request, indicator_id):
     }
     return render(request, 'data_management/indicator_view.html', context)
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 @login_required
 def data_entry(request):
     user = request.user
@@ -279,10 +300,8 @@ def data_entry(request):
     # Indicators (POST → SESSION)
     # ----------------------------
     indicator_ids = request.GET.getlist('indicators')
-
     if not indicator_ids and request.method == 'POST':
         indicator_ids = request.POST.getlist('indicators')
-
     if indicator_ids:
         request.session['selected_indicators'] = indicator_ids
     else:
@@ -328,10 +347,17 @@ def data_entry(request):
     else:
         indicators_qs = base_indicator_qs
 
-    # -------------------------------
-    # STEP 5: Indicator dropdown list (SAFE SLICE)
-    # -------------------------------
-    indicators_list_qs = base_indicator_qs[:300]
+    # ----------------------------
+    # STEP 5: Pagination
+    # ----------------------------
+    page = request.GET.get('page', 1)
+    paginator = Paginator(indicators_qs, 100)  # 100 indicators per page
+    try:
+        indicators_page = paginator.page(page)
+    except PageNotAnInteger:
+        indicators_page = paginator.page(1)
+    except EmptyPage:
+        indicators_page = paginator.page(paginator.num_pages)
 
     # ----------------------------
     # Time dimensions
@@ -345,27 +371,27 @@ def data_entry(request):
     months = Month.objects.all().order_by('number')
 
     # ----------------------------
-    # Data maps (FAST)
+    # Data maps
     # ----------------------------
     annual_map = {}
-    for row in AnnualData.objects.filter(indicator__in=indicators_qs):
+    for row in AnnualData.objects.filter(indicator__in=indicators_page):
         annual_map.setdefault(row.indicator_id, {})[row.for_datapoint_id] = row.performance
 
     quarter_map = {}
-    for row in QuarterData.objects.filter(indicator__in=indicators_qs):
+    for row in QuarterData.objects.filter(indicator__in=indicators_page):
         quarter_map.setdefault(row.indicator_id, {}) \
                    .setdefault(row.for_datapoint_id, {})[row.for_quarter_id] = row.performance
 
     month_map = {}
-    for row in MonthData.objects.filter(indicator__in=indicators_qs):
+    for row in MonthData.objects.filter(indicator__in=indicators_page):
         month_map.setdefault(row.indicator_id, {}) \
                  .setdefault(row.for_datapoint_id, {})[row.for_month_id] = row.performance
 
     context = {
         'topics': topics_qs,
         'categories': categories_qs,
-        'indicators_list': indicators_list_qs,
-        'indicators': indicators_qs,
+        'indicators_list': base_indicator_qs[:300],  # dropdown
+        'indicators': indicators_page,  # paginated indicators
         'years_annual': years_annual,
         'years_quarterly': years_quarterly,
         'years_monthly': years_monthly,
@@ -377,10 +403,11 @@ def data_entry(request):
         'selected_topic': int(topic_id) if topic_id else None,
         'selected_category': int(category_id) if category_id else None,
         'selected_indicators': list(map(int, indicator_ids)),
+        'paginator': paginator,
+        'page_obj': indicators_page,
     }
 
     return render(request, 'data_management/data_entry.html', context)
-
 
 
 @login_required
@@ -528,7 +555,7 @@ def data_documents(request):
     # Base topics
     base_topics_qs = Topic.objects.prefetch_related('categories')
 
-    if hasattr(user, 'is_category_manager') and user.is_category_manager:
+    if user.is_category_manager and user.is_category_manager:
         assigned_category_ids = CategoryAssignment.objects.filter(
             manager=user
         ).values_list('category_id', flat=True)
