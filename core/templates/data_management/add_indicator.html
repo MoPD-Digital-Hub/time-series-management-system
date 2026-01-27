@@ -108,6 +108,14 @@
                             <label class="form-label"><i class="ti ti-database"></i> Data Type</label>
                             {{ form.data_type }}
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-variable"></i> Version</label>
+                            {{ form.version }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="ti ti-variable"></i> Status</label>
+                            {{ form.status }}
+                        </div>
                     </div>
 
                     <div class="form-section-title">3. Analytics & Methodology</div>
@@ -117,10 +125,12 @@
                             {{ form.kpi_characteristics }}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Visibility Settings</label>
-                            <div class="form-check form-switch p-3 border rounded-3 bg-light">
-                                {{ form.is_dashboard_visible }}
-                                <label class="form-check-label ms-2" for="{{ form.is_dashboard_visible.id_for_label }}">Show on Dashboard</label>
+                            <label class="form-label">Visibility</label>
+                            <div class="switch-card">
+                                <span class="small fw-medium text-dark">Visible on Dashboard</span>
+                                <div class="form-check form-switch m-0">
+                                    {{ form.is_dashboard_visible }}
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-12">

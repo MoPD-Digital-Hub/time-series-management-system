@@ -13,6 +13,9 @@ from django.shortcuts import render
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
+from django.db.models import Prefetch
+
+
 @login_required
 def dashboard_index(request):
     # --- 1. Top Level Metrics ---
@@ -226,8 +229,12 @@ def data_entry(request):
     # ----------------------------
     # Indicators (POST → SESSION)
     # ----------------------------
-    if request.method == 'POST':
+    indicator_ids = request.GET.getlist('indicators')
+
+    if not indicator_ids and request.method == 'POST':
         indicator_ids = request.POST.getlist('indicators')
+
+    if indicator_ids:
         request.session['selected_indicators'] = indicator_ids
     else:
         indicator_ids = request.session.get('selected_indicators', [])
@@ -334,25 +341,40 @@ def add_indicator_page(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Indicator added successfully.')
-            return redirect('indicators')
+            return redirect('data_indicators')
+        else:
+            # 🔥 SHOW EXACT ERRORS
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = IndicatorForm()
+
     return render(request, 'data_management/add_indicator.html', {'form': form})
 
 @login_required
 def edit_indicator_page(request, pk):
     indicator = get_object_or_404(Indicator, id=pk)
+
     if request.method == 'POST':
         form = IndicatorForm(request.POST, instance=indicator)
         if form.is_valid():
             form.save()
             messages.success(request, 'Indicator updated successfully.')
-            return redirect('indicators')
+            return redirect('data_indicators')
         else:
-            messages.error(request, 'Please correct the errors below.')
+            # 🔥 SHOW EXACT ERRORS
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = IndicatorForm(instance=indicator)
-    return render(request, 'data_management/edit_indicator.html', {'form': form, 'indicator': indicator})
+
+    return render(
+        request,
+        'data_management/edit_indicator.html',
+        {'form': form, 'indicator': indicator}
+    )
 
 
 @login_required
@@ -579,11 +601,23 @@ def manage_user_form(request, user_id=None):
     
     # Determine what categories can be assigned
     if user.is_superuser:
-        available_topics = Topic.objects.prefetch_related('categories').all()
+         available_topics = Topic.objects.prefetch_related('categories').all()
     else:
-        # Managers can only assign categories THEY manage
+        # Categories managed by the current user
         my_cats = CategoryAssignment.objects.filter(manager=user).values_list('category_id', flat=True)
-        available_topics = Topic.objects.filter(categories__id__in=my_cats).prefetch_related('categories').distinct()
+        
+        # Topics that have at least one of these categories
+        available_topics = Topic.objects.filter(categories__id__in=my_cats).distinct()
+        
+        # Prefetch only the categories the manager can assign
+        available_topics = available_topics.prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=my_cats),
+                to_attr='managed_categories'
+            )
+        )
+
 
     if request.method == 'POST':
         email = request.POST.get('email')

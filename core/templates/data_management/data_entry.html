@@ -95,6 +95,7 @@
                             <div class="d-flex justify-content-between">
                                 <label class="form-label fw-bold">3. Indicators</label>
                                 <a href="#" id="selectAllIndicators" class="small">Select All</a>
+                                <a href="#" id="unselectAllIndicators" class="small">Clear</a>
                             </div>
                             <select name="indicators" id="indicatorSelect" class="js-choice" multiple>
                                 {% for ind in indicators_list %}
@@ -348,6 +349,12 @@
             Array.from(indicatorEl.options).map(o => o.value)
         );
     });
+    document.getElementById('unselectAllIndicators').addEventListener('click', function (e) {
+        e.preventDefault();
+        indicatorChoice.removeActiveItems();
+    });
+
+
 });
 
 function bulkSave(tabType) {

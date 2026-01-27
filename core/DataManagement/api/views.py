@@ -5,8 +5,10 @@ from django.contrib.auth.decorators import login_required
 from Base.models import *
 
 @csrf_exempt
+@login_required
 def save_indicator_data_bulk(request):
     user = request.user
+
     if request.method != "POST":
         return JsonResponse({'success': False, 'message': 'Invalid method'})
 
@@ -16,11 +18,7 @@ def save_indicator_data_bulk(request):
 
         saved = 0
 
-        if user.is_category_manager:
-            is_verified = True
-        else:
-            is_verified = False
-
+        default_verified = True if user.is_category_manager else False
 
         for item in data_list:
             indicator_id = item.get('indicator_id')
@@ -30,48 +28,49 @@ def save_indicator_data_bulk(request):
             value = item.get('value')
             type_ = item.get('type')
 
-            # 🔹 Skip empty rows safely
-            if value is None:
+            # 🔹 Skip empty values
+            if value in [None, ""]:
                 continue
 
             indicator = Indicator.objects.get(id=indicator_id)
             datapoint = DataPoint.objects.get(id=year_id)
 
             if type_ == "annual":
-                AnnualData.objects.update_or_create(
+                obj, created = AnnualData.objects.update_or_create(
                     indicator=indicator,
                     for_datapoint=datapoint,
                     defaults={
-                        'performance': value,
-                        'is_verified': is_verified
+                        'performance': value
                     }
                 )
 
             elif type_ == "quarter":
                 quarter = Quarter.objects.get(id=quarter_id)
-                QuarterData.objects.update_or_create(
+                obj, created = QuarterData.objects.update_or_create(
                     indicator=indicator,
                     for_datapoint=datapoint,
                     for_quarter=quarter,
                     defaults={
-                        'performance': value,
-                        'is_verified': is_verified
+                        'performance': value
                     }
                 )
 
             elif type_ == "month":
                 month = Month.objects.get(id=month_id)
-                MonthData.objects.update_or_create(
+                obj, created = MonthData.objects.update_or_create(
                     indicator=indicator,
                     for_datapoint=datapoint,
                     for_month=month,
                     defaults={
-                        'performance': value,
-                        'is_verified': is_verified
+                        'performance': value
                     }
                 )
 
-            
+            # 🔹 Only set verification on CREATE
+            if created:
+                obj.is_verified = default_verified
+                obj.save(update_fields=['is_verified'])
+
             saved += 1
 
         return JsonResponse({
