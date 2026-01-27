@@ -127,7 +127,7 @@
                         <div class="ms-3">
                             <span class="user-name">{{ user.first_name }}</span>
                             <span class="user-role">
-                                {% if user.is_superuser %}Administrator{% else %}Manager{% endif %}
+                                {% if user.is_superuser %}Administrator{% elif user.is_manager %}Manager{% elif user.is_importer %}Data Importer{% endif %}
                             </span>
                         </div>
                     </div>
@@ -207,6 +207,15 @@
                     <a href="" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-file-lines"></i></span>
                         <span class="pc-mtext">Audit Log</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if request.user.is_importer %}
+                <li class="pc-item pc-caption">Governance</li>
+               <li class="pc-item">
+                    <a href="{% url "edit_profile" %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-person"></i></span>
+                        <span class="pc-mtext">Edit Profile</span>
                     </a>
                 </li>
                 {% endif %}

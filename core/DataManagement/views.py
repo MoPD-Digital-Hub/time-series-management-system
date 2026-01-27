@@ -602,6 +602,9 @@ def edit_document(request, doc_id):
 
 
 ######## User Management Dashboard ##########
+
+from django.contrib.auth import update_session_auth_hash
+
 @login_required
 def user_management_dashboard(request):
     user = request.user
@@ -713,3 +716,32 @@ def manage_user_form(request, user_id=None):
         'title': "Edit User" if instance else "Add New User"
     }
     return render(request, 'data_management/user_form.html', context)
+
+
+
+@login_required
+def edit_profile(request):
+    user = request.user
+
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.email = request.POST.get('email')
+
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if password:
+            if password != confirm_password:
+                messages.error(request, "Passwords do not match.")
+                return redirect('edit_profile')
+            user.set_password(password)
+            update_session_auth_hash(request, user)  # keeps user logged in
+
+        user.save()
+        messages.success(request, "Profile updated successfully.")
+        return redirect('user_management_dashboard')
+
+    return render(request, 'data_management/edit_profile.html', {
+        'user_obj': user
+    })

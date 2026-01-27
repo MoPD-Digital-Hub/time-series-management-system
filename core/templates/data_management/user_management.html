@@ -38,6 +38,8 @@
 {% include 'data_management/common/nav.html' %}
 {% include 'data_management/common/header.html' %}
 
+{% include 'data_management/common/messages.html' %}
+
 <div class="pc-container">
     <div class="pc-content">
 
@@ -49,6 +51,10 @@
             <div class="col-md-5 text-md-end mt-3 mt-md-0">
                 <a href="{% url 'user_add' %}" class="btn btn-primary shadow-sm px-4">
                     <i class="ti ti-user-plus me-2"></i> Add New {{ role_label|slice:":-1" }}
+                </a>
+                <a href="{% url 'edit_profile'  %}" 
+                    class="btn btn-outline-secondary shadow-sm px-4 ms-2">
+                        <i class="ti ti-user-edit me-2"></i> Edit My Profile
                 </a>
             </div>
         </div>

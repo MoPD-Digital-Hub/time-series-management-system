@@ -1,0 +1,126 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'base/common/head.html' %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    
+    <style>
+        :root { --mopd-blue: #3f8cff; --mopd-bg: #f8fafd; }
+        body { background-color: var(--mopd-bg); font-family: 'Inter', sans-serif; }
+        
+        .card { border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #4b5563; margin-bottom: 0.5rem; }
+        
+        .form-control { 
+            border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.75rem 1rem; 
+            background: #fcfdfe; transition: 0.2s;
+        }
+        .form-control:focus { border-color: var(--mopd-blue); box-shadow: 0 0 0 4px rgba(63, 140, 255, 0.1); }
+
+        /* Custom Sectioning */
+        .section-tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--mopd-blue); letter-spacing: 1px; }
+        
+        /* Choices.js Customization */
+        .choices__inner { border-radius: 12px !important; border: 1px solid #e5e7eb !important; background: #fcfdfe !important; }
+        .choices__pill { background: var(--mopd-blue) !important; border-radius: 6px !important; border: none !important; }
+        
+        .btn-save { padding: 12px 30px; border-radius: 12px; font-weight: 600; }
+        .btn-cancel { padding: 12px 30px; border-radius: 12px; font-weight: 600; color: #64748b; }
+    </style>
+</head>
+
+<body>
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+
+{% include 'data_management/common/messages.html' %}
+
+<div class="pc-container">
+    <div class="pc-content">
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                
+                <div class="mb-4">
+                    <a href="{% url 'user_management_dashboard' %}" class="text-decoration-none text-muted small fw-bold">
+                        <i class="ti ti-arrow-left me-1"></i> Back to User List
+                    </a>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body p-lg-5">
+                        <div class="text-center mb-5">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-soft-primary text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
+                                <i class="ti ti-user-cog fs-1"></i>
+                            </div>
+                            <h3 class="fw-bold">{{ title }}</h3>
+                            <p class="text-muted">Edit your profile info.</p>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label>First Name</label>
+                                <input type="text" name="first_name" class="form-control"
+                                    value="{{ user_obj.first_name }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" class="form-control"
+                                    value="{{ user_obj.last_name }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Email</label>
+                                <input type="email" name="email" class="form-control"
+                                    value="{{ user_obj.email }}">
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <label>New Password (optional)</label>
+                                <input type="password" name="password" class="form-control">
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Confirm Password</label>
+                                <input type="password" name="confirm_password" class="form-control">
+                            </div>
+
+                            <button class="btn btn-primary">Update Profile</button>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const element = document.getElementById('categorySelect');
+        if (element) {
+            new Choices(element, {
+                removeItemButton: true,
+                placeholder: true,
+                placeholderValue: 'Click to select categories...',
+                itemSelectText: '',
+                shouldSort: false,
+            });
+        }
+    });
+</script>
+</body>
+</html>

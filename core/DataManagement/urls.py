@@ -39,4 +39,6 @@ urlpatterns = [
     path('user-management/', user_management_dashboard, name='user_management_dashboard'),
     path('management/add/', manage_user_form, name='user_add'),
     path('management/edit/<int:user_id>/', manage_user_form, name='user_edit'),
+    path('profile/edit/', edit_profile, name='edit_profile'),
+
 ]
