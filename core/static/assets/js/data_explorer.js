@@ -252,8 +252,8 @@
                         var info = indicatorInfo[ind.title] || {};
                         rowsHtml += '<tr data-id="' + (ind.id || '') + '" data-code="' + (ind.code || '') + '">';
                         rowsHtml += '<td class="sticky-col" style="min-width: 150px; max-width: 150px; width: 150px;"><div class="font-bold text-sm">' + (ind.code || '-') + '</div><div class="text-xs text-gray-600 truncate" style="max-width: 140px;">' + (ind.title || '-') + '</div></td>';
-                        rowsHtml += '<td class="text-center"><a href="/indicator/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
-                        
+                        rowsHtml += '<td class="text-center"><a href="/data-management/indicators/' + (ind.id || '') + '/" class="inline-flex items-center justify-center w-8 h-8 text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition" title="View Indicator Details"><i class="fas fa-eye"></i></a></td>';
+
                         // Add year values
                         sortedYears.forEach(function(year) {
                             var value = yearDataMap[year] && yearDataMap[year][ind.title] !== undefined ? yearDataMap[year][ind.title] : null;

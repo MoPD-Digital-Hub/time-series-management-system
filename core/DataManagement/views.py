@@ -14,6 +14,7 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from django.db.models import Prefetch
+from .serializers import *
 
 
 @login_required
@@ -96,6 +97,31 @@ def dashboard_index(request):
     }
 
     return render(request, 'data_management/dashboard.html', context)
+
+
+
+@login_required
+def data_explorer(request):
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
+    else:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    context = {
+        'topics': topics,
+    }
+    return render(request, 'data_management/data_explorer.html', context)
+
+
 
 @login_required
 def topics(request):
@@ -215,6 +241,29 @@ def indicators(request):
     }
 
     return render(request, 'data_management/indicators.html', context)
+
+@login_required
+def indicator_view(request, indicator_id):
+    indicator = get_object_or_404(Indicator, id=indicator_id, is_verified=True)
+    if request.user.is_authenticated and not request.user.is_superuser:
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    else:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    context = {
+        'indicator': indicator,
+        'topics': topics,
+    }
+    return render(request, 'data_management/indicator_view.html', context)
 
 @login_required
 def data_entry(request):
@@ -572,7 +621,7 @@ def user_management_dashboard(request):
     elif user.is_category_manager:
         # Manager sees only THEIR Importers
         users_to_manage = CustomUser.objects.filter(manager=user, is_importer=True).prefetch_related('managed_categories__category')
-        role_label = "My Data Importers"
+        role_label = "Data Importers"
         
         # Manager Stats
         stats = {

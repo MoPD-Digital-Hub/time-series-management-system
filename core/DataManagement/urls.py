@@ -5,9 +5,11 @@ from .api.views import *
 
 urlpatterns = [
     path('' , dashboard_index , name='dashboard_index'),
+    path('explorer/', data_explorer, name='data_explorer'),
     path('topics', topics, name='data_topics'),
     path('categories/', categories, name='data_categories'),
     path('indicators/', indicators, name='data_indicators'),
+    path('indicators/<int:indicator_id>/', indicator_view, name='data_indicator_view'),
     path('data_entry/', data_entry, name='data_entry'),
 
 

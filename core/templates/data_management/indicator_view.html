@@ -1,0 +1,189 @@
+{% extends 'base/base.html' %}
+<title>{{ indicator.title_ENG|default:'base' }}</title>
+{% load static %}
+{% block content %}
+{% include 'data_management/common/nav.html' %}
+{% include 'data_management/common/header.html' %}
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="card mb-6 shadow-sm">
+            <div class="card-body p-6">
+                <div class="flex items-start justify-between mb-6 pb-4 border-b">
+                    <div class="flex-1">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2" id="indicator-detail" data-indicator-id="{{ indicator.id }}">
+                            {{ indicator.title_ENG }}{% if indicator.title_AMH %} / {{ indicator.title_AMH }}{% endif %}
+                        </h2>
+                        {% if indicator.code %}
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold">
+                                <i class="fas fa-hashtag mr-1"></i>{{ indicator.code }}
+                            </span>
+                            {% if indicator.get_status_display %}
+                            <span class="px-3 py-1 {% if indicator.status == 'active' %}bg-success-100 text-success-700{% else %}bg-warning-100 text-warning-700{% endif %} rounded-full text-sm font-semibold">
+                                {{ indicator.get_status_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if indicator.description %}
+                <div class="mb-4 p-3 bg-gray-50 rounded border-l-4 border-primary-500">
+                    <p class="text-base text-gray-700">{{ indicator.description }}</p>
+                </div>
+                {% endif %}
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2rem;">
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Code</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.code|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Data Type</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.get_data_type_display|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Status</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.get_status_display|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">KPI Characteristics</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.get_kpi_characteristics_display|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Version</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.version|default:'1' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Rank</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.rank|default:'0' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Measurement Units (Annual)</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.measurement_units|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Measurement Units (Quarter)</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.measurement_units_quarter|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Measurement Units (Month)</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.measurement_units_month|default:'N/A' }}</div>
+                    </div>
+                    {% if indicator.time_coverage_start_year %}
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Time Coverage Start</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.time_coverage_start_year.year_GC|default:indicator.time_coverage_start_year.year_EC }}</div>
+                    </div>
+                    {% endif %}
+                    {% if indicator.time_coverage_end_year %}
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Time Coverage End</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.time_coverage_end_year.year_GC|default:indicator.time_coverage_end_year.year_EC }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Source</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.source|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Methodology</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.methodology|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Disaggregation Dimensions</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.disaggregation_dimensions|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Responsible Entity</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.responsible_entity|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Collection Instrument</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.collection_Instrument|default:'N/A' }}</div>
+                    </div>
+                    {% if indicator.sdg_link %}
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">SDG Link</div>
+                        <div class="text-sm"><a href="{{ indicator.sdg_link }}" target="_blank" class="text-primary-600 hover:underline font-medium">{{ indicator.sdg_link }}</a></div>
+                    </div>
+                    {% endif %}
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Tags</div>
+                        <div class="text-base text-gray-800 font-medium">{{ indicator.tags|default:'N/A' }}</div>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100">
+                        <div class="text-sm font-semibold text-gray-500 uppercase mb-1">Categories</div>
+                        <div class="text-base">
+                            {% if indicator.for_category.all %}
+                                <div class="flex flex-wrap gap-1">
+                                    {% for cat in indicator.for_category.all %}
+                                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-sm font-medium">{{ cat.name_ENG }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-gray-500">N/A</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 mb-6 ">
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Last 10 Years Performance (Value)</h4>
+                    <canvas id="chart-10years" height="120"></canvas>
+                </div>
+            </div>
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Recent Year Month Performance (Value)</h4>
+                    <canvas id="chart-month" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 mb-6 ">
+            <div class="card flex-1">
+                <div class="card-body">
+                    <h4 class="font-semibold mb-2">Recent 10 Years Quarterly (Value)</h4>
+                    <canvas id="chart-10years-quarterly" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="latest-annual-card" class="mb-6"></div>
+        <div class="card mb-6">
+            <div class="card-body">
+                <div class="flex gap-4 mb-4">
+                    <button class="data-table-tab btn btn-outline-primary active" data-type="annual">Yearly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="quarterly">Quarterly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="monthly">Monthly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="weekly">Weekly</button>
+                    <button class="data-table-tab btn btn-outline-primary" data-type="daily">Daily</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="data-table" class="table-auto w-full border border-theme-border rounded">
+                        <thead id="data-table-head">
+                            <!-- Filled by JS -->
+                        </thead>
+                        <tbody id="data-table-body">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="{% static 'assets/js/indicator_detail.js' %}"></script>
+{% include 'data_management/common/footer.html' %}
+{% include 'data_management/common/js.html' %}
+{% endblock %}

@@ -270,7 +270,7 @@ def login_view(request):
                 return redirect('climate_dashboard')
             if next_url:
                 return redirect(next_url)
-            return redirect('user_management_dashboard')
+            return redirect('dashboard_index')
         else:
             messages.error(request, 'Invalid username or password')
 

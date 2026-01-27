@@ -143,6 +143,15 @@
                         <span class="pc-mtext">Overview</span>
                     </a>
                 </li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'data_explorer' %}active{% endif %}">
+                    <a href="{% url 'data_explorer' %}" class="pc-link">
+                        <span class="pc-micon">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </span>
+                        <span class="pc-mtext">Data Explorer</span>
+                    </a>
+                </li>
+
 
                 <li class="pc-item pc-caption">Data Assets</li>
                 <li class="pc-item {% if request.resolver_match.url_name == 'data_topics' %}active{% endif %}">
@@ -190,6 +199,14 @@
                     <a href="{% url 'user_management_dashboard' %}" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-users-gear"></i></span>
                         <span class="pc-mtext">User Management</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if request.user.is_superuser %}
+               <li class="pc-item">
+                    <a href="" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-file-lines"></i></span>
+                        <span class="pc-mtext">Audit Log</span>
                     </a>
                 </li>
                 {% endif %}
