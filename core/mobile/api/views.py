@@ -2,9 +2,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from mobile.models import HighFrequency
-from .serializers import HighFrequencySerializer
+from .serializers import HighFrequencySerializer, IndicatorMetaDataSerializer
 from itertools import groupby
-
+from Base.models import Indicator
 
 @api_view(['GET'])
 def high_frequency(request):
@@ -21,3 +21,14 @@ def high_frequency(request):
         "message": "",
         "data": data
     })
+
+@api_view(['GET'])
+def ai_indicator_meta_data(request):
+    kpis = Indicator.objects.all()
+    serializer = IndicatorMetaDataSerializer(kpis, many=True)
+
+    return Response({
+            "result": "SUCCESS",
+            "message": "",
+            "data": serializer.data
+        })

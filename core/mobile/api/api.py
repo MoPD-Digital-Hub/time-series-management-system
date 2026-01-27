@@ -421,3 +421,4 @@ def kpis(request, category_id):
     serializer = IndicatorSerializer(kpi_lists, many = True)
 
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
+

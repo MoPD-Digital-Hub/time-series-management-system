@@ -42,8 +42,6 @@ class AnnualDataPreviousSerializer(serializers.ModelSerializer):
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
     
-    
-
 class QuarterDataPreviousSerializer(serializers.ModelSerializer):
     previous_year_performance_data = serializers.SerializerMethodField()
     class Meta:
@@ -53,7 +51,6 @@ class QuarterDataPreviousSerializer(serializers.ModelSerializer):
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
     
-
 class MonthDataPreviousSerializer(serializers.ModelSerializer):
     previous_year_performance_data = serializers.SerializerMethodField()
     class Meta:
@@ -63,8 +60,6 @@ class MonthDataPreviousSerializer(serializers.ModelSerializer):
     def get_previous_year_performance_data(self, obj):
         return obj.get_previous_year_performance()
     
-
-
 class TopicSerializer(serializers.ModelSerializer):
     count_category = serializers.SerializerMethodField()
     count_kpis = serializers.SerializerMethodField()
@@ -98,9 +93,6 @@ class AnnualDataSerializer(serializers.ModelSerializer):
     def get_performance(self, obj):
         return round(obj.performance, 2) if obj.performance is not None else None
     
-
-
-
 class QuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
     for_quarter = serializers.SlugRelatedField(read_only=True, slug_field='title_ENG')
@@ -119,8 +111,6 @@ class QuarterDataSerializer(serializers.ModelSerializer):
     
     def get_for_datapoint(self, obj):
         return str(obj.for_datapoint.year_EC) if obj.for_datapoint else None
-
-
 
 class MonthDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
@@ -142,7 +132,6 @@ class MonthDataSerializer(serializers.ModelSerializer):
     def get_performance(self, obj):
         return round(obj.performance, 2) if obj.performance is not None else None
     
-
 class WeekDataSerializer(serializers.ModelSerializer):
     day_data = serializers.SerializerMethodField()
 
@@ -174,16 +163,13 @@ class WeekDataSerializer(serializers.ModelSerializer):
                 filtered.append(r)
 
         return DayDataSerializer(filtered, many=True).data
-
     
 class DayDataSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = KPIRecord
         fields = ('target', 'performance', 'ethio_date')
-    
- 
-    
+        
 class IndicatorSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
     quarter_data = QuarterDataSerializer(many = True , read_only = True)
@@ -287,8 +273,6 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         return latest_data[1]
     
-
-
 class MobileDashboardOverviewSerializer(serializers.ModelSerializer):
     performance = serializers.SerializerMethodField()
     indicator = IndicatorSerializer()
@@ -313,7 +297,6 @@ class CategorySerializer2(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['name_ENG']
-
 
 class IndicatorPerformanceSerializer(serializers.ModelSerializer): 
     previous_performance = serializers.SerializerMethodField()
@@ -470,7 +453,6 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
         children_list = sorted(children_qs, key=lambda i: _natural_key(i.code))
         return IndicatorSerializer(children_list, many=True, context=self.context).data
 
-
 class CategoryDetailSerializer(serializers.ModelSerializer):
     indicators = serializers.SerializerMethodField()
 
@@ -507,7 +489,6 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
                 return None
         return super().to_representation(instance)
     
-
 class TopicDetailSerializer(serializers.ModelSerializer):
     categories = serializers.SerializerMethodField()
 
@@ -520,7 +501,6 @@ class TopicDetailSerializer(serializers.ModelSerializer):
         serializer = CategoryDetailSerializer(categories, many=True, context=self.context)
         # Remove categories that were skipped (returned as None)
         return [cat for cat in serializer.data if cat is not None]
-
         
 class CategorySerializer(serializers.ModelSerializer):
     indicators = IndicatorSerializer(many = True , read_only = True)
@@ -547,8 +527,6 @@ class SubProjectSerializer(serializers.ModelSerializer):
           data =  json.loads(obj.data)
           return data
         return None
-
-
         
 class ProjectDetailSerializer(serializers.ModelSerializer):
     sub_projects = serializers.SerializerMethodField()  # Serialize the JSON data as a string
@@ -568,7 +546,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             'stats': serializer.data,
             'projects': serializer_projects.data
         }
-
 
 class CategoryWithIndicatorsSerializer(serializers.ModelSerializer):
     indicators = serializers.SerializerMethodField()
@@ -597,7 +574,6 @@ class AIAnnualDataSerializer(serializers.ModelSerializer):
 
     def get_indicator(self, obj):
             return str(obj.indicator.title_ENG)
-
 
 class AIQuarterDataSerializer(serializers.ModelSerializer):
     for_datapoint = serializers.SerializerMethodField()
@@ -630,12 +606,10 @@ class AIMonthDataSerializer(serializers.ModelSerializer):
 
 
 ### Updated category lists
-
 class UpdatedCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
-
 
 class IndicatorShortSerializer(serializers.ModelSerializer):
     annual_data = serializers.SerializerMethodField()
@@ -752,8 +726,6 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
 
         return latest_data[1]
 
-
-
 class HighFrequencySerializer(serializers.ModelSerializer):
     indicator = serializers.SerializerMethodField()
 
@@ -786,4 +758,41 @@ class HighFrequencySerializer(serializers.ModelSerializer):
         ).data
 
 
+class IndicatorMetaDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Indicator
+        model = ('id','title_ENG')
+
+    def to_representation(self, instance):
+        category_list = instance.for_category.values_list('name_ENG', flat=True).distinct()
+        category_name = " | ".join(category_list) if category_list else ""
+
+        topic_list = Topic.objects.filter(categories__indicators=instance).values_list('title_ENG', flat=True).distinct()
+        topic_name = " | ".join(topic_list) if topic_list else ""
+
+        parent = instance.parent.title_ENG if instance.parent else ""
+
+        return {
+            "id": f"tsms_kpi_{instance.id}",
+            "page_content": f"Time Series - Indicator: {instance.title_ENG}",
+            "metadata": {
+                "entity_type": "indicator",
+                "indicator_id": instance.id,
+                "indicator_eng": instance.title_ENG,
+                "indicator_code": instance.code,
+                "parent": parent,
+                "annual_measurement_unit" : instance.measurement_units,
+                "quarter_measurement_unit" : instance.measurement_units_quarter,
+                "month_measurement_unit" : instance.measurement_units_month,
+                "characteristics": (
+                        "Increasing" if instance.kpi_characteristics == "inc"
+                        else "Decreasing" if instance.kpi_characteristics == "dec"
+                        else "Constant"
+                    ),
+                "topic_name": topic_name,
+                "category_name": category_name,
+                "source": instance.source,
+                "domain": "TSMS"
+            }
+        }
     
