@@ -576,21 +576,30 @@ def approve_all_submissions_api(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def approve_submission_api(request):
     """Approve a submission (indicator or data)"""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    
     submission_type = request.data.get('type')
     submission_id = request.data.get('id')
+    
+    if not submission_type or not submission_id:
+        return Response({'error': 'Missing type or id parameter'}, status=status.HTTP_400_BAD_REQUEST)
     
     if submission_type == 'indicator':
         submission = get_object_or_404(IndicatorSubmission, id=submission_id)
     elif submission_type == 'data':
         submission = get_object_or_404(DataSubmission, id=submission_id)
     else:
-        return Response({'error': 'Invalid submission type'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid submission type. Must be "indicator" or "data".'}, status=status.HTTP_400_BAD_REQUEST)
     
+    # Update status and verification info
     submission.status = 'approved'
     submission.verified_by = request.user
     submission.verified_at = timezone.now()
+    # Save without update_fields to ensure all changes are tracked by auditlog
     submission.save()
     # If this is an indicator submission, mark the indicator as verified
     if submission_type == 'indicator' and hasattr(submission, 'indicator') and submission.indicator:
@@ -602,28 +611,31 @@ def approve_submission_api(request):
             # don't block approval if marking fails; approval already saved
             pass
     
-    if submission_type == 'indicator':
-        serializer = IndicatorSubmissionSerializer(submission)
-    else:
-        # attempt to import data into DB when a data submission is approved
-        import_result = None
-        try:
-            import_result = _import_data_submission_to_db(submission)
-        except Exception as e:
-            # don't fail the approval if import fails; include error in response
-            import_result = {'error': str(e)}
-        serializer = DataSubmissionSerializer(submission)
-    
-    out = serializer.data
-    if submission_type == 'data':
-        # keep serialized submission fields at top-level for backwards compatibility
-        # and attach import_result as an extra key
-        try:
-            out = dict(serializer.data)
-        except Exception:
+    try:
+        if submission_type == 'indicator':
+            serializer = IndicatorSubmissionSerializer(submission)
+            return Response(serializer.data)
+        else:
+            # attempt to import data into DB when a data submission is approved
+            import_result = None
+            try:
+                import_result = _import_data_submission_to_db(submission)
+            except Exception as e:
+                # don't fail the approval if import fails; include error in response
+                import_result = {'error': str(e)}
+            serializer = DataSubmissionSerializer(submission)
+            
             out = serializer.data
-        out['import_result'] = import_result
-    return Response(out)
+            # keep serialized submission fields at top-level for backwards compatibility
+            # and attach import_result as an extra key
+            try:
+                out = dict(serializer.data)
+            except Exception:
+                out = serializer.data
+            out['import_result'] = import_result
+            return Response(out)
+    except Exception as e:
+        return Response({'error': f'Failed to process approval: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def _import_data_submission_to_db(submission: DataSubmission):
@@ -945,8 +957,11 @@ def _import_data_submission_to_db(submission: DataSubmission):
 @api_view(['POST'])
 @transaction.atomic
 def submit_bulk_data_api(request):
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit data.'}, status=status.HTTP_403_FORBIDDEN)
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit data.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
 
     data_file = request.FILES.get('data_file')
     if not data_file:
@@ -1080,41 +1095,83 @@ def submit_bulk_data_api(request):
 
         # Create a single DataSubmission record for the entire multiple-mode upload
         notes = request.data.get('notes', 'Bulk import (Multiple Mode)')
-        DataSubmission.objects.create(
-            indicator=None, # Multiple indicators in this file
-            submitted_by=request.user,
-            data_file=data_file,
-            status='pending',
-            notes=notes
-        )
-
-        return Response({
-            'message': 'Bulk submission successful! A single pending submission record has been created for manager approval.',
-            'total_indicators': len(processed_indicators),
-            'rows_validated': result['created'],
-            'rows_skipped': result['skipped'],
-            'errors': result['errors']
-        })
+        
+        # If category manager, auto-approve and import data
+        if is_category_manager:
+            submission = DataSubmission.objects.create(
+                indicator=None, # Multiple indicators in this file
+                submitted_by=request.user,
+                data_file=data_file,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now(),
+                notes=notes
+            )
+            # Import data directly since it's approved
+            try:
+                import_result = _import_data_submission_to_db(submission)
+                return Response({
+                    'message': 'Bulk submission successful and verified! Data has been imported.',
+                    'total_indicators': len(processed_indicators),
+                    'rows_validated': result['created'],
+                    'rows_skipped': result['skipped'],
+                    'errors': result['errors'],
+                    'import_result': import_result
+                })
+            except Exception as e:
+                return Response({
+                    'message': 'Bulk submission successful and verified, but import had errors',
+                    'total_indicators': len(processed_indicators),
+                    'rows_validated': result['created'],
+                    'rows_skipped': result['skipped'],
+                    'errors': result['errors'],
+                    'import_error': str(e)
+                })
+        else:
+            # For importers, create pending submission
+            DataSubmission.objects.create(
+                indicator=None, # Multiple indicators in this file
+                submitted_by=request.user,
+                data_file=data_file,
+                status='pending',
+                notes=notes
+            )
+            return Response({
+                'message': 'Bulk submission successful! A single pending submission record has been created for manager approval.',
+                'total_indicators': len(processed_indicators),
+                'rows_validated': result['created'],
+                'rows_skipped': result['skipped'],
+                'errors': result['errors']
+            })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def decline_submission_api(request):
     """Decline a submission (indicator or data)"""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    
     submission_type = request.data.get('type')
     submission_id = request.data.get('id')
+    
+    if not submission_type or not submission_id:
+        return Response({'error': 'Missing type or id parameter'}, status=status.HTTP_400_BAD_REQUEST)
     
     if submission_type == 'indicator':
         submission = get_object_or_404(IndicatorSubmission, id=submission_id)
     elif submission_type == 'data':
         submission = get_object_or_404(DataSubmission, id=submission_id)
     else:
-        return Response({'error': 'Invalid submission type'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid submission type. Must be "indicator" or "data".'}, status=status.HTTP_400_BAD_REQUEST)
     
+    # Update status and verification info
     submission.status = 'declined'
     submission.verified_by = request.user
     submission.verified_at = timezone.now()
+    # Save without update_fields to ensure all changes are tracked by auditlog
     submission.save()
     # If this is an indicator submission, unmark the indicator as verified
     if submission_type == 'indicator' and hasattr(submission, 'indicator') and submission.indicator:
@@ -1125,12 +1182,15 @@ def decline_submission_api(request):
         except Exception:
             pass
     
-    if submission_type == 'indicator':
-        serializer = IndicatorSubmissionSerializer(submission)
-    else:
-        serializer = DataSubmissionSerializer(submission)
-    
-    return Response(serializer.data)
+    try:
+        if submission_type == 'indicator':
+            serializer = IndicatorSubmissionSerializer(submission)
+        else:
+            serializer = DataSubmissionSerializer(submission)
+        
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': f'Failed to process decline: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -1279,9 +1339,12 @@ def sample_template_api(request):
 @api_view(['POST'])
 def submit_indicator_api(request):
     """Submit a new indicator for approval"""
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit indicators.'}, 
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit indicators.'}, 
                        status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
 
     title_eng = request.data.get('title_eng')
     title_amh = request.data.get('title_amh')
@@ -1352,15 +1415,28 @@ def submit_indicator_api(request):
             indicator.generate_code()
             indicator.save()
 
-        # Create submission record
-        IndicatorSubmission.objects.create(
-            indicator=indicator,
-            submitted_by=request.user,
-            status='pending'
-        )
-
-        return Response({'message': 'Indicator submitted successfully', 'indicator_id': indicator.id}, 
-                       status=status.HTTP_201_CREATED)
+        # If category manager, auto-verify and approve
+        if is_category_manager:
+            indicator.is_verified = True
+            indicator.save(update_fields=['is_verified'])
+            submission = IndicatorSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now()
+            )
+            return Response({'message': 'Indicator created and verified successfully', 'indicator_id': indicator.id}, 
+                           status=status.HTTP_201_CREATED)
+        else:
+            # Create submission record for importers (pending approval)
+            IndicatorSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                status='pending'
+            )
+            return Response({'message': 'Indicator submitted successfully', 'indicator_id': indicator.id}, 
+                           status=status.HTTP_201_CREATED)
     except Category.DoesNotExist:
         return Response({'error': 'Invalid category'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
@@ -1370,9 +1446,12 @@ def submit_indicator_api(request):
 @api_view(['POST'])
 def submit_data_api(request):
     """Submit data for an existing indicator"""
-    if not request.user.is_importer:
-        return Response({'error': 'Access denied. Only importers can submit data.'}, 
+    if not (request.user.is_importer or request.user.is_category_manager):
+        return Response({'error': 'Access denied. Only importers and category managers can submit data.'}, 
                        status=status.HTTP_403_FORBIDDEN)
+    
+    # Only category managers' submissions are automatically verified (not staff or superusers)
+    is_category_manager = request.user.is_category_manager
     
     indicator_id = request.data.get('indicator_id')
     data_file = request.FILES.get('data_file')
@@ -1460,16 +1539,41 @@ def submit_data_api(request):
             return Response({'error': 'Unsupported file type. Accepts .csv, .xls, .xlsx only.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Create submission record (file passed validations)
-        submission = DataSubmission.objects.create(
-            indicator=indicator,
-            submitted_by=request.user,
-            data_file=data_file,
-            notes=notes,
-            status='pending'
-        )
-
-        return Response({'message': 'Data submitted successfully', 'submission_id': submission.id}, status=status.HTTP_201_CREATED)
+        # If category manager, auto-approve and import data
+        if is_category_manager:
+            submission = DataSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                data_file=data_file,
+                notes=notes,
+                status='approved',
+                verified_by=request.user,
+                verified_at=timezone.now()
+            )
+            # Import data directly since it's approved
+            try:
+                import_result = _import_data_submission_to_db(submission)
+                return Response({
+                    'message': 'Data submitted and verified successfully', 
+                    'submission_id': submission.id,
+                    'import_result': import_result
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    'message': 'Data submitted and verified, but import had errors', 
+                    'submission_id': submission.id,
+                    'import_error': str(e)
+                }, status=status.HTTP_201_CREATED)
+        else:
+            # Create submission record for importers (pending approval)
+            submission = DataSubmission.objects.create(
+                indicator=indicator,
+                submitted_by=request.user,
+                data_file=data_file,
+                notes=notes,
+                status='pending'
+            )
+            return Response({'message': 'Data submitted successfully', 'submission_id': submission.id}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -2155,18 +2259,29 @@ def decline_pending_data(request):
         if not data_type or not data_id:
             return Response({'error': 'Missing type or id'}, status=400)
         
+        # Get the object first with related fields to ensure it's fully loaded
+        # This ensures auditlog can properly track the deletion
+        obj = None
         if data_type == 'annual':
-            AnnualData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(AnnualData.objects.select_related('indicator', 'for_datapoint'), id=data_id)
         elif data_type == 'quarterly':
-            QuarterData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(QuarterData.objects.select_related('indicator', 'for_datapoint', 'for_quarter'), id=data_id)
         elif data_type == 'monthly':
-            MonthData.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(MonthData.objects.select_related('indicator', 'for_datapoint', 'for_month'), id=data_id)
         elif data_type in ('weekly', 'daily'):
-            KPIRecord.objects.filter(id=data_id).delete()
+            obj = get_object_or_404(KPIRecord.objects.select_related('indicator'), id=data_id)
         else:
             return Response({'error': 'Invalid type'}, status=400)
         
-        return Response({'status': 'declined'})
+        # Store object info before deletion for logging
+        obj_repr = str(obj)
+        
+        # Delete the object individually to trigger auditlog signals
+        # The AuditlogMiddleware should capture request.user as the actor
+        if obj:
+            obj.delete()
+        
+        return Response({'status': 'declined', 'deleted': obj_repr})
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
@@ -2186,12 +2301,25 @@ def approve_all_table_data_api(request):
         
         q_filter &= Q(indicator__for_category__topic__is_initiative=False)
 
-        AnnualData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
-        QuarterData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
-        MonthData.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        # Use individual saves instead of .update() to ensure auditlog tracks changes
+        for obj in AnnualData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
+        for obj in QuarterData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
+        for obj in MonthData.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
         # KPIRecord filter doesn't support indicator__for_category directly in the same way if indicator is null, 
         # but we follow the same pattern
-        KPIRecord.objects.filter(q_filter).update(is_verified=True, is_seen=True)
+        for obj in KPIRecord.objects.filter(q_filter):
+            obj.is_verified = True
+            obj.is_seen = True
+            obj.save()
 
         return Response({'status': 'success', 'message': 'All pending table data approved'})
     except Exception as e:

@@ -206,7 +206,6 @@
 
 
 
-
   // --- Hierarchy filter functions
   function updateIndicatorList() {
     const selectedCats = $("#category-list .cat-checkbox:checked")
@@ -232,7 +231,6 @@
     // whenever indicators change, reset sidebar
     resetSidebar();
   }
-
 
   // --- Trigger hierarchy updates on checkbox change
   $("#category-list .cat-checkbox").on("change", function () {
@@ -1147,7 +1145,7 @@
                   ? ` data-date="${r.date || ""}"`
                   : "");
 
-              rowsHtml += `<td contenteditable="true" class="editable-cell" ${dataAttrs}>${fmt("")}</td>`;
+              rowsHtml += `<td contenteditable="true" class="editable-cell" data-original-value="" ${dataAttrs}>${fmt("")}</td>`;
             });
 
             rowsHtml += `</tr>`;
@@ -1215,7 +1213,9 @@
                 }" data-month-label="${escapeHtml(r.month_label || "")}"`;
             if (currentMode === "weekly" || currentMode === "daily")
               dataAttrs += ` data-date="${r.date || ""}"`;
-            rowsHtml += `<td contenteditable="true" class="editable-cell ${extraClasses}" title="${cellTitle}" ${dataAttrs}>${fmt(
+            // Store original value for validation/restore
+            const originalValue = (value === null || value === undefined || value === "") ? null : value;
+            rowsHtml += `<td contenteditable="true" class="editable-cell ${extraClasses}" title="${cellTitle}" data-original-value="${originalValue !== null ? originalValue : ''}" ${dataAttrs}>${fmt(
               value
             )}</td>`;
           });
@@ -1288,10 +1288,51 @@
         const mode = $td.data("mode");
         const rawVal = $td.text().trim();
 
+        // Store original value on first edit if not already stored
+        if ($td.data("original-value") === undefined) {
+          const currentText = $td.text().trim();
+          const currentValue = (currentText === "-" || currentText === "") ? null : currentText;
+          $td.data("original-value", currentValue);
+        }
+        
+        // Validate that the value is a single number (not multiple values)
+        let parsedValue = null;
+        if (rawVal !== "-" && rawVal !== "") {
+          // Check for multiple values (comma, semicolon, or space separated)
+          const trimmedVal = rawVal.trim();
+          const hasMultipleValues = /[,;]/.test(trimmedVal) || trimmedVal.split(/\s+/).filter(v => v.trim() && !isNaN(parseFloat(v.trim()))).length > 1;
+          if (hasMultipleValues) {
+            alert(`Error: Only one value is allowed per cell. Please enter a single number.\n\nYou entered: "${rawVal}"`);
+            // Reset to original value
+            const originalValue = $td.data("original-value");
+            if (originalValue !== null && originalValue !== undefined && originalValue !== "") {
+              $td.text(originalValue);
+            } else {
+              $td.text("-");
+            }
+            return;
+          }
+          
+          // Try to parse as float
+          const numVal = parseFloat(trimmedVal);
+          if (isNaN(numVal)) {
+            alert(`Error: Invalid number format. Please enter a valid number.\n\nYou entered: "${rawVal}"`);
+            // Reset to original value
+            const originalValue = $td.data("original-value");
+            if (originalValue !== null && originalValue !== undefined && originalValue !== "") {
+              $td.text(originalValue);
+            } else {
+              $td.text("-");
+            }
+            return;
+          }
+          parsedValue = numVal;
+        }
+
         let key = `${ind_id}|${year_ec}|${year_gc}`;
         const payload = {
           indicator_id: ind_id,
-          value: (rawVal === "-" || rawVal === "") ? null : rawVal,
+          value: parsedValue,
           year_ec,
           year_gc,
         };

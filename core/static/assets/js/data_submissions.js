@@ -36,8 +36,15 @@ async function _postSubmissionActionData(submissionId, action) {
       body: JSON.stringify({ type: "data", id: submissionId }),
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      alert(err.error || "Request failed");
+      let errorMessage = "Request failed";
+      try {
+        const err = await resp.json();
+        errorMessage = err.error || err.message || err.detail || `HTTP ${resp.status}: ${resp.statusText}`;
+      } catch (e) {
+        errorMessage = `HTTP ${resp.status}: ${resp.statusText}`;
+      }
+      alert(errorMessage);
+      console.error("Submission action failed:", errorMessage, resp.status);
       return;
     }
     const data = await resp.json();

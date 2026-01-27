@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'ckeditor',
     'ckeditor_uploader',
+    'auditlog',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'auditlog.middleware.AuditlogMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -161,6 +163,10 @@ EMAIL_USE_SSL = False
 
 
 CKEDITOR_UPLOAD_PATH = "ckeditor/"
+
+# Auditlog configuration
+AUDITLOG_INCLUDE_ALL_MODELS = False  # Only track registered models
+AUDITLOG_DISABLE_ON_RAW_SAVE = False  # Track raw saves too
 # ####log
 # # settings.py
 # LOGGING = {

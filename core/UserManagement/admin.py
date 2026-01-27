@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db import models
 from .models import CustomUser, CategoryAssignment, IndicatorSubmission, DataSubmission, ResponsibleEntity, UserSector
+from auditlog.registry import auditlog
 
 # -------------------- Custom User Admin --------------------
 class CustomUserAdmin(BaseUserAdmin):
@@ -203,3 +204,7 @@ admin.site.register(IndicatorSubmission, IndicatorSubmissionAdmin)
 admin.site.register(DataSubmission, DataSubmissionAdmin)
 admin.site.register(ResponsibleEntity)
 admin.site.register(UserSector)
+
+# Register models with auditlog
+auditlog.register(IndicatorSubmission)
+auditlog.register(DataSubmission)
