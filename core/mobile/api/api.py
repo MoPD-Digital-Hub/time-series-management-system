@@ -353,32 +353,24 @@ def get_annual_value(request):
         except AnnualData.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
     else:
-        subquery = indicator.annual_data.filter(
-            Q(for_datapoint__year_EC__isnull=False)).annotate(
-            year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('year_num')  
 
         annual_queryset = indicator.annual_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        ).reverse()[:10]
+             Q(for_datapoint__year_EC__isnull=False)
+        ).annotate(
+            year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_num')[:10]
 
-        subquery = indicator.quarter_data.filter(
+        quarter_queryset = indicator.quarter_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)
+        ).annotate(
+                year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_num', '-for_quarter__number')[:8]
+
+        month_queryset = indicator.month_data.filter(
             Q(for_datapoint__year_EC__isnull=False)
             ).annotate(
                 year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_num') 
-
-        quarter_queryset = indicator.quarter_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        ).reverse()[:16]
-
-        subquery = indicator.month_data.filter(
-            Q(for_datapoint__year_EC__isnull=False)
-        ).order_by('-for_datapoint__year_EC', 'for_month__number')  
-
-        month_queryset = indicator.month_data.filter(
-            id__in=Subquery(subquery.values('id'))
-        ).reverse()[:24]
+        ).order_by('-year_num', '-for_month__number')[:24]  
 
 
         
