@@ -777,21 +777,21 @@ class IndicatorMetaDataSerializer(serializers.ModelSerializer):
             "page_content": f"Time Series - Indicator: {instance.title_ENG}",
             "metadata": {
                 "entity_type": "indicator",
-                "indicator_id": instance.id,
-                "indicator_eng": instance.title_ENG,
-                "indicator_code": instance.code,
-                "parent": parent,
-                "annual_measurement_unit" : instance.measurement_units,
-                "quarter_measurement_unit" : instance.measurement_units_quarter,
-                "month_measurement_unit" : instance.measurement_units_month,
+                "indicator_id": instance.id or "",
+                "indicator_eng": instance.title_ENG or "",
+                "indicator_code": instance.code or "",
+                "parent": parent or "",
+                "annual_measurement_unit" : instance.measurement_units or "",
+                "quarter_measurement_unit" : instance.measurement_units_quarter or "",
+                "month_measurement_unit" : instance.measurement_units_month or "",
                 "characteristics": (
                         "Increasing" if instance.kpi_characteristics == "inc"
                         else "Decreasing" if instance.kpi_characteristics == "dec"
                         else "Constant"
                     ),
-                "topic_name": topic_name,
-                "category_name": category_name,
-                "source": instance.source,
+                "topic_name": topic_name or "",
+                "category_name": category_name or "",
+                "source": instance.source or "",
                 "domain": "TSMS"
             }
         }
