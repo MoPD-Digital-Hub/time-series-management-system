@@ -798,7 +798,7 @@ class IndicatorMetaDataSerializer(serializers.ModelSerializer):
             "page_content": page_content.strip(),
             "metadata": {
                 "entity_type": "indicator",
-                "indicator_id": instance.id or "",
+                "id": instance.id or "",
                 "indicator_eng": instance.title_ENG or "",
                 "indicator_code": instance.code or "",
                 "parent": parent or "",
