@@ -27,8 +27,4 @@ def ai_indicator_meta_data(request):
     kpis = Indicator.objects.filter(is_dashboard_visible=True,)
     serializer = IndicatorMetaDataSerializer(kpis, many=True)
 
-    return Response({
-            "result": "SUCCESS",
-            "message": "",
-            "data": serializer.data
-        })
+    return Response(serializer.data)
