@@ -330,6 +330,12 @@ def get_annual_value(request):
     if not code:
         return Response({"error": "Missing 'code' parameter"}, status=400)
     
+    try:
+        indicator = Indicator.objects.get(code = code)
+    except Indicator.DoesNotExist:
+        return Response({"error": "Indicator Not Found!"}, status=400)
+
+    
     if year:
         try:
             year = int(year)
@@ -347,9 +353,35 @@ def get_annual_value(request):
         except AnnualData.DoesNotExist:
             return Response({"error": "Data not found"}, status=404)
     else:
-        annual_queryset = AnnualData.objects.filter(indicator__code=code).order_by('-for_datapoint__year_EC').exclude(performance = 0)[:10]
-        quarter_queryset = QuarterData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_quarter__isnull = False).order_by('-for_datapoint__year_EC').exclude(performance = 0)[:10]
-        month_queryset = MonthData.objects.filter(indicator__code=code, for_datapoint__isnull = False, for_month__isnull = False).order_by('-for_datapoint__year_EC').exclude(performance = 0)[:10]
+        subquery = indicator.annual_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)).annotate(
+            year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('year_num')  
+
+        annual_queryset = indicator.annual_data.filter(
+            id__in=Subquery(subquery.values('id'))
+        ).reverse()[:10]
+
+        subquery = indicator.quarter_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)
+            ).annotate(
+                year_num=Cast('for_datapoint__year_EC', IntegerField())
+        ).order_by('-year_num') 
+
+        quarter_queryset = indicator.quarter_data.filter(
+            id__in=Subquery(subquery.values('id'))
+        )[:16]
+
+        subquery = indicator.month_data.filter(
+            Q(for_datapoint__year_EC__isnull=False)
+        ).order_by('-for_datapoint__year_EC', 'for_month__number')  
+
+        month_queryset = indicator.month_data.filter(
+            id__in=Subquery(subquery.values('id'))
+        )[:24]
+
+
+        
 
         if not (annual_queryset.exists() or quarter_queryset.exists() or month_queryset.exists()):
             return Response({"error": "Data not found"}, status=404)
