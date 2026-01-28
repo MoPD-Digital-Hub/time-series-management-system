@@ -82,7 +82,7 @@
                                 <select name="categories" id="categorySelect" multiple>
                                     {% for topic in all_topics %}
                                         <optgroup label="{{ topic.title_ENG }}">
-                                            {% for cat in topic.categories.all %}
+                                            {% for cat in topic.managed_categories %}
                                                 <option value="{{ cat.id }}" {% if cat.id in assigned_cat_ids %}selected{% endif %}>
                                                     {{ cat.name_ENG }}
                                                 </option>
