@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import *
 from .resource import *
 from import_export.admin import ImportExportModelAdmin
+from auditlog.registry import auditlog
 
 
 
@@ -171,3 +172,10 @@ admin.site.register(ProjectInitiatives)
 admin.site.register(SubProject)
 admin.site.register(Content)
 
+
+auditlog.register(Indicator)
+auditlog.register(AnnualData)
+auditlog.register(MonthData)
+auditlog.register(QuarterData)
+auditlog.register(DataPoint)
+auditlog.register(KPIRecord)

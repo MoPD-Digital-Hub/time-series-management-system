@@ -102,20 +102,7 @@ def dashboard_index(request):
 
 @login_required
 def data_explorer(request):
-    if request.user.is_superuser:
-        topics = Topic.objects.prefetch_related('categories__indicators').filter(is_initiative=False)
-    else:
-        assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
-        topics = Topic.objects.filter(
-            categories__id__in=assigned_category_ids,
-            is_initiative=False
-        ).prefetch_related(
-            Prefetch(
-                'categories',
-                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
-                to_attr='prefetched_categories'
-            )
-        ).distinct()
+    topics = Topic.objects.prefetch_related('categories__indicators').filter()
     context = {
         'topics': topics,
     }
@@ -506,7 +493,12 @@ from .utils import (
     get_unverified_indicators,
     get_unverified_annual_data,
     get_unverified_quarter_data,
-    get_unverified_month_data
+    get_unverified_month_data,
+    get_action_context,
+    get_field_changes_summary,
+    get_related_object_info,
+    
+
 )
 
 def is_category_manager(user):
@@ -772,3 +764,103 @@ def edit_profile(request):
     return render(request, 'data_management/edit_profile.html', {
         'user_obj': user
     })
+
+
+
+######### Logging ##########
+from auditlog.models import LogEntry
+from django.db.models import Q
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser, login_url='/user-management/login/')
+def audit_log_view(request):
+    """Display audit log for admin - shows all actions by data importers and category managers"""
+    # Filter to only show actions by data importers and category managers
+    # Use select_related for better performance
+    # Note: We filter by actor to ensure we only show actions by importers/managers
+    # For delete actions, the actor should be captured by AuditlogMiddleware
+    logs = LogEntry.objects.select_related('actor', 'content_type').filter(
+        Q(actor__is_importer=True) | Q(actor__is_category_manager=True)
+    )
+    
+    # Order by most recent first
+    logs = logs.order_by('-timestamp').distinct()
+    
+    # Get filter parameters
+    action_type = request.GET.get('action', '')
+    user_type = request.GET.get('user_type', '')
+    user_id = request.GET.get('user', '')
+    model_name = request.GET.get('model', '')
+    
+    # Apply filters
+    if action_type:
+        logs = logs.filter(action=action_type)
+    if user_type == 'importer':
+        logs = logs.filter(actor__is_importer=True)
+    elif user_type == 'manager':
+        logs = logs.filter(actor__is_category_manager=True)
+    if user_id:
+        logs = logs.filter(actor_id=user_id)
+    if model_name:
+        logs = logs.filter(content_type__model=model_name.lower())
+    
+    # Pagination
+    paginator = Paginator(logs, 50)  # Show 50 entries per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Enrich logs with additional context
+    enriched_logs = []
+    for log in page_obj:
+        log_data = {
+            'log': log,
+            'context': get_action_context(log),
+            'field_changes': get_field_changes_summary(log),
+            'related_object': get_related_object_info(log)
+        }
+        enriched_logs.append(log_data)
+    
+    # Get all importers and managers for filter dropdown
+    importers = CustomUser.objects.filter(is_importer=True).order_by('email')
+    managers = CustomUser.objects.filter(is_category_manager=True).order_by('email')
+    
+    # Get model names for filter
+    model_names = ['Indicator', 'AnnualData', 'MonthData', 'QuarterData', 'KPIRecord']
+    
+    # Get topics for navigation (same logic as other views)
+    if request.user.is_superuser:
+        topics = Topic.objects.prefetch_related('categories').filter(is_initiative=False)
+    else:
+        # For non-superusers, get topics based on category assignments
+        if request.user.is_importer and hasattr(request.user, 'manager') and request.user.manager:
+            target_manager = request.user.manager
+        else:
+            target_manager = request.user
+        
+        assigned_category_ids = CategoryAssignment.objects.filter(manager=target_manager).values_list('category_id', flat=True)
+        topics = Topic.objects.filter(
+            categories__id__in=assigned_category_ids,
+            is_initiative=False
+        ).prefetch_related(
+            Prefetch(
+                'categories',
+                queryset=Category.objects.filter(id__in=assigned_category_ids).prefetch_related('indicators'),
+                to_attr='prefetched_categories'
+            )
+        ).distinct()
+    
+    context = {
+        'page_obj': page_obj,
+        'logs': enriched_logs,
+        'importers': importers,
+        'managers': managers,
+        'model_names': model_names,
+        'action_type': action_type,
+        'user_type': user_type,
+        'user_id': user_id,
+        'model_name': model_name,
+        'topics': topics,  # Add topics for navigation
+    }
+
+    return render(request, 'data_management/audit_log.html', context)

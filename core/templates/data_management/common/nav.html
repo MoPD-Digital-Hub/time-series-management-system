@@ -206,7 +206,7 @@
                 {% endif %}
                 {% if request.user.is_superuser %}
                <li class="pc-item">
-                    <a href="" class="pc-link">
+                    <a href="{% url "audit_log_view" %}" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-file-lines"></i></span>
                         <span class="pc-mtext">Audit Log</span>
                     </a>

@@ -36,6 +36,34 @@
         appendChunk();
     }
 
+    function exportTableToCSV(tableId, filename) {
+        const rows = document.querySelectorAll(`#${tableId} tr`);
+        let csv = [];
+
+        rows.forEach(row => {
+            let cols = row.querySelectorAll('th, td');
+            let rowData = [];
+            cols.forEach(col => rowData.push(`"${col.innerText.trim()}"`));
+            csv.push(rowData.join(','));
+        });
+
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    }
+
+    $('#export-table').on('click', () => {
+        exportTableToCSV(
+            'explorer-table',
+            'data_explorer_' + (window.currentMode || 'data') + '.csv'
+        );
+    });
+
+
+
+
     // Dropdown toggle
     function toggleMenu(btnId, menuId) {
         $(btnId).on('click', function (e) {

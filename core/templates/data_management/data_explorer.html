@@ -98,6 +98,9 @@
                             <button id="clear-all"
                                 class="px-3 py-1 rounded border border-theme-border text-gray-700 hover:bg-gray-50 text-sm">Clear</button>
                             <button id="apply-selection" class="btn btn-primary btn-sm">Apply</button>
+                            <button id="export-table" class="btn btn-success btn-sm">
+                                Export to Excel
+                            </button>
                         </div>
                     </div>
 
@@ -230,6 +233,8 @@
 
     {% include 'data_management/common/footer.html' %}
     {% include 'data_management/common/js.html' %}
+
+    
 
     <script src="{% static 'assets/js/data_explorer.js' %}"></script>
 

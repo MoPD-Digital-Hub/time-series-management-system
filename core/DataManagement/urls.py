@@ -41,4 +41,8 @@ urlpatterns = [
     path('management/edit/<int:user_id>/', manage_user_form, name='user_edit'),
     path('profile/edit/', edit_profile, name='edit_profile'),
 
+
+    ######## Audit Log ##########
+    path('audit-log/', audit_log_view, name='audit_log_view'),
+
 ]
