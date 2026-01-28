@@ -354,9 +354,9 @@ def get_annual_value(request):
         if not (annual_queryset.exists() or quarter_queryset.exists() or month_queryset.exists()):
             return Response({"error": "Data not found"}, status=404)
 
-        annual_serializer = AIAnnualDataSerializer(annual_queryset, many=True)
-        quarter_serializer = AIQuarterDataSerializer(quarter_queryset, many=True)
-        month_serializer = AIMonthDataSerializer(month_queryset, many=True)
+        annual_serializer = AnnualDataSerializer(annual_queryset, many=True)
+        quarter_serializer = QuarterDataSerializer(quarter_queryset, many=True)
+        month_serializer = MonthDataSerializer(month_queryset, many=True)
 
         annual_full_series = [
             {
