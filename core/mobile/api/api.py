@@ -370,7 +370,7 @@ def get_annual_value(request):
             Q(for_datapoint__year_EC__isnull=False)
             ).annotate(
                 year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_num', '-for_month__number')[:12]  
+        ).order_by('-year_num', '-for_month__number')[:12]
 
 
         

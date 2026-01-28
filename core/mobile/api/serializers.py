@@ -381,8 +381,7 @@ class IndicatorDetailSerializer(serializers.ModelSerializer):
             Q(for_datapoint__year_EC__isnull=False)
         ).annotate(
             year_num=Cast('for_datapoint__year_EC', IntegerField())
-        ).order_by('-year_num')  # ascending order by year
-
+        ).order_by('-year_num')  
         month_data = obj.month_data.filter(
             id__in=Subquery(subquery.values('id'))
         )
