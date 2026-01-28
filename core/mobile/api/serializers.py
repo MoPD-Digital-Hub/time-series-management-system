@@ -761,38 +761,55 @@ class HighFrequencySerializer(serializers.ModelSerializer):
 class IndicatorMetaDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Indicator
-        model = ('id','title_ENG')
+        fields = ('id', 'title_ENG')
 
     def to_representation(self, instance):
-        category_list = instance.for_category.values_list('name_ENG', flat=True).distinct()
+        category_list = instance.for_category.values_list(
+            'name_ENG', flat=True
+        ).distinct()
         category_name = " | ".join(category_list) if category_list else ""
 
-        topic_list = Topic.objects.filter(categories__indicators=instance).values_list('title_ENG', flat=True).distinct()
+        topic_list = Topic.objects.filter(
+            categories__indicators=instance
+        ).values_list('title_ENG', flat=True).distinct()
         topic_name = " | ".join(topic_list) if topic_list else ""
 
         parent = instance.parent.title_ENG if instance.parent else ""
 
+        characteristics = (
+            "increasing" if instance.kpi_characteristics == "inc"
+            else "decreasing" if instance.kpi_characteristics == "dec"
+            else "constant"
+        )
+
+        page_content = (
+            f"{instance.title_ENG} is a time series indicator"
+            f"{f' under {parent}' if parent else ''}."
+            f"{f' It belongs to the {topic_name} topic.' if topic_name else ''}"
+            f"{f' Category: {category_name}.' if category_name else ''}"
+            f"{f' The indicator code is {instance.code}.' if instance.code else ''}"
+            f"{f' Measured annually in {instance.measurement_units},' if instance.measurement_units else ''}"
+            f"{f' quarterly in {instance.measurement_units_quarter},' if instance.measurement_units_quarter else ''}"
+            f"{f' and monthly in {instance.measurement_units_month}.' if instance.measurement_units_month else ''}"
+            f" The overall trend is {characteristics}."
+        )
+
         return {
             "id": f"tsms_kpi_{instance.id}",
-            "page_content": f"Time Series - Indicator: {instance.title_ENG}",
+            "page_content": page_content.strip(),
             "metadata": {
                 "entity_type": "indicator",
                 "indicator_id": instance.id or "",
                 "indicator_eng": instance.title_ENG or "",
                 "indicator_code": instance.code or "",
                 "parent": parent or "",
-                "annual_measurement_unit" : instance.measurement_units or "",
-                "quarter_measurement_unit" : instance.measurement_units_quarter or "",
-                "month_measurement_unit" : instance.measurement_units_month or "",
-                "characteristics": (
-                        "Increasing" if instance.kpi_characteristics == "inc"
-                        else "Decreasing" if instance.kpi_characteristics == "dec"
-                        else "Constant"
-                    ),
+                "annual_measurement_unit": instance.measurement_units or "",
+                "quarter_measurement_unit": instance.measurement_units_quarter or "",
+                "month_measurement_unit": instance.measurement_units_month or "",
+                "characteristics": characteristics.capitalize(),
                 "topic_name": topic_name or "",
                 "category_name": category_name or "",
                 "source": instance.source or "",
                 "domain": "TSMS"
             }
         }
-    
