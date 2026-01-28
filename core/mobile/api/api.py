@@ -370,7 +370,7 @@ def get_annual_value(request):
 
         quarter_queryset = indicator.quarter_data.filter(
             id__in=Subquery(subquery.values('id'))
-        )[:16]
+        ).reverse()[:16]
 
         subquery = indicator.month_data.filter(
             Q(for_datapoint__year_EC__isnull=False)
@@ -378,7 +378,7 @@ def get_annual_value(request):
 
         month_queryset = indicator.month_data.filter(
             id__in=Subquery(subquery.values('id'))
-        )[:24]
+        ).reverse()[:24]
 
 
         
