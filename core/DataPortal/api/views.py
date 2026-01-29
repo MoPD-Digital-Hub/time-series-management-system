@@ -53,7 +53,7 @@ def category_with_indicator(request , id=None):
     
     # 📌 Optional topic filter
     if id:
-        categories = categories.filter(topic_id=id)
+        categories = categories.filter(topic__id=id)
 
     serializer = CategorySerializers(categories.distinct(), many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
