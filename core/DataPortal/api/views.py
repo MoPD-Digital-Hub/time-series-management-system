@@ -34,7 +34,7 @@ def topic_lists(request):
     
 
 @api_view(['GET'])
-def category_with_indicator(request):
+def category_with_indicator(request , id=None):
     search = request.GET.get('search')
 
     categories = Category.objects.filter()
@@ -50,6 +50,10 @@ def category_with_indicator(request):
             Q(name_AMH__icontains=search) |
             Q(id__in=indicator_category_ids)
         )
+    
+    # 📌 Optional topic filter
+    if id:
+        categories = categories.filter(topic_id=id)
 
     serializer = CategorySerializers(categories.distinct(), many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
