@@ -37,14 +37,13 @@ def topic_lists(request):
 def category_with_indicator(request):
     search = request.GET.get('search')
 
-    categories = Category.objects.filter(is_dashboard_visible=True)
+    categories = Category.objects.filter()
 
     # 🔍 Search logic (works without topic)
     if search:
         indicator_category_ids = Indicator.objects.filter(
             Q(title_ENG__icontains=search) | Q(title_AMH__icontains=search),
-            is_dashboard=True
-        ).values_list('for_category_id', flat=True)
+        ).values_list('for_category__id', flat=True)
 
         categories = categories.filter(
             Q(name_ENG__icontains=search) |
