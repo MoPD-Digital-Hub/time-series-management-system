@@ -199,6 +199,7 @@
                 </li>
                 {% endif %}
                 {% if request.user.is_category_manager or request.user.is_superuser %}
+                <li class="pc-item pc-caption">Governance</li>
                 <li class="pc-item">
                     <a href="{% url 'user_management_dashboard' %}" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-users-gear"></i></span>
