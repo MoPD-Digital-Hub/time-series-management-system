@@ -36,21 +36,39 @@ def topic_lists(request):
 @api_view(['GET'])
 def category_with_indicator(request, id):
     try:
-        topic = Topic.objects.get(id = id)
+        topic = Topic.objects.get(id=id)
     except Topic.DoesNotExist:
-        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Topic not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    if 'search' in request.GET:
-        search = request.GET['search']
-        indicator = Indicator.objects.filter(Q(is_dashboard = True), Q(title_ENG__icontains=search) | Q(title_AMH__icontains=search)).select_related().values('for_category__id')
-        categories = Category.objects.filter( Q(is_dashboard_visible = True), Q(name_ENG__icontains=search) | Q(name_AMH__icontains=search) | Q(id__in=indicator)).select_related()
+    search = request.GET.get('search', '').strip()
+    
+    if search:
+        # Get IDs of categories linked to indicators that match the search
+        indicator_category_ids = list(
+            Indicator.objects.filter(
+                Q(title_ENG__icontains=search) | Q(title_AMH__icontains=search),
+                is_dashboard=True,
+            ).values_list('for_category__id', flat=True)
+        )
+
+        # Filter categories based on search or indicator linkage
+        categories = Category.objects.filter(
+            topic=topic,
+            is_dashboard_visible=True
+        ).filter(
+            Q(name_ENG__icontains=search) |
+            Q(name_AMH__icontains=search) |
+            Q(id__in=indicator_category_ids)
+        )
+
         serializer = CategorySerializers(categories, many=True)
         return Response(serializer.data)
-    
-    if request.method == 'GET':
-        categories = Category.objects.filter(topic =  topic, is_dashboard_visible = True).select_related()
-        serializer = CategorySerializers(categories, many=True)
-        return Response(serializer.data)
+
+    # No search: return all categories for topic
+    categories = Category.objects.filter(topic=topic, is_dashboard_visible=True)
+    serializer = CategorySerializers(categories, many=True)
+    return Response(serializer.data)
+
     
 
 
