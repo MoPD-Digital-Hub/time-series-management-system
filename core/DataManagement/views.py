@@ -250,7 +250,7 @@ def indicators(request):
 
 @login_required
 def indicator_view(request, indicator_id):
-    indicator = get_object_or_404(Indicator, id=indicator_id, is_verified=True)
+    indicator = get_object_or_404(Indicator, id=indicator_id)
     if request.user.is_authenticated and not request.user.is_superuser:
         assigned_category_ids = CategoryAssignment.objects.filter(manager=request.user).values_list('category_id', flat=True)
         topics = Topic.objects.filter(
