@@ -189,7 +189,7 @@
                     </a>
                 </li>
 
-                {% if request.user.is_category_manager or request.user.is_superuser %}
+                {% if request.user.is_category_manager %}
                 <li class="pc-item pc-caption">Governance</li>
                 <li class="pc-item">
                     <a href="{% url 'verification_dashboard' %}" class="pc-link">
@@ -197,6 +197,8 @@
                         <span class="pc-mtext">Quality Control</span>
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_category_manager or request.user.is_superuser %}
                 <li class="pc-item">
                     <a href="{% url 'user_management_dashboard' %}" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-users-gear"></i></span>
