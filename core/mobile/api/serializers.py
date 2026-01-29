@@ -204,7 +204,6 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
         return AnnualDataSerializer(annual_data, many=True).data
 
-
     def get_quarter_data(self, obj):
         # Subquery: cast to int and order by that
         subquery = obj.quarter_data.filter(
@@ -227,7 +226,6 @@ class IndicatorSerializer(serializers.ModelSerializer):
         quarter_list = list(qs)[::-1]
         return QuarterDataSerializer(quarter_list, many=True).data
 
-
     def get_month_data(self, obj):
         subquery = obj.month_data.filter(
         Q(for_datapoint__year_EC__isnull=False)
@@ -242,12 +240,10 @@ class IndicatorSerializer(serializers.ModelSerializer):
     def get_week_data(self, obj):
         weekly_qs = obj.records.filter(record_type="weekly").order_by('date')
         return WeekDataSerializer(weekly_qs, many=True).data
-
-   
+ 
     def get_day_data(self, obj):
         daily_qs = obj.records.filter(record_type="daily").order_by('date')
         return DayDataSerializer(daily_qs, many=True).data
-
     
     def get_latest_data(self, obj):
         # Get the latest entry based on for_datapoint__year_EC from each dataset
@@ -619,7 +615,7 @@ class IndicatorShortSerializer(serializers.ModelSerializer):
    
     class Meta:
         model = Indicator
-        fields = ('id','title_ENG', 'code', 'measurement_units', 'measurement_units_quarter', 'measurement_units_month','latest_data', 'annual_data', 'quarter_data', 'month_data', 'children')
+        fields = ('id','title_ENG', 'code', 'measurement_units', 'measurement_units_quarter', 'measurement_units_month','latest_data', 'annual_data', 'quarter_data', 'month_data', 'children', 'kpi_characteristics')
     
 
     def get_children(self, obj):
