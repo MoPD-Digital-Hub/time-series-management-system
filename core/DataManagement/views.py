@@ -672,7 +672,10 @@ def manage_user_form(request, user_id=None):
     
     # Determine what categories can be assigned
     if user.is_superuser:
-         available_topics = Topic.objects.prefetch_related('categories').all()
+        available_topics = Topic.objects.prefetch_related('categories').all()
+        # Add managed_categories as categories for template consistency
+        for topic in available_topics:
+            topic.managed_categories = topic.categories.all()
     else:
         # Categories managed by the current user
         my_cats = CategoryAssignment.objects.filter(manager=user).values_list('category_id', flat=True)
