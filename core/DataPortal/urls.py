@@ -6,7 +6,7 @@ urlpatterns = [
 
     # ================= API (FIRST) =================
     path('api/topic-lists/', api.topic_lists),
-    path('api/category-with-indicator/<int:id>/', api.category_with_indicator),
+    path('api/category-with-indicator/', api.category_with_indicator),
     path('api/indicator-value/<int:id>/', api.indicator_value),
     path('api/data-points-last-five/', api.data_points),
 

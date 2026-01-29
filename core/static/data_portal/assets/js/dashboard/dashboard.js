@@ -391,7 +391,7 @@ $(document).ready(function () {
         let searchItem = $("#searchItemValue").val()
 
         handleCardSkeleton(true)  //enable loading
-        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/19?search=${searchItem}`)
+        const searchResult = await fetchData(`/data-portal/api/category-with-indicator/?search=${searchItem}`)
         handleCardSkeleton(false) //disable loading
 
         categoryHtml(searchResult)

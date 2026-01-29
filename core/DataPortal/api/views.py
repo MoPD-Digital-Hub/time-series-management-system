@@ -34,42 +34,27 @@ def topic_lists(request):
     
 
 @api_view(['GET'])
-def category_with_indicator(request, id):
-    try:
-        topic = Topic.objects.get(id=id)
-    except Topic.DoesNotExist:
-        return Response({"detail": "Topic not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    search = request.GET.get('search', '').strip()
-    
-    if search:
-        # Get IDs of categories linked to indicators that match the search
-        indicator_category_ids = list(
-            Indicator.objects.filter(
-                Q(title_ENG__icontains=search) | Q(title_AMH__icontains=search),
-                is_dashboard=True,
-            ).values_list('for_category__id', flat=True)
-        )
+def category_with_indicator(request):
+    search = request.GET.get('search')
 
-        # Filter categories based on search or indicator linkage
-        categories = Category.objects.filter(
-            topic=topic,
-            is_dashboard_visible=True
-        ).filter(
+    categories = Category.objects.filter(is_dashboard_visible=True)
+
+    # 🔍 Search logic (works without topic)
+    if search:
+        indicator_category_ids = Indicator.objects.filter(
+            Q(title_ENG__icontains=search) | Q(title_AMH__icontains=search),
+            is_dashboard=True
+        ).values_list('for_category_id', flat=True)
+
+        categories = categories.filter(
             Q(name_ENG__icontains=search) |
             Q(name_AMH__icontains=search) |
             Q(id__in=indicator_category_ids)
         )
 
-        serializer = CategorySerializers(categories, many=True)
-        return Response(serializer.data)
-
-    # No search: return all categories for topic
-    categories = Category.objects.filter(topic=topic, is_dashboard_visible=True)
-    serializer = CategorySerializers(categories, many=True)
-    return Response(serializer.data)
-
-    
+    serializer = CategorySerializers(categories.distinct(), many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+   
 
 
 @api_view(['GET'])
