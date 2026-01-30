@@ -390,7 +390,6 @@ def recent_data_for_topic(request, id):
 
 ########## External API Integration ##########
 
-@login_required(login_url='login')
 @api_view(['GET'])
 def fayda_api(request):
     EXTERNAL_API_URL = "https://nid-cms.fayda.et/api/faydanumber"  # ← your API
