@@ -26,6 +26,8 @@ from Base.serializer import (
 )
 from django.contrib.auth.decorators import login_required
 
+import requests
+
 @login_required(login_url='login')
 @api_view(['GET'])
 def topic_lists(request):
@@ -382,3 +384,36 @@ def recent_data_for_topic(request, id):
    categories = Category.objects.filter(topic__id = id, is_deleted = False).select_related()
    serializer = CategoryIndicatorSerializers(categories, many = True)
    return Response(serializer.data)
+
+
+
+
+########## External API Integration ##########
+
+@login_required(login_url='login')
+@api_view(['GET'])
+def fayda_api(request):
+    EXTERNAL_API_URL = "https://nid-cms.fayda.et/api/faydanumber"  # ← your API
+
+    try:
+        response = requests.get(
+            EXTERNAL_API_URL,
+            timeout=10,
+            headers={
+                "Accept": "application/json",
+                # "Authorization": "Bearer YOUR_TOKEN",  # if needed
+            }
+        )
+
+        response.raise_for_status()  # raises 4xx / 5xx errors
+
+        return Response(response.json(), status=status.HTTP_200_OK)
+
+    except requests.exceptions.RequestException as e:
+        return Response(
+            {
+                "error": "Failed to fetch external data",
+                "details": str(e)
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
