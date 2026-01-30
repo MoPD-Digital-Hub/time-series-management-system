@@ -398,7 +398,7 @@ def fayda_api(request):
     try:
         response = requests.get(
             EXTERNAL_API_URL,
-            timeout=10,
+            timeout=50,
             headers={
                 "Accept": "application/json",
                 # "Authorization": "Bearer YOUR_TOKEN",  # if needed
