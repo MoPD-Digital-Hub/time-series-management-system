@@ -151,6 +151,14 @@
                         <span class="pc-mtext">Data Explorer</span>
                     </a>
                 </li>
+                <li class="pc-item {% if request.resolver_match.url_name == 'admas-ai' %}active{% endif %}">
+                    <a href="{% url 'admas-ai' %}" class="pc-link">
+                        <span class="pc-micon">
+                            <i class="fa-solid fa-robot"></i>
+                        </span>
+                        <span class="pc-mtext">Admas  AI</span>
+                    </a>
+                </li>
 
 
                 <li class="pc-item pc-caption">Data Assets</li>

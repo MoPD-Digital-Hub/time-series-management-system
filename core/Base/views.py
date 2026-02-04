@@ -914,4 +914,4 @@ def admas_ai(request):
     context = {
         'topics': topics,
     }
-    return render(request, 'base/admas_ai.html', context)
+    return render(request, 'data_management/admas_ai.html', context)
