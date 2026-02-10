@@ -189,12 +189,14 @@
                         <span class="pc-mtext">Data Entry</span>
                     </a>
                 </li>
+                {% if request.user.email == 'tagane@gmail.com' %}
                 <li class="pc-item">
                     <a href="{% url 'projects_data_management' %}" class="pc-link">
                         <span class="pc-micon"><i class="fa-solid fa-diagram-project"></i></span>
                         <span class="pc-mtext">Projects</span>
                     </a>
                 </li>
+                {% endif %}
 
                 {% endif %}
                 <li class="pc-item">
