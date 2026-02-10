@@ -897,7 +897,7 @@ def manage_project(request, pk=None):
         if form.is_valid():
             form.save()
             messages.success(request,'Project add successfully.')
-            return redirect('projects')
+            return redirect('projects_data_management')
     else:
         form = ProjectInitiativesForm(instance=project)
     
@@ -929,27 +929,57 @@ def sub_projects(request , id):
     }
     return render(request , 'data_management/sub_projects.html' , context)
 
+
 @login_required(login_url='login')
 def manage_sub_project(request, parent_id, pk=None):
     parent_project = get_object_or_404(ProjectInitiatives, id=parent_id)
     sub_project = get_object_or_404(SubProject, pk=pk) if pk else None
-    
+
+    # --- Headers only, no row data ---
+    default_headers = [
+        "Name", "Pictures", "Description", "Location", "Amount of investment", "Potential",
+        "Start date", "End date", "Number of beneficiaries",
+        "UDPP-Plan", "UDPP-Performance", "UDPP-Percentage",
+        "UDFP-Plan", "UDFP-Performance", "UDFP-Percentage",
+        "List of major challengs"
+    ]
+    default_content = [default_headers]  # only headers, no empty rows
+
     if request.method == 'POST':
         form = SubProjectForm(request.POST, instance=sub_project)
         if form.is_valid():
             instance = form.save(commit=False)
             instance.project = parent_project
+
+            # --- Initialize content with headers ONLY if creating new ---
+            if not sub_project:
+                instance.content = json.dumps(default_content)
+
             instance.save()
-            messages.success(request, 'Sub-instance saved successfully.')
+            messages.success(request, 'Sub-project saved successfully.')
             return redirect('sub_projects_data_management', id=parent_id)
     else:
         form = SubProjectForm(instance=sub_project)
-    
+
+    # --- Send content to template for Handsontable ---
+    if sub_project and sub_project.content:
+        try:
+            table_data = json.loads(sub_project.content)
+        except Exception:
+            table_data = default_content
+    else:
+        table_data = default_content
+
     return render(request, 'data_management/sub_project_form.html', {
         'form': form,
         'parent_project': parent_project,
-        'sub_project': sub_project
+        'sub_project': sub_project,
+        'table_headers': default_headers,
+        'table_data': json.dumps(table_data),
     })
+
+
+
 
 @login_required(login_url='login')
 def sub_project_detail(request, id):

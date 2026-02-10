@@ -128,12 +128,21 @@ function showToast(message, isError = false) {
     toastBody.innerText = message;
     toastBootstrap.show();
 }
-
 /* ---------------- Table Setup ---------------- */
-const rawData = JSON.parse('{{ projects|escapejs }}');
-const colHeaders = rawData.length ? rawData[0] : [];
-const tableData = rawData.length > 1 ? rawData.slice(1) : [];
+/* ---------------- Table Setup ---------------- */
+let rawData = JSON.parse('{{ projects|escapejs }}') || [];
 
+const colHeaders = Array.isArray(rawData) && rawData.length
+    ? rawData[0]
+    : [];
+
+// ✅ ALWAYS create at least one row with correct column length
+let tableData = (Array.isArray(rawData) && rawData.length > 1)
+    ? rawData.slice(1)
+    : [Array(colHeaders.length || 1).fill(null)];
+
+// If data is empty, we MUST ensure tableData is at least an empty array 
+// and define minRows/minSpareRows together.
 const hot = new Handsontable(document.getElementById('example1'), {
     data: tableData,
     colHeaders: colHeaders,
@@ -145,8 +154,11 @@ const hot = new Handsontable(document.getElementById('example1'), {
     filters: true,
     manualColumnResize: true,
     outsideClickDeselects: false,
-    licenseKey: 'non-commercial-and-evaluation'
+    licenseKey: 'non-commercial-and-evaluation',
+
+    minSpareRows: 1,   // 👈 keeps ONE empty row at the bottom always
 });
+
 
 /* ---------------- Save Logic ---------------- */
 document.getElementById('save').addEventListener('click', function() {
@@ -154,12 +166,18 @@ document.getElementById('save').addEventListener('click', function() {
     const spinner = document.getElementById('saveSpinner');
     const saveText = document.getElementById('saveText');
     
-    // 1. Loading State: Show spinner, change text
     btn.disabled = true;
     spinner.style.setProperty('display', 'inline-block', 'important');
     saveText.innerText = " Saving...";
 
-    const fullData = [colHeaders, ...hot.getData()];
+    // Use getSourceData() or filter getData() to exclude the trailing empty spare row
+    // This prevents saving a row that is entirely null/empty to your database
+    const cleanData = hot.getData().filter(row => row.some(cell => cell !== null && cell !== ''));
+
+    const fullData = [
+        colHeaders,
+        ...cleanData
+    ];
 
     fetch(window.location.pathname, {
         method: 'POST',
@@ -180,7 +198,6 @@ document.getElementById('save').addEventListener('click', function() {
         showToast('Failed to save data.', true);
     })
     .finally(() => {
-        // 2. Reset State: Hide spinner, restore text
         btn.disabled = false;
         spinner.style.setProperty('display', 'none', 'important');
         saveText.innerHTML = '<i class="fa fa-cloud-upload-alt me-2"></i>Save Changes';
