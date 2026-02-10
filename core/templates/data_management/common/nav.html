@@ -189,6 +189,13 @@
                         <span class="pc-mtext">Data Entry</span>
                     </a>
                 </li>
+                <li class="pc-item">
+                    <a href="{% url 'projects_data_management' %}" class="pc-link">
+                        <span class="pc-micon"><i class="fa-solid fa-diagram-project"></i></span>
+                        <span class="pc-mtext">Projects</span>
+                    </a>
+                </li>
+
                 {% endif %}
                 <li class="pc-item">
                     <a href="{% url 'data_documents' %}" class="pc-link">
@@ -225,12 +232,12 @@
                 {% endif %}
                 {% if request.user.is_importer %}
                 <li class="pc-item pc-caption">Governance</li>
-               <li class="pc-item">
-                    <a href="{% url "edit_profile" %}" class="pc-link">
-                        <span class="pc-micon"><i class="fa-solid fa-person"></i></span>
-                        <span class="pc-mtext">Edit Profile</span>
-                    </a>
-                </li>
+                <li class="pc-item">
+                        <a href="{% url "edit_profile" %}" class="pc-link">
+                            <span class="pc-micon"><i class="fa-solid fa-person"></i></span>
+                            <span class="pc-mtext">Edit Profile</span>
+                        </a>
+                    </li>
                 {% endif %}
             </ul>
         </div>

@@ -1,0 +1,34 @@
+{% include 'base/common/head.html' %}
+<body>
+    
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+    
+    <div class="pc-container">
+        <div class="pc-content">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card mt-5">
+                        <div class="card-header">
+                            <h5>{% if project %} Edit Project: {{ project.title_ENG }} {% else %} Add New Project {% endif %}</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {% csrf_token %}
+                                {{ form.as_p }}
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-primary">Save Project</button>
+                                    <a href="{% url 'projects' %}" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+
+</body>

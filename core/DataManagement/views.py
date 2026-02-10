@@ -4,7 +4,7 @@ from UserManagement.models import *
 from django.contrib.auth.decorators import login_required
 
 from django.contrib import messages
-from .forms import IndicatorForm
+from .forms import *
 
 from django.db.models import Count
 from django.utils import timezone
@@ -17,6 +17,7 @@ from django.db.models import Prefetch
 from .serializers import *
 
 
+from django.http import JsonResponse
 @login_required
 def dashboard_index(request):
     # --- 1. Top Level Metrics ---
@@ -867,3 +868,196 @@ def audit_log_view(request):
     }
 
     return render(request, 'data_management/audit_log.html', context)
+
+
+
+
+
+
+
+
+############## Projects ############
+
+@login_required(login_url='login')
+def projects(request):
+    projects = ProjectInitiatives.objects.filter(is_initiative=False)
+    initiatives = ProjectInitiatives.objects.filter(is_initiative=True)
+    return render(request, 'data_management/projects.html', {
+        "projects": projects,
+        "initiatives": initiatives
+    })
+
+@login_required(login_url='login')
+def manage_project(request, pk=None):
+    # If pk is provided, we are editing; otherwise, adding.
+    project = get_object_or_404(ProjectInitiatives, pk=pk) if pk else None
+    
+    if request.method == 'POST':
+        form = ProjectInitiativesForm(request.POST, instance=project)
+        if form.is_valid():
+            form.save()
+            messages.success(request,'Project add successfully.')
+            return redirect('projects')
+    else:
+        form = ProjectInitiativesForm(instance=project)
+    
+    return render(request, 'data_management/project_form.html', {
+        'form': form,
+        'project': project
+    })
+
+
+@login_required(login_url='login')
+def sub_projects(request , id):
+    parent_project = ProjectInitiatives.objects.get(id=id)
+    if request.method == 'POST':
+        # Handle form submission for adding a new project
+        form = SubProjectForm(request.POST)
+        if form.is_valid():
+            sub_project = form.save(commit=False)
+            sub_project.project = parent_project
+            sub_project.save()  # Save the new project
+            return redirect('sub_projects' , id=id)  # Redirect to the list of projects after saving
+    else:
+        form = SubProjectForm()
+    projects = SubProject.objects.filter(project__id=id)
+    form = SubProjectForm()
+    context = {
+        "parent_project" : parent_project,
+        "projects" : projects,
+        "form" : form
+    }
+    return render(request , 'data_management/sub_projects.html' , context)
+
+@login_required(login_url='login')
+def manage_sub_project(request, parent_id, pk=None):
+    parent_project = get_object_or_404(ProjectInitiatives, id=parent_id)
+    sub_project = get_object_or_404(SubProject, pk=pk) if pk else None
+    
+    if request.method == 'POST':
+        form = SubProjectForm(request.POST, instance=sub_project)
+        if form.is_valid():
+            instance = form.save(commit=False)
+            instance.project = parent_project
+            instance.save()
+            messages.success(request, 'Sub-instance saved successfully.')
+            return redirect('sub_projects_data_management', id=parent_id)
+    else:
+        form = SubProjectForm(instance=sub_project)
+    
+    return render(request, 'data_management/sub_project_form.html', {
+        'form': form,
+        'parent_project': parent_project,
+        'sub_project': sub_project
+    })
+
+@login_required(login_url='login')
+def sub_project_detail(request, id):
+    project = get_object_or_404(SubProject, id=id)
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)  # Parse JSON from request
+            project.content = json.dumps(data.get("data", []))  # Update content
+            project.save()  # Save the changes
+            return JsonResponse({"message": "Project updated successfully"}, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
+    # Handling GET request
+    if hasattr(project, "content"):
+        if isinstance(project.content, str):
+            try:
+                projects_json = json.loads(project.content)
+            except json.JSONDecodeError:
+                projects_json = {"error": "Invalid JSON format in content field"}
+        else:
+            projects_json = project.content  
+    else:
+        projects_json = json.loads(serialize("json", [project]))[0]["fields"]
+
+    context = {
+        "projects": json.dumps(projects_json),
+        "project" : project
+    }
+    return render(request, "data_management/sub_project_detail.html", context)
+
+
+# @login_required(login_url='login')
+# @api_view(['POST'])
+# def edit_project(request):    
+#     id = request.POST.get('id') 
+#     title_ENG = request.POST.get('title_ENG')
+#     title_AMH = request.POST.get('title_AMH')
+#     description = request.POST.get('description')
+#     is_initiative = request.POST.get('is_initiative')  # Will be "on" if checked, None if not
+
+#     # Convert checkbox value to boolean
+#     is_initiative = True if is_initiative in ["on", "true", "True", True] else False
+
+#     print("ID:", id)
+#     print("Title ENG:", title_ENG)      
+#     print("Title AMH:", title_AMH)
+#     print("Description:", description)
+#     print("Is Initiative:", is_initiative)
+
+#     try:
+#         project = ProjectInitiatives.objects.get(id=id)
+#         project.title_ENG = title_ENG
+#         project.title_AMH = title_AMH
+#         project.description = description
+#         project.is_initiative = is_initiative  # save it
+#         project.save()
+#         response = {'success': True}
+#     except Exception as e:
+#         print("Error:", e)
+#         response = {'success': False}
+
+#     return Response(response)
+
+
+# @login_required(login_url='login')
+# @api_view(['POST'])
+# def edit_sub_project(request):    
+#     id = request.POST.get('id') 
+#     title_ENG = request.POST.get('title_ENG')
+#     title_AMH = request.POST.get('title_AMH')
+#     description = request.POST.get('description')
+#     is_regional = request.POST.get('is_regional')  # Will be "true" or "false" as string
+
+
+
+#     try:
+#         project = SubProject.objects.get(id=id)
+#         project.title_ENG = title_ENG
+#         project.title_AMH = title_AMH
+#         project.description = description
+        
+#         # Convert "true"/"false" string to boolean
+#         project.is_regional = str(is_regional).lower() == "true"
+
+#         project.save()
+#         response = {'success': True}
+#     except SubProject.DoesNotExist:
+#         response = {'success': False, 'error': 'Project not found'}
+#     except Exception as e:
+#         response = {'success': False, 'error': str(e)}
+
+#     return Response(response)
+
+  
+
+# @login_required(login_url='login')
+# def delete_project(request, id):
+#     project = ProjectInitiatives.objects.get(id=id)    
+#     project.delete()
+#     messages.success(request, '😀 Hello User, Project Successfully Deleted')
+#     return redirect('projects')
+
+# @login_required(login_url='login')
+# def delete_sub_project(request, id):
+#     project = SubProject.objects.get(id=id)  
+#     parent_id = project.project.id  
+#     project.delete()
+#     messages.success(request, '😀 Hello User, Project Successfully Deleted')
+#     return redirect('sub_projects' , id=parent_id)

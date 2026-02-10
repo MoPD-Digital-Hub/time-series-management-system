@@ -1,0 +1,85 @@
+{% include 'base/common/head.html' %}
+<style>
+    .pc-container { background-color: #f8f9fa; min-height: 100vh; padding: 3rem 0; }
+    .form-card {
+        background: #fff;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .form-header {
+        background: #f8f9fa;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #eee;
+    }
+    .form-body { padding: 2rem; }
+    /* Styling Django Form widgets */
+    input, textarea, select {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    label { font-weight: 600; margin-bottom: 0.4rem; color: #495057; }
+</style>
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+    
+    <div class="pc-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'projects_data_management' %}">Projects</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'sub_projects_data_management' parent_project.id %}">{{ parent_project.title_ENG }}</a></li>
+                            <li class="breadcrumb-item active">{% if sub_project %}Edit{% else %}Add{% endif %} Instance</li>
+                        </ol>
+                    </nav>
+
+                    <div class="form-card">
+                        <div class="form-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0 fw-bold">
+                                {% if sub_project %} Edit Instance {% else %} New Sub Instance {% endif %}
+                            </h4>
+                            <span class="badge bg-soft-primary text-primary px-3 py-2">
+                                Parent: {{ parent_project.title_ENG|truncatechars:20 }}
+                            </span>
+                        </div>
+                        
+                        <div class="form-body">
+                            <form method="POST">
+                                {% csrf_token %}
+                                
+                                {% for field in form %}
+                                    <div class="mb-3">
+                                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        {{ field }}
+                                        {% if field.errors %}
+                                            <div class="text-danger small">{{ field.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+
+                                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                                    <a href="{% url 'sub_projects_data_management' parent_project.id %}" class="btn btn-light px-4">Cancel</a>
+                                    <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                                        <i class="fa fa-save me-2"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+      {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+
+</body>

@@ -1,0 +1,170 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+    {% include 'data_management/common/header.html' %}
+   
+
+    <style>
+    /* Consistent Dashboard Theme */
+    .pc-container { background-color: #f4f7fa; min-height: 100vh; padding-top: 1.5rem; }
+    
+    /* Stats or Header Card */
+    .dashboard-card {
+        background: #fff;
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px 0 rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Table Styling */
+    .project-table thead th {
+        background-color: #f8f9fa;
+        color: #8898aa;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .project-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #525f7f;
+    }
+
+    /* Action Icon Styling */
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        line-height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .btn-icon:hover { transform: translateY(-2px); }
+    
+    .bg-soft-primary { background-color: #e7f1ff; color: #0d6efd; }
+    .bg-soft-warning { background-color: #fff8e6; color: #ffc107; }
+    .bg-soft-info { background-color: #e1f5fe; color: #03a9f4; }
+
+    /* Custom Title Style */
+    .project-title {
+        font-weight: 600;
+        color: #32325d;
+        text-decoration: none;
+    }
+    .project-title:hover { color: #5e72e4; }
+</style>
+
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-lg-11">
+                    
+                    {% include 'data_management/common/messages.html' %}
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="fw-bold mb-0">Project Directory</h3>
+                            <p class="text-muted small">Manage and oversee all main project instances</p>
+                        </div>
+                        <a href="{% url 'add_project' %}" class="btn btn-primary px-4 shadow-sm border-0" style="border-radius: 10px;">
+                            <i class="fa fa-plus-circle me-2"></i> Add Instance
+                        </a>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <div class="table-responsive">
+                            <table class="table project-table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" style="width: 5%">#</th>
+                                        <th style="width: 30%">Project Name</th>
+                                        <th style="width: 45%">Description</th>
+                                        <th class="text-end" style="width: 20%">Management</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for project in projects %}
+                                    <tr>
+                                        <td class="text-center text-muted fw-bold">{{ forloop.counter }}</td>
+                                        <td>
+                                            <a href="{% url 'sub_projects_data_management' project.id %}" class="project-title">
+                                                {{ project.title_ENG }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted small">
+                                                {{ project.description|default:"No description provided."|truncatechars:120 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{% url 'sub_projects_data_management' project.id %}" 
+                                               class="btn-icon bg-soft-info me-2" 
+                                               data-bs-toggle="tooltip" title="View Sub-Projects">
+                                                <i class="fa fa-list-ul"></i>
+                                            </a>
+                                            <a href="{% url 'edit_project' project.id %}" 
+                                               class="btn-icon bg-soft-warning" 
+                                               data-bs-toggle="tooltip" title="Edit Details">
+                                                <i class="fa fa-pencil-alt"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="fa fa-folder-open fa-3x mb-3 opacity-20"></i>
+                                                <p>No projects found. Click "Add Instance" to start.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+
+</body>
+
+ 
+  <script>
+    $(document).ready(function () {
+
+        $(".btn-delete").on('click', function () {
+
+            const buttonData = $(this).data()
+            $("#deleteProjectAnchor").attr("href", `/user-admin/delete_project/${buttonData.id}`)
+            $("#deleteProject").html(`Are you sure you want to delete <div> <code> ${buttonData.name}</code>? </div> `)
+          })
+
+
+ 
+
+
+    })
+  </script>
+
+</html>

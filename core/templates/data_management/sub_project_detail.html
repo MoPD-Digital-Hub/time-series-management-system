@@ -1,0 +1,190 @@
+{% load static %}
+{% include 'base/common/head.html' %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.full.min.css">
+
+<style>
+    /* 1. Page Background & Layout */
+    .pc-container { background-color: #f1f4f9; min-height: 100vh; }
+    
+    /* 2. Modern Header/Toolbar */
+    .data-toolbar {
+        background: #ffffff;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #e0e6ed;
+    }
+
+    /* 3. Attractive Table Container */
+    .table-container {
+        background: #ffffff;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #e0e6ed;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+
+    /* 4. Handsontable Custom "Skin" */
+    .handsontable {
+        font-family: 'Inter', -apple-system, system-ui, sans-serif !important;
+        font-size: 13px !important;
+    }
+    .handsontable th {
+        background-color: #f8f9fa !important;
+        color: #4b5563 !important;
+        font-weight: 600 !important;
+        border-color: #e5e7eb !important;
+        padding: 8px !important;
+    }
+    .handsontable td {
+        border-color: #f3f4f6 !important;
+        padding: 6px 10px !important;
+    }
+    /* Highlight color when selecting cells */
+    .handsontable .area { background-color: rgba(94, 114, 228, 0.1) !important; }
+
+    /* 5. Save Button & Hidden Spinner Fix */
+    #saveSpinner { display: none; } /* Strictly hide on load */
+    
+    .btn-save {
+        background: #5e72e4;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .btn-save:hover { background: #4559d4; transform: translateY(-1px); }
+</style>
+
+<body>
+    {% include 'data_management/common/nav.html' %}
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fw-bold" id="toastMessage"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pc-container">
+        <div class="pc-content">
+            <div class="container-fluid">
+                
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="#" class="text-muted text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item active fw-bold text-primary">{{ project.title_ENG }}</li>
+                    </ol>
+                </nav>
+
+                <div class="data-toolbar">
+                    <div>
+                        <h4 class="mb-0 fw-bold text-dark">{{ project.title_ENG }}</h4>
+                        <span class="badge bg-light-primary text-primary mt-1">
+                            <i class="fa fa-database me-1"></i> Live Data Grid
+                        </span>
+                    </div>
+                    <button id="save" class="btn btn-primary btn-save shadow-sm">
+                        <span class="spinner-border spinner-border-sm me-2" id="saveSpinner" role="status"></span>
+                        <span id="saveText"><i class="fa fa-cloud-upload-alt me-2"></i>Save Changes</span>
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <div id="example1"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% include 'data_management/common/footer.html' %}
+    {% include 'data_management/common/js.html' %}
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@13.0.0/dist/handsontable.full.min.js"></script>
+
+<script>
+/* ---------------- Toast Setup ---------------- */
+const toastEl = document.getElementById('liveToast');
+const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastEl);
+
+function showToast(message, isError = false) {
+    const toastBody = document.getElementById('toastMessage');
+    toastEl.classList.remove('bg-success', 'bg-danger', 'text-white');
+    
+    if (isError) {
+        toastEl.classList.add('bg-danger', 'text-white');
+    } else {
+        toastEl.classList.add('bg-success', 'text-white');
+    }
+    
+    toastBody.innerText = message;
+    toastBootstrap.show();
+}
+
+/* ---------------- Table Setup ---------------- */
+const rawData = JSON.parse('{{ projects|escapejs }}');
+const colHeaders = rawData.length ? rawData[0] : [];
+const tableData = rawData.length > 1 ? rawData.slice(1) : [];
+
+const hot = new Handsontable(document.getElementById('example1'), {
+    data: tableData,
+    colHeaders: colHeaders,
+    rowHeaders: true,
+    height: '65vh',
+    stretchH: 'all',
+    contextMenu: true,
+    dropdownMenu: true,
+    filters: true,
+    manualColumnResize: true,
+    outsideClickDeselects: false,
+    licenseKey: 'non-commercial-and-evaluation'
+});
+
+/* ---------------- Save Logic ---------------- */
+document.getElementById('save').addEventListener('click', function() {
+    const btn = this;
+    const spinner = document.getElementById('saveSpinner');
+    const saveText = document.getElementById('saveText');
+    
+    // 1. Loading State: Show spinner, change text
+    btn.disabled = true;
+    spinner.style.setProperty('display', 'inline-block', 'important');
+    saveText.innerText = " Saving...";
+
+    const fullData = [colHeaders, ...hot.getData()];
+
+    fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ data: fullData })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+    })
+    .then(() => {
+        showToast('Data synchronized successfully!');
+    })
+    .catch(() => {
+        showToast('Failed to save data.', true);
+    })
+    .finally(() => {
+        // 2. Reset State: Hide spinner, restore text
+        btn.disabled = false;
+        spinner.style.setProperty('display', 'none', 'important');
+        saveText.innerHTML = '<i class="fa fa-cloud-upload-alt me-2"></i>Save Changes';
+    });
+});
+</script>
+</body>

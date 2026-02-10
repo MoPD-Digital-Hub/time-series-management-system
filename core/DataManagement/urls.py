@@ -42,6 +42,21 @@ urlpatterns = [
     path('profile/edit/', edit_profile, name='edit_profile'),
 
 
+
+
+
+    ######## Projects #########
+    path('projects/', projects, name='projects_data_management'),
+    path('project/add/', manage_project, name='add_project'),
+    path('project/edit/<int:pk>/', manage_project, name='edit_project'),
+    path('sub_projects/<int:id>' , sub_projects , name='sub_projects_data_management'),
+    path('project/<int:parent_id>/sub-projects/add/', manage_sub_project, name='manage_sub_project'),
+    path('project/<int:parent_id>/sub-projects/edit/<int:pk>/', manage_sub_project, name='edit_sub_project'),
+    path('sub_project_detail/<int:id>/', sub_project_detail, name='detail_sub_project'),
+
+
+
+
     ######## Audit Log ##########
     path('audit-log/', audit_log_view, name='audit_log_view'),
 
