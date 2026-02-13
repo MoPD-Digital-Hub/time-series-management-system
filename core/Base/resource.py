@@ -112,7 +112,7 @@ class AnnualDataWideResource(resources.ModelResource):
     indicator = fields.Field(
         column_name='indicator',
         attribute='indicator',
-        widget=ForeignKeyWidget(Indicator, 'code')
+        widget=ForeignKeyWidget(Indicator, 'title_ENG')
     )
 
     for_datapoint = fields.Field(
