@@ -136,7 +136,7 @@ class QuarterDataResource(resources.ModelResource):
     indicator = fields.Field(
         column_name='indicator',
         attribute='indicator',
-        widget=ForeignKeyWidget(Indicator, 'title_ENG'),
+        widget=ForeignKeyWidget(Indicator, 'code'),
         saves_null_values = True,
     ) 
 
@@ -281,7 +281,7 @@ class MonthDataResource(resources.ModelResource):
     indicator = fields.Field(
         column_name='indicator',
         attribute='indicator',
-        widget=ForeignKeyWidget(Indicator, 'title_ENG'),
+        widget=ForeignKeyWidget(Indicator, 'code'),
     )
 
     for_month = fields.Field(
