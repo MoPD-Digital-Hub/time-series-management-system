@@ -105,9 +105,14 @@
                 </div>
             </div>
 
+            <a href="{% url 'oidc_authentication_init' %}" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:border-slate-400 hover:bg-slate-50 hover:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 active:scale-[0.99]">
+                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">M</span>
+                Continue with MoPD Auth
+            </a>
+
             <div>
                 <button type="submit"
-                    class="group relative flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors">
+                    class="group relative flex w-full justify-center rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-600 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 active:translate-y-0">
                     Sign in
                 </button>
             </div>

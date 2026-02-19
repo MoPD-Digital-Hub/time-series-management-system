@@ -10,9 +10,9 @@ def root_redirect(request):
 
 
 urlpatterns = [
-    path('', root_redirect),                # 👈 catches ONLY '/'
+    path('', root_redirect),               
     path('admin/', admin.site.urls),
-    path('', include('Base.urls')),         # 👈 still available for other Base routes
+    path('', include('Base.urls')),         
     path('user-admin/', include('UserAdmin.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('data-portal/', include('DataPortal.urls')),
@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/mobile/', include('mobile.urls')),
     path('user-management/', include('UserManagement.urls')),
     path('data-management/', include('DataManagement.urls')),
+    path('oidc/', include('mozilla_django_oidc.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

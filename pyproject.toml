@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.10,<4.0"
 django = "^4.2.6"
 django-import-export = "^4.3.9"
 django-fontawesome-5 = "^1.0.18"
@@ -20,6 +20,7 @@ django-cors-headers = "^4.7.0"
 py-ethiopian-date-converter = "0.1.1"
 django-ckeditor = "^6.7.3"
 django-auditlog = "<3.4"
+mozilla-django-oidc = "^5.0.2"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

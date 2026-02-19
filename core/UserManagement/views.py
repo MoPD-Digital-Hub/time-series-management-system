@@ -19,6 +19,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
+from urllib.parse import urlencode
 
 # Create your views here.
 
@@ -278,9 +279,26 @@ def login_view(request):
 
 
 def logout_view(request):
-    """Log out and redirect to login page."""
+    """Log out from Django and Keycloak, then return to the login page."""
+    oidc_id_token = request.session.get("oidc_id_token")
     auth_logout(request)
-    return redirect('user_management_login')
+    oidc_logout_endpoint = getattr(settings, "OIDC_OP_LOGOUT_ENDPOINT", "")
+
+    if oidc_logout_endpoint:
+        post_logout_redirect_uri = getattr(
+            settings,
+            "OIDC_POST_LOGOUT_REDIRECT_URI",
+            request.build_absolute_uri("/user-management/login/"),
+        )
+        params = {
+            "client_id": settings.OIDC_RP_CLIENT_ID,
+            "post_logout_redirect_uri": post_logout_redirect_uri,
+        }
+        if oidc_id_token:
+            params["id_token_hint"] = oidc_id_token
+        return redirect(f"{oidc_logout_endpoint}?{urlencode(params)}")
+
+    return redirect("user_management_login")
 
 @login_required
 def importer_dashboard(request):
