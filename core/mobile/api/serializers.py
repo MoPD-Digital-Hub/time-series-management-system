@@ -758,53 +758,140 @@ class IndicatorMetaDataSerializer(serializers.ModelSerializer):
         model = Indicator
         fields = ('id', 'title_ENG')
 
-    def to_representation(self, instance):
-        category_list = instance.for_category.values_list(
-            'name_ENG', flat=True
-        ).distinct()
-        category_name = " | ".join(category_list) if category_list else ""
 
-        topic_list = Topic.objects.filter(
-            categories__indicators=instance
-        ).values_list('title_ENG', flat=True).distinct()
-        topic_name = " | ".join(topic_list) if topic_list else ""
+class TopicTreeAnnualDataSerializer(serializers.ModelSerializer):
+    year_ec = serializers.IntegerField(source='for_datapoint.year_EC', read_only=True)
+    year_gc = serializers.CharField(source='for_datapoint.year_GC', read_only=True)
+    performance = serializers.SerializerMethodField()
 
-        parent = instance.parent.title_ENG if instance.parent else ""
+    class Meta:
+        model = AnnualData
+        fields = ('id', 'year_ec', 'year_gc', 'performance')
 
-        characteristics = (
-            "increasing" if instance.kpi_characteristics == "inc"
-            else "decreasing" if instance.kpi_characteristics == "dec"
-            else "constant"
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+
+
+class TopicTreeQuarterDataSerializer(serializers.ModelSerializer):
+    year_ec = serializers.IntegerField(source='for_datapoint.year_EC', read_only=True)
+    year_gc = serializers.CharField(source='for_datapoint.year_GC', read_only=True)
+    quarter_number = serializers.IntegerField(source='for_quarter.number', read_only=True)
+    quarter_title_eng = serializers.CharField(source='for_quarter.title_ENG', read_only=True)
+    quarter_title_amh = serializers.CharField(source='for_quarter.title_AMH', read_only=True)
+    performance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuarterData
+        fields = (
+            'id',
+            'year_ec',
+            'year_gc',
+            'quarter_number',
+            'quarter_title_eng',
+            'quarter_title_amh',
+            'performance',
         )
 
-        page_content = (
-            f"{instance.title_ENG} is a time series indicator"
-            f"{f' under {parent}' if parent else ''}."
-            f"{f' It belongs to the {topic_name} topic.' if topic_name else ''}"
-            f"{f' Category: {category_name}.' if category_name else ''}"
-            f"{f' The indicator code is {instance.code}.' if instance.code else ''}"
-            f"{f' Measured annually in {instance.measurement_units},' if instance.measurement_units else ''}"
-            f"{f' quarterly in {instance.measurement_units_quarter},' if instance.measurement_units_quarter else ''}"
-            f"{f' and monthly in {instance.measurement_units_month}.' if instance.measurement_units_month else ''}"
-            f" The overall trend is {characteristics}."
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+
+
+class TopicTreeMonthDataSerializer(serializers.ModelSerializer):
+    year_ec = serializers.IntegerField(source='for_datapoint.year_EC', read_only=True)
+    year_gc = serializers.CharField(source='for_datapoint.year_GC', read_only=True)
+    month_number = serializers.IntegerField(source='for_month.number', read_only=True)
+    month_title_eng = serializers.CharField(source='for_month.month_ENG', read_only=True)
+    month_title_amh = serializers.CharField(source='for_month.month_AMH', read_only=True)
+    performance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MonthData
+        fields = (
+            'id',
+            'year_ec',
+            'year_gc',
+            'month_number',
+            'month_title_eng',
+            'month_title_amh',
+            'performance',
         )
 
-        return {
-            "id": f"tsms_kpi_{instance.id}",
-            "page_content": page_content.strip(),
-            "metadata": {
-                "entity_type": "indicator",
-                "id": instance.id or "",
-                "indicator_eng": instance.title_ENG or "",
-                "indicator_code": instance.code or "",
-                "parent": parent or "",
-                "annual_measurement_unit": instance.measurement_units or "",
-                "quarter_measurement_unit": instance.measurement_units_quarter or "",
-                "month_measurement_unit": instance.measurement_units_month or "",
-                "characteristics": characteristics.capitalize(),
-                "topic_name": topic_name or "",
-                "category_name": category_name or "",
-                "source": instance.source or "",
-                "domain": "TSMS"
-            }
-        }
+    def get_performance(self, obj):
+        return round(obj.performance, 2) if obj.performance is not None else None
+
+
+class TopicTreeIndicatorSerializer(serializers.ModelSerializer):
+    annual_data = TopicTreeAnnualDataSerializer(source='verified_annual_data', many=True, read_only=True)
+    quarter_data = TopicTreeQuarterDataSerializer(source='verified_quarter_data', many=True, read_only=True)
+    month_data = TopicTreeMonthDataSerializer(source='verified_month_data', many=True, read_only=True)
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Indicator
+        fields = (
+            'id',
+            'title_ENG',
+            'code',
+            'rank',
+            'description',
+            'measurement_units',
+            'measurement_units_quarter',
+            'measurement_units_month',
+            'frequency',
+            'source',
+            'methodology',
+            'kpi_characteristics',
+            'is_dashboard_visible',
+            'parent_id',
+            'annual_data',
+            'quarter_data',
+            'month_data',
+            'children',
+        )
+
+    def get_children(self, obj):
+        children_map = self.context.get('children_map', {})
+        children = children_map.get(obj.id, [])
+        return TopicTreeIndicatorSerializer(children, many=True, context=self.context).data
+
+
+class TopicTreeCategorySerializer(serializers.ModelSerializer):
+    indicators = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'name_ENG',
+            'code',
+            'rank',
+            'is_reginal',
+            'is_dashboard_visible',
+            'indicators',
+        )
+
+    def get_indicators(self, obj):
+        category_indicator_map = self.context.get('category_indicator_map', {})
+        indicators = category_indicator_map.get(obj.id, [])
+        return TopicTreeIndicatorSerializer(indicators, many=True, context=self.context).data
+
+
+class TopicTreeTopicSerializer(serializers.ModelSerializer):
+    categories = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Topic
+        fields = (
+            'id',
+            'title_ENG',
+            'rank',
+            'description',
+            'is_dashboard',
+            'categories',
+        )
+
+    def get_categories(self, obj):
+        categories = getattr(obj, 'prefetched_categories', None)
+        if categories is None:
+            categories = obj.categories.filter(is_deleted=False).order_by('rank', 'id')
+        return TopicTreeCategorySerializer(categories, many=True, context=self.context).data
