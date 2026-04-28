@@ -441,8 +441,10 @@ def kpis(request, category_id):
     except Category.DoesNotExist:
         return Response({"result" : "FAILED", "message" : "Category not found", "data" : None,}, status=status.HTTP_404_NOT_FOUND)
     
-    kpi_lists = category.indicators.filter(is_dashboard_visible = True)
+    kpi_lists = category.indicators.filter(
+        is_dashboard_visible=True,
+        parent__isnull=True,
+    ).distinct().order_by("rank", "id")
     serializer = IndicatorSerializer(kpi_lists, many = True)
 
     return Response({"result" : "SUCCUSS", "message" : "SUCCUSS", "data" : serializer.data,}, status=status.HTTP_200_OK)
-
