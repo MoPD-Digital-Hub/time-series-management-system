@@ -100,10 +100,10 @@ class AnnualDataAdmin(ImportExportModelAdmin):
     list_editable = ('performance','for_datapoint')
 
     def indicator_title(self, obj):
-        return obj.indicator.title_ENG
-    
+        return obj.indicator.title_ENG if obj.indicator else "(orphaned — indicator deleted)"
+
     def year(self, obj):
-        return obj.for_datapoint.year_EC
+        return obj.for_datapoint.year_EC if obj.for_datapoint else ""
 
 admin.site.register(AnnualData,  AnnualDataAdmin)
 

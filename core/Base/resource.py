@@ -3,6 +3,7 @@ from import_export.formats.base_formats import XLS
 import tablib
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 from import_export.results import RowResult, Result
+from django.db.utils import OperationalError, ProgrammingError
 from .models import *
 from tablib import Dataset
 from datetime import datetime
@@ -848,7 +849,10 @@ def create_aggregate_data_resource():
     attrs['Meta'] = Meta
     return type('AnnualDataResource', (resources.ModelResource,), attrs)
 
-AnnualDataResource = create_aggregate_data_resource()
+try:
+    AnnualDataResource = create_aggregate_data_resource()
+except (OperationalError, ProgrammingError):
+    AnnualDataResource = None  # DataPoint table not yet migrated
 
 def create_quarter_aggregate_resource():
     YEARS = list(DataPoint.objects.order_by('year_EC').values_list('year_EC', flat=True).distinct())
@@ -980,5 +984,9 @@ def create_month_aggregate_resource():
 
 
 # Usage
-QuarterDataWideResource = create_quarter_aggregate_resource()
-MonthDataWideResource = create_month_aggregate_resource()
+try:
+    QuarterDataWideResource = create_quarter_aggregate_resource()
+    MonthDataWideResource = create_month_aggregate_resource()
+except (OperationalError, ProgrammingError):
+    QuarterDataWideResource = None  # DataPoint table not yet migrated
+    MonthDataWideResource = None
