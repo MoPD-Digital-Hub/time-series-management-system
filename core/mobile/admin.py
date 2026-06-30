@@ -24,7 +24,7 @@ admin.site.register(MobileDahboardOverview, MobileDahboardOverviewAdmin)
 
 
 @admin.register(HighFrequency)
-class HighFrequencyAdmin(admin.ModelAdmin):
+class HighFrequencyAdmin(ImportExportModelAdmin):
     list_display = (
         'indicator',
         'chart_type',

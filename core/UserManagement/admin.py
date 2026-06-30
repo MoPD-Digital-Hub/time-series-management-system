@@ -1,11 +1,24 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db import models
+from import_export import resources
+from import_export.admin import ImportExportModelAdmin
 from .models import CustomUser, CategoryAssignment, IndicatorSubmission, DataSubmission, ResponsibleEntity, UserSector
 
+
+# -------------------- Import/Export Resources --------------------
+class CustomUserResource(resources.ModelResource):
+    class Meta:
+        model = CustomUser
+        # Never import/export the password hash.
+        exclude = ('password',)
+        import_id_fields = ('email',)
+
+
 # -------------------- Custom User Admin --------------------
-class CustomUserAdmin(BaseUserAdmin):
+class CustomUserAdmin(ImportExportModelAdmin, BaseUserAdmin):
     model = CustomUser
+    resource_classes = [CustomUserResource]
 
     list_display = (
         'email', 'username', 'first_name', 'last_name',
@@ -88,7 +101,7 @@ class CustomUserAdmin(BaseUserAdmin):
 
 
 # -------------------- Category Assignment Admin --------------------
-class CategoryAssignmentAdmin(admin.ModelAdmin):
+class CategoryAssignmentAdmin(ImportExportModelAdmin):
     list_display = ('manager_full_name', 'category')
     list_filter = ('manager', 'category')
     search_fields = (
@@ -104,7 +117,7 @@ class CategoryAssignmentAdmin(admin.ModelAdmin):
 
 
 # -------------------- Indicator Submission Admin --------------------
-class IndicatorSubmissionAdmin(admin.ModelAdmin):
+class IndicatorSubmissionAdmin(ImportExportModelAdmin):
     list_display = (
         'indicator',
         'submitted_by',
@@ -152,7 +165,7 @@ class IndicatorSubmissionAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} submission(s) declined.")
 
 # -------------------- Data Submission Admin --------------------
-class DataSubmissionAdmin(admin.ModelAdmin):
+class DataSubmissionAdmin(ImportExportModelAdmin):
     list_display = (
         'indicator',
         'submitted_by',
@@ -204,5 +217,11 @@ admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(CategoryAssignment, CategoryAssignmentAdmin)
 admin.site.register(IndicatorSubmission, IndicatorSubmissionAdmin)
 admin.site.register(DataSubmission, DataSubmissionAdmin)
-admin.site.register(ResponsibleEntity)
-admin.site.register(UserSector)
+@admin.register(ResponsibleEntity)
+class ResponsibleEntityAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(UserSector)
+class UserSectorAdmin(ImportExportModelAdmin):
+    pass

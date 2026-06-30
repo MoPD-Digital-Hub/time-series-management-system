@@ -142,7 +142,7 @@ class MonthDataAdmin(ImportExportModelAdmin):
 
 
 
-class TrendingIndicatorAdmin(admin.ModelAdmin):
+class TrendingIndicatorAdmin(ImportExportModelAdmin):
     list_display = ("indicator", "performance", "direction", "note", "created_at")
     list_filter = ("direction", "indicator")
     search_fields = ("indicator__title_ENG", "note")
@@ -165,12 +165,37 @@ class TrendingIndicatorAdmin(admin.ModelAdmin):
 admin.site.register(MonthData,  MonthDataAdmin)
 
 
-admin.site.register(Quarter)
-admin.site.register(Month)
-admin.site.register(Video)
-admin.site.register(ProjectInitiatives)
-admin.site.register(SubProject)
-admin.site.register(Content)
+@admin.register(Quarter)
+class QuarterAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(Month)
+class MonthAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(Video)
+class VideoAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(ProjectInitiatives)
+class ProjectInitiativesAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(SubProject)
+class SubProjectAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(Content)
+class ContentAdmin(ImportExportModelAdmin):
+    pass
+
+
+admin.site.register(TrendingIndicator, TrendingIndicatorAdmin)
 
 
 auditlog.register(Indicator)

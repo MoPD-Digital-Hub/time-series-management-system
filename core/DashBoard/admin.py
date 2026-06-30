@@ -1,7 +1,24 @@
 from django.contrib import admin
+from import_export.admin import ImportExportModelAdmin
 from .models import *
 # Register your models here.
-admin.site.register(Dashboard)
-admin.site.register(DashboardIndicator)
-admin.site.register(Row)
-admin.site.register(Component)
+
+
+@admin.register(Dashboard)
+class DashboardAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(DashboardIndicator)
+class DashboardIndicatorAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(Row)
+class RowAdmin(ImportExportModelAdmin):
+    pass
+
+
+@admin.register(Component)
+class ComponentAdmin(ImportExportModelAdmin):
+    pass
